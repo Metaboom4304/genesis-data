@@ -1,0 +1,32 @@
+{
+  "20391": {
+    "owner": "EQCAGB...0Mmz",
+    "status": "Занят",
+    "price": 14.3,
+    "faction": "Стражи",
+    "artifact": true,
+    "temple": false,
+    "mine": true,
+    "population": 120
+  },
+  "22313": {
+    "owner": "EQZXVB...7LmD",
+    "status": "В продаже",
+    "price": 25.7,
+    "faction": "Наблюдатели",
+    "artifact": false,
+    "temple": true,
+    "mine": false,
+    "population": 95
+  },
+  "10501": {
+    "owner": "EQYZLP...1VmX",
+    "status": "Свободен",
+    "price": null,
+    "faction": null,
+    "artifact": false,
+    "temple": false,
+    "mine": false,
+    "population": 0
+  }
+}
