@@ -2,8 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Genesis Map — Clan Viewer</title>
-  <!-- Leaflet -->
+  <title>Genesis Map — Полная карта</title>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
@@ -24,35 +23,28 @@
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
   (async function(){
-    // 🗺️ Инициализация карты
     const map = L.map('map', {
       center: [0, 0],
       zoom: 2,
       minZoom: 0,
-      maxZoom: 8,
-      attributionControl: true,
-      zoomControl: true
+      maxZoom: 8
     });
 
-    // 🌍 ArcGIS Physical Map без подписей
+    // Подложка: ArcGIS Physical Map
     L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles © Esri'
+        attribution: '© Esri, ArcGIS'
     }).addTo(map);
 
-    // 🧱 Слои: сетка и тайлы
-    const gridLayer  = L.layerGroup().addTo(map);
-    const tileLayer  = L.layerGroup().addTo(map);
+    const gridLayer = L.layerGroup().addTo(map);
+    const tileLayer = L.layerGroup().addTo(map);
 
-    // 📦 Загрузка фрагментированных JSON
-    const PARTS = [
-      './data/tiles_01.json','./data/tiles_02.json','./data/tiles_03.json',
-      './data/tiles_04.json','./data/tiles_05.json','./data/tiles_06.json',
-      './data/tiles_07.json','./data/tiles_08.json','./data/tiles_09.json',
-      './data/tiles_10.json'
-    ];
+    // Загружаем все 22 файла
+    const PARTS = Array.from({ length: 22 }, (_, i) =>
+      `./data/tiles_${String(i+1).padStart(2,'0')}.json`
+    );
+
     let tileData = [];
-
     try {
       const chunks = await Promise.all(
         PARTS.map(url => fetch(url).then(r => r.json()))
@@ -64,45 +56,36 @@
       return;
     }
 
-    // 🧠 Генерация словаря по ID с координатами
-    const tilesMap = {};
+    // Добавляем координаты x/y
     tileData.forEach(t => {
       const id = parseInt(t.number, 10);
-      if (!id) return;
       const idx = id - 1;
       t.x = idx % 256;
       t.y = Math.floor(idx / 256);
-      tilesMap[id] = t;
     });
 
-    // 📍 Отрисовка сетки Y–X
     function drawGrid() {
       gridLayer.clearLayers();
-      const z = map.getZoom();
-      const size = 256;
-      const bounds = map.getBounds();
-      const nw = map.project(bounds.getNorthWest(), z);
-      const se = map.project(bounds.getSouthEast(), z);
-      const x0 = Math.floor(nw.x / size);
-      const x1 = Math.floor(se.x / size);
-      const y0 = Math.floor(nw.y / size);
-      const y1 = Math.floor(se.y / size);
+      const z = map.getZoom(), s = 256;
+      const b = map.getBounds();
+      const nw = map.project(b.getNorthWest(), z);
+      const se = map.project(b.getSouthEast(), z);
+      const x0 = Math.floor(nw.x/s), x1 = Math.floor(se.x/s);
+      const y0 = Math.floor(nw.y/s), y1 = Math.floor(se.y/s);
 
       for (let y = y0; y <= y1; y++) {
         for (let x = x0; x <= x1; x++) {
-          const p0 = L.point(x*size, y*size);
-          const p1 = L.point((x+1)*size, (y+1)*size);
+          const p0 = L.point(x*s, y*s);
+          const p1 = L.point((x+1)*s, (y+1)*s);
           const rect = L.latLngBounds(
-            map.unproject(p0, z),
-            map.unproject(p1, z)
+            map.unproject(p0, z), map.unproject(p1, z)
           );
           L.rectangle(rect, {
             weight: 1,
             color: 'rgba(255,255,255,0.2)',
             interactive: false
           }).addTo(gridLayer);
-          const center = rect.getCenter();
-          L.marker(center, {
+          L.marker(rect.getCenter(), {
             icon: L.divIcon({
               className: 'tile-label',
               html: `${y}-${x}`,
@@ -114,24 +97,19 @@
       }
     }
 
-    // 🎨 Отрисовка тайлов по JSON
     function drawTiles() {
       tileLayer.clearLayers();
-      const z = map.getZoom();
-      const size = 256;
-
+      const z = map.getZoom(), s = 256;
       tileData.forEach(t => {
-        const p0 = L.point(t.x*size, t.y*size);
-        const p1 = L.point((t.x+1)*size, (t.y+1)*size);
-        const bounds = L.latLngBounds(
-          map.unproject(p0, z),
-          map.unproject(p1, z)
+        const p0 = L.point(t.x*s, t.y*s);
+        const p1 = L.point((t.x+1)*s, (t.y+1)*s);
+        const rect = L.latLngBounds(
+          map.unproject(p0, z), map.unproject(p1, z)
         );
         const owned = t.has_owner === true || t.has_owner === 'true';
 
-        L.rectangle(bounds, {
+        L.rectangle(rect, {
           weight: 0,
-          fill: true,
           fillOpacity: 0.4,
           fillColor: owned ? '#ff4444' : '#444444'
         })
@@ -145,7 +123,6 @@
       });
     }
 
-    // 🔄 Обновления
     drawGrid();
     drawTiles();
     map.on('zoomend moveend', drawGrid);
