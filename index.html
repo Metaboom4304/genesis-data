@@ -2,11 +2,22 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Genesis Map — Тайлы с ресурсами</title>
+  <title>Genesis Map — Тайлы и ресурсы</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
-    html, body { margin:0; padding:0; height:100%; }
-    #map { width:100%; height:100%; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    #map { position: absolute; top: 50px; left: 0; right: 0; bottom: 0; }
+    #panel {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 50px; background: #222; color: white;
+      display: flex; align-items: center; padding: 0 10px;
+      font-family: sans-serif; font-size: 14px;
+      gap: 10px;
+    }
+    #panel input, #panel select {
+      font-size: 14px;
+      padding: 4px;
+    }
     .tile-label {
       font-size: 10px;
       color: rgba(255,255,255,0.8);
@@ -15,6 +26,23 @@
   </style>
 </head>
 <body>
+  <div id="panel">
+    <label>🔍 Тайл ID: <input type="number" id="search" placeholder="12345" /></label>
+    <label>⚙️ Фильтр: 
+      <select id="filter">
+        <option value="">— без фильтра —</option>
+        <option value="iron">Железо</option>
+        <option value="gold">Золото</option>
+        <option value="platinum">Платина</option>
+        <option value="silver">Серебро</option>
+        <option value="copper">Медь</option>
+        <option value="tungsten">Вольфрам</option>
+        <option value="uranium">Уран</option>
+        <option value="rare_earth_elements">Редк. элементы</option>
+      </select>
+    </label>
+    <span id="count">Загружается тайлы…</span>
+  </div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -45,7 +73,7 @@
         PARTS.map(url => fetch(url).then(r => r.json()))
       );
       tileData = chunks.flat();
-      console.log('Загружено тайлов:', tileData.length);
+      document.getElementById("count").textContent = `Загружено тайлов: ${tileData.length}`;
     } catch(err) {
       console.error('Ошибка загрузки JSON:', err);
       return;
@@ -94,7 +122,21 @@
     function drawTiles() {
       tileLayer.clearLayers();
       const z = map.getZoom(), s = 256;
+      const b = map.getBounds();
+      const nw = map.project(b.getNorthWest(), z);
+      const se = map.project(b.getSouthEast(), z);
+      const x0 = Math.floor(nw.x / s), x1 = Math.floor(se.x / s);
+      const y0 = Math.floor(nw.y / s), y1 = Math.floor(se.y / s);
+
+      const resourceFilter = document.getElementById('filter').value;
+      const searchID = parseInt(document.getElementById('search').value);
+
       tileData.forEach(t => {
+        if (t.x < x0 || t.x > x1 || t.y < y0 || t.y > y1) return;
+
+        if (resourceFilter && parseInt(t[resourceFilter]) === 0) return;
+        if (!isNaN(searchID) && parseInt(t.id_tile) !== searchID) return;
+
         const p0 = L.point(t.x*s, t.y*s);
         const p1 = L.point((t.x+1)*s, (t.y+1)*s);
         const bounds = L.latLngBounds(
@@ -102,7 +144,6 @@
         );
         const owned = String(t.has_owner).toLowerCase() === "true";
 
-        // Сборка инфы о ресурсах
         const resources = [
           'iron','gold','platinum','copper','silver','limestone',
           'aluminum','titanium','tungsten','uranium','rare_earth_elements'
@@ -127,7 +168,10 @@
     drawGrid();
     drawTiles();
     map.on('zoomend moveend', drawGrid);
-    map.on('zoomend', drawTiles);
+    map.on('zoomend moveend', drawTiles);
+
+    document.getElementById('filter').addEventListener('change', drawTiles);
+    document.getElementById('search').addEventListener('input', drawTiles);
   })();
   </script>
 </body>
