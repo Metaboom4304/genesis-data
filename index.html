@@ -2,99 +2,125 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>DEBUG: GENESIS TILE TEST</title>
+  <title>DEBUG TILE MAP — GEO TEST</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
     html, body { margin: 0; padding: 0; height: 100%; }
     #map { width: 100%; height: 100%; }
+    #panel {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: rgba(0,0,0,0.7); color: white;
+      padding: 8px; z-index: 1000;
+      font-family: sans-serif; font-size: 14px;
+    }
+    #panel input { padding: 4px; font-size: 14px; }
     .tile-label {
-      font-size: 9px;
-      color: black;
+      font-size: 10px;
       background: yellow;
-      padding: 2px;
       border-radius: 3px;
+      padding: 1px 3px;
+      color: black;
     }
   </style>
 </head>
 <body>
+  <div id="panel">
+    🔍 Поиск тайла: <input type="number" id="search" placeholder="22313" />
+  </div>
   <div id="map"></div>
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
-  (async function(){
-    const map = L.map('map', {
-      center: [0, 0],
-      zoom: 2,
-      minZoom: 1,
-      maxZoom: 8
-    });
+(async function(){
+  const map = L.map('map').setView([49.25, -123.1], 5); // Центр на Ванкувер
 
-    // Используем OpenStreetMap
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
 
-    const tileLayer = L.layerGroup().addTo(map);
+  const tileLayer = L.layerGroup().addTo(map);
 
-    // Загружаем JSON-файлы
-    const PARTS = Array.from({ length: 22 }, (_, i) =>
-      `./data/tiles_${String(i+1).padStart(2,'0')}.json`
-    );
+  const PARTS = Array.from({ length: 22 }, (_, i) =>
+    `./data/tiles_${String(i+1).padStart(2,'0')}.json`
+  );
 
-    let tileData = [];
-    try {
-      const chunks = await Promise.all(
-        PARTS.map(url => fetch(url).then(r => r.json()))
-      );
-      tileData = chunks.flat();
-      console.log('Загружено тайлов:', tileData.length);
-    } catch(err) {
-      console.error('Ошибка загрузки JSON:', err);
-      return;
-    }
+  let tileData = [];
+  try {
+    const chunks = await Promise.all(PARTS.map(url => fetch(url).then(r => r.json())));
+    tileData = chunks.flat();
+    console.log('Загружено тайлов:', tileData.length);
+  } catch (err) {
+    console.error('Ошибка загрузки JSON:', err);
+    return;
+  }
 
-    tileData.forEach((t, idx) => {
-      const id = parseInt(t.id_tile, 10);
-      const i = id - 1;
-      t.x = i % 256;
-      t.y = Math.floor(i / 256);
-      if (idx < 5) console.log(`Тайл #${id} → x:${t.x}, y:${t.y}`);
-    });
+  tileData.forEach(t => {
+    const id = parseInt(t.id_tile, 10);
+    const idx = id - 1;
+    t.x = idx % 256;
+    t.y = Math.floor(idx / 256);
 
-    function drawTiles() {
-      const s = 256;
-      const z = map.getZoom();
-      tileLayer.clearLayers();
+    // Привязка координат: растягиваем на диапазон широта/долгота
+    // x: 0 → -180°, 255 → +180°
+    // y: 0 → +85°, 255 → -85°
+    t.lng = -180 + (360 * t.x / 255);
+    t.lat = 85 - (170 * t.y / 255);
+  });
 
-      tileData.forEach(t => {
-        const p0 = L.point(t.x*s, t.y*s);
-        const p1 = L.point((t.x+1)*s, (t.y+1)*s);
-        const bounds = L.latLngBounds(
-          map.unproject(p0, z), map.unproject(p1, z)
-        );
+  function drawTiles() {
+    tileLayer.clearLayers();
 
-        L.rectangle(bounds, {
-          weight: 1,
-          color: '#000',
-          fillColor: '#ffff66',
-          fillOpacity: 0.5
+    tileData.forEach(t => {
+      const sw = [t.lat - 0.7, t.lng - 0.7];
+      const ne = [t.lat + 0.7, t.lng + 0.7];
+      const bounds = L.latLngBounds(sw, ne);
+
+      const owned = String(t.has_owner).toLowerCase() === "true";
+
+      L.rectangle(bounds, {
+        weight: 1,
+        color: '#000',
+        fillColor: owned ? '#3366ff' : '#ffff66',
+        fillOpacity: 0.4
+      })
+      .bindPopup(`
+        <strong>Тайл #${t.id_tile}</strong><br>
+        Координаты: x=${t.x}, y=${t.y}<br>
+        lat=${t.lat.toFixed(3)}, lng=${t.lng.toFixed(3)}<br>
+        Владелец: ${owned ? "✅" : "—"}
+      `)
+      .addTo(tileLayer);
+
+      L.marker([t.lat, t.lng], {
+        icon: L.divIcon({
+          className: 'tile-label',
+          html: `${t.id_tile}`,
+          iconSize: [30, 10]
         })
-        .bindPopup(`Тайл #${t.id_tile}<br>x: ${t.x} / y: ${t.y}`)
-        .addTo(tileLayer);
+      }).addTo(tileLayer);
+    });
+  }
 
-        L.marker(bounds.getCenter(), {
-          icon: L.divIcon({
-            className: 'tile-label',
-            html: `${t.id_tile}`,
-            iconSize: [30,10]
-          })
-        }).addTo(tileLayer);
-      });
-    }
+  function flyToTile(idStr) {
+    const id = parseInt(idStr);
+    const tile = tileData.find(t => parseInt(t.id_tile) === id);
+    if (!tile) return;
+    map.flyTo([tile.lat, tile.lng], 6);
+    setTimeout(() => {
+      L.popup()
+        .setLatLng([tile.lat, tile.lng])
+        .setContent(`🧭 Тайл #${tile.id_tile}<br>Координаты: lat=${tile.lat.toFixed(2)}, lng=${tile.lng.toFixed(2)}`)
+        .openOn(map);
+    }, 800);
+  }
 
-    drawTiles();
-    map.on('zoomend moveend', drawTiles);
-  })();
+  document.getElementById('search').addEventListener('change', (e) => {
+    flyToTile(e.target.value);
+  });
+
+  drawTiles();
+})();
   </script>
 </body>
 </html>
