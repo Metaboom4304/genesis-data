@@ -24,6 +24,10 @@
       color: rgba(255,255,255,0.8);
       text-shadow: 0 0 2px black;
     }
+    button.mark-btn {
+      margin: 5px 2px; padding: 3px 6px;
+      font-size: 12px; cursor: pointer;
+    }
     @media (max-width: 600px) {
       #panel { flex-direction: column; align-items: flex-start; }
       #map { top: 220px; }
@@ -32,7 +36,7 @@
 </head>
 <body>
   <div id="panel">
-    <strong>🧭 GENESIS WAR MAP:</strong> твой стратегический интерфейс.
+    <strong>🧭 GENESIS WAR MAP:</strong> стратегический интерфейс
     <label>🔍 ID: <input type="number" id="search" placeholder="22313" /></label>
     <label>⚙️ Ресурс: 
       <select id="filter">
@@ -45,14 +49,6 @@
         <option value="tungsten">Вольфрам</option>
         <option value="uranium">Уран</option>
         <option value="rare_earth_elements">Редкие элементы</option>
-      </select>
-    </label>
-    <label>🎯 Статус:
-      <select id="mark-mode">
-        <option value="">— Режим —</option>
-        <option value="ally">🟩 Союзник</option>
-        <option value="enemy">🟥 Враг</option>
-        <option value="clear">⚪ Сбросить</option>
       </select>
     </label>
     <label>🗺️ Слой:
@@ -111,14 +107,23 @@
 
   document.getElementById("count").textContent = `Загружено тайлов: ${tileData.length}`;
 
+  const deg_lat = 170 / 256;
+  const deg_lng = 360 / 256;
+  const ref_lat = 49.25;
+  const ref_lng = -123.10;
+  const ref_x = 25;
+  const ref_y = 87;
+
   tileData.forEach(t => {
     const id = parseInt(t.id_tile, 10);
     const x = id % 256;
     const y = Math.floor(id / 256);
     t.x = x;
     t.y = y;
-    t.lat = 49.25 - (y - 87) * 0.664;
-    t.lng = -123.10 + (x - 25) * 1.34;
+    const dx = x - ref_x;
+    const dy = y - ref_y;
+    t.lat = ref_lat - dy * deg_lat;
+    t.lng = ref_lng + dx * deg_lng;
   });
 
   const savedMarks = JSON.parse(localStorage.getItem('tile_marks') || '{}');
@@ -126,6 +131,7 @@
     if (status) savedMarks[id] = status;
     else delete savedMarks[id];
     localStorage.setItem('tile_marks', JSON.stringify(savedMarks));
+    drawTiles();
   }
 
   function drawTiles() {
@@ -139,8 +145,8 @@
       if (!isNaN(searchID) && parseInt(t.id_tile) !== searchID) return;
 
       const bounds = L.latLngBounds(
-        [t.lat - 0.5, t.lng - 0.5],
-        [t.lat + 0.5, t.lng + 0.5]
+        [t.lat - deg_lat/2, t.lng - deg_lng/2],
+        [t.lat + deg_lat/2, t.lng + deg_lng/2]
       );
 
       const owned = String(t.has_owner).toLowerCase() === "true";
@@ -167,17 +173,16 @@
         ${['iron','gold','platinum','silver','copper','tungsten','uranium','rare_earth_elements']
           .filter(r => parseInt(t[r]) > 0)
           .map(r => `• ${r}: ${t[r]}`).join('<br>') || 'Нет ресурсов'}
-      `)
-      .on('click', () => {
-        const mode = document.getElementById('mark-mode').value;
-        saveMark(t.id_tile, mode === 'clear' ? null : mode);
-        drawTiles();
-      }).addTo(tileLayer);
+        <br><br>
+        <button class="mark-btn" onclick="saveMark('${t.id_tile}','ally')">🟩 Союзник</button>
+        <button class="mark-btn" onclick="saveMark('${t.id_tile}','enemy')">🟥 Враг</button>
+        <button class="mark-btn" onclick="saveMark('${t.id_tile}','')">⚪ Сбросить</button>
+      `).addTo(tileLayer);
     });
   }
 
   function focusTile(idStr) {
-    const id = parseInt(idStr);
+      const id = parseInt(idStr);
     const t = tileData.find(t => parseInt(t.id_tile) === id);
     if (!t) return;
     map.flyTo([t.lat, t.lng], 6);
@@ -191,11 +196,9 @@
   document.getElementById('search').addEventListener('change', e => focusTile(e.target.value));
   document.getElementById('search').addEventListener('input', drawTiles);
   document.getElementById('filter').addEventListener('change', drawTiles);
-  document.getElementById('mark-mode').addEventListener('change', drawTiles);
   document.getElementById('reset').addEventListener('click', () => {
     document.getElementById('search').value = '';
     document.getElementById('filter').value = '';
-    document.getElementById('mark-mode').value = '';
     drawTiles();
   });
 
