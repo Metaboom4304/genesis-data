@@ -100,7 +100,7 @@
         const bounds = L.latLngBounds(
           map.unproject(p0, z), map.unproject(p1, z)
         );
-        const owned = t.has_owner === true;
+        const owned = String(t.has_owner).toLowerCase() === "true";
 
         // Сборка инфы о ресурсах
         const resources = [
