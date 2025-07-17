@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Genesis Map — Карта тайлов</title>
+  <title>Genesis Map — Тайлы с ресурсами</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
     html, body { margin:0; padding:0; height:100%; }
@@ -27,16 +27,14 @@
       maxZoom: 8
     });
 
-    // Фоновая карта (ArcGIS Physical Map)
     L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Map © Esri'
-    }).addTo(map);
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Map © Esri' }
+    ).addTo(map);
 
     const gridLayer = L.layerGroup().addTo(map);
     const tileLayer = L.layerGroup().addTo(map);
 
-    // Загружаем 22 JSON-файла с тайлами
     const PARTS = Array.from({ length: 22 }, (_, i) =>
       `./data/tiles_${String(i+1).padStart(2,'0')}.json`
     );
@@ -53,15 +51,13 @@
       return;
     }
 
-    // Вычисляем координаты x, y
     tileData.forEach(t => {
-      const id = parseInt(t.number, 10);
+      const id = parseInt(t.id_tile, 10);
       const idx = id - 1;
       t.x = idx % 256;
       t.y = Math.floor(idx / 256);
     });
 
-    // Отрисовка сетки тайлов
     function drawGrid() {
       gridLayer.clearLayers();
       const z = map.getZoom(), s = 256;
@@ -95,7 +91,6 @@
       }
     }
 
-    // Отрисовка закрашенных тайлов с инфой
     function drawTiles() {
       tileLayer.clearLayers();
       const z = map.getZoom(), s = 256;
@@ -105,7 +100,15 @@
         const bounds = L.latLngBounds(
           map.unproject(p0, z), map.unproject(p1, z)
         );
-        const owned = t.has_owner === true || t.has_owner === 'true';
+        const owned = t.has_owner === true;
+
+        // Сборка инфы о ресурсах
+        const resources = [
+          'iron','gold','platinum','copper','silver','limestone',
+          'aluminum','titanium','tungsten','uranium','rare_earth_elements'
+        ].filter(res => parseInt(t[res]) > 0)
+          .map(res => `• ${res}: ${t[res]}`)
+          .join('<br>');
 
         L.rectangle(bounds, {
           weight: 0,
@@ -113,16 +116,14 @@
           fillColor: owned ? '#ff4444' : '#444444'
         })
         .bindPopup(`
-          <strong>Тайл #${t.number}</strong><br>
-          Владелец: ${t.owner || '—'}<br>
-          Клан: ${t.clan_tile}<br>
-          Шахты: ${t.mines}
+          <strong>Тайл #${t.id_tile}</strong><br>
+          Владелец: ${owned ? '✅' : '—'}<br>
+          ${resources || 'Нет ресурсов'}
         `)
         .addTo(tileLayer);
       });
     }
 
-    // Первая отрисовка и обновление при движении/зуме
     drawGrid();
     drawTiles();
     map.on('zoomend moveend', drawGrid);
