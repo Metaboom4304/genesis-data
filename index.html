@@ -6,34 +6,74 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
-    #map { position: absolute; top: 60px; left: 0; right: 0; bottom: 0; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: sans-serif;
+      background: #000;
+    }
+    #map {
+      position: absolute;
+      top: 60px; left: 0; right: 0; bottom: 0;
+    }
     #panel {
-      position: absolute; top: 0; left: 0; right: 0;
+      position: absolute;
+      top: 0; left: 0; right: 0;
       background: #111; color: white;
       display: flex; flex-wrap: wrap;
-      align-items: center; padding: 8px 10px;
-      gap: 10px; z-index: 1000;
+      align-items: center;
+      padding: 8px 10px;
+      gap: 10px;
+      z-index: 1000;
     }
     #panel select, #panel input, #panel button {
-      font-size: 14px; padding: 5px;
+      font-size: 14px;
+      padding: 5px;
     }
-    #panel label { display: flex; align-items: center; gap: 5px; }
+    #panel label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #search {
+      width: 100px;
+    }
+    .tile-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.8);
+      text-shadow: 0 0 2px black;
+    }
     button.mark-btn {
-      margin: 5px 2px; padding: 3px 6px;
-      font-size: 12px; cursor: pointer;
+      margin: 5px 2px;
+      padding: 3px 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    #goto-btn {
+      font-size: 14px;
+      padding: 5px 8px;
+      background: #444;
+      color: white;
+      border: none;
+      cursor: pointer;
     }
     @media (max-width: 600px) {
-      #panel { flex-direction: column; align-items: flex-start; }
-      #map { top: 220px; }
+      #panel {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      #map {
+        top: 220px;
+      }
     }
   </style>
 </head>
 <body>
   <div id="panel">
     <strong>🧭 GENESIS WAR MAP:</strong> стратегический интерфейс
-    <label>🔍 ID: <input type="number" id="search" placeholder="22313" /></label>
-    <label>⚙️ Ресурс: 
+    <label>🔍 <input type="number" id="search" placeholder="Номер тайла" /> <button id="goto-btn">➡️</button></label>
+    <label>⚙️ Ресурс:
       <select id="filter">
         <option value="">— Все —</option>
         <option value="iron">Железо</option>
@@ -44,6 +84,14 @@
         <option value="tungsten">Вольфрам</option>
         <option value="uranium">Уран</option>
         <option value="rare_earth_elements">Редкие элементы</option>
+      </select>
+    </label>
+    <label>🎯 Метка:
+      <select id="status-filter">
+        <option value="">— Все —</option>
+        <option value="ally">🟩 Только союзники</option>
+        <option value="enemy">🟥 Только враги</option>
+        <option value="clear">⚪ Без метки</option>
       </select>
     </label>
     <label>🗺️ Слой:
@@ -133,6 +181,7 @@
   function drawTiles() {
     tileLayer.clearLayers();
     const filter = document.getElementById('filter').value;
+    const statusFilter = document.getElementById('status-filter').value;
     const searchID = parseInt(document.getElementById('search').value);
 
     tileData.forEach(t => {
@@ -140,13 +189,17 @@
       if (filter && parseInt(t[filter]) === 0) return;
       if (!isNaN(searchID) && parseInt(t.id_tile) !== searchID) return;
 
+      const status = savedMarks[t.id_tile] || '';
+      if (statusFilter === 'ally' && status !== 'ally') return;
+      if (statusFilter === 'enemy' && status !== 'enemy') return;
+      if (statusFilter === 'clear' && status) return;
+
       const bounds = L.latLngBounds(
         [t.lat - deg_lat/2, t.lng - deg_lng/2],
         [t.lat + deg_lat/2, t.lng + deg_lng/2]
       );
 
       const owned = String(t.has_owner).toLowerCase() === "true";
-      const status = savedMarks[t.id_tile];
 
       const color = status === "ally" ? "#33cc33" :
                     status === "enemy" ? "#cc3333" :
@@ -156,8 +209,9 @@
                       status === "enemy" ? "#ff0000" : "#000000";
 
       L.rectangle(bounds, {
-        weight: 1,
+        weight: 3,
         color: outline,
+        dashArray: status ? "4" : null,
         fillOpacity: 0.5,
         fillColor: color
       })
@@ -181,6 +235,7 @@
     const id = parseInt(idStr);
     const t = tileData.find(t => parseInt(t.id_tile) === id);
     if (!t) return;
+
     map.flyTo([t.lat, t.lng], 6);
 
     const owned = String(t.has_owner).toLowerCase() === "true";
@@ -201,18 +256,25 @@
     `;
 
     setTimeout(() => {
-      L.popup().setLatLng([t.lat, t.lng])
+      L.popup()
+        .setLatLng([t.lat, t.lng])
         .setContent(popupHTML)
         .openOn(map);
     }, 800);
   }
 
-  document.getElementById('search').addEventListener('change', e => focusTile(e.target.value));
+  document.getElementById('goto-btn').addEventListener('click', () => {
+    const id = document.getElementById('search').value;
+    if (id) focusTile(id);
+  });
+
   document.getElementById('search').addEventListener('input', drawTiles);
   document.getElementById('filter').addEventListener('change', drawTiles);
+  document.getElementById('status-filter').addEventListener('change', drawTiles);
   document.getElementById('reset').addEventListener('click', () => {
     document.getElementById('search').value = '';
     document.getElementById('filter').value = '';
+    document.getElementById('status-filter').value = '';
     drawTiles();
   });
 
