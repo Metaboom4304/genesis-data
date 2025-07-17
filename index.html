@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Genesis Map — Clan Viewer</title>
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+  />
+  <style>
+    html, body { margin:0; padding:0; height:100%; }
+    #map { width:100%; height:100%; }
+    .tile-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.8);
+      text-shadow: 0 0 2px black;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+  (async function(){
+    // 🗺️ Инициализация карты
+    const map = L.map('map', {
+      center: [0, 0],
+      zoom: 2,
+      minZoom: 0,
+      maxZoom: 8,
+      attributionControl: true,
+      zoomControl: true
+    });
+
+    // 🌍 ArcGIS Physical Map без подписей
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles © Esri'
+    }).addTo(map);
+
+    // 🧱 Слои: сетка и тайлы
+    const gridLayer  = L.layerGroup().addTo(map);
+    const tileLayer  = L.layerGroup().addTo(map);
+
+    // 📦 Загрузка фрагментированных JSON
+    const PARTS = [
+      './data/tiles_01.json','./data/tiles_02.json','./data/tiles_03.json',
+      './data/tiles_04.json','./data/tiles_05.json','./data/tiles_06.json',
+      './data/tiles_07.json','./data/tiles_08.json','./data/tiles_09.json',
+      './data/tiles_10.json'
+    ];
+    let tileData = [];
+
+    try {
+      const chunks = await Promise.all(
+        PARTS.map(url => fetch(url).then(r => r.json()))
+      );
+      tileData = chunks.flat();
+      console.log('Загружено тайлов:', tileData.length);
+    } catch(err) {
+      console.error('Ошибка загрузки JSON:', err);
+      return;
+    }
+
+    // 🧠 Генерация словаря по ID с координатами
+    const tilesMap = {};
+    tileData.forEach(t => {
+      const id = parseInt(t.number, 10);
+      if (!id) return;
+      const idx = id - 1;
+      t.x = idx % 256;
+      t.y = Math.floor(idx / 256);
+      tilesMap[id] = t;
+    });
+
+    // 📍 Отрисовка сетки Y–X
+    function drawGrid() {
+      gridLayer.clearLayers();
+      const z = map.getZoom();
+      const size = 256;
+      const bounds = map.getBounds();
+      const nw = map.project(bounds.getNorthWest(), z);
+      const se = map.project(bounds.getSouthEast(), z);
+      const x0 = Math.floor(nw.x / size);
+      const x1 = Math.floor(se.x / size);
+      const y0 = Math.floor(nw.y / size);
+      const y1 = Math.floor(se.y / size);
+
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          const p0 = L.point(x*size, y*size);
+          const p1 = L.point((x+1)*size, (y+1)*size);
+          const rect = L.latLngBounds(
+            map.unproject(p0, z),
+            map.unproject(p1, z)
+          );
+          L.rectangle(rect, {
+            weight: 1,
+            color: 'rgba(255,255,255,0.2)',
+            interactive: false
+          }).addTo(gridLayer);
+          const center = rect.getCenter();
+          L.marker(center, {
+            icon: L.divIcon({
+              className: 'tile-label',
+              html: `${y}-${x}`,
+              iconSize: [0, 0]
+            }),
+            interactive: false
+          }).addTo(gridLayer);
+        }
+      }
+    }
+
+    // 🎨 Отрисовка тайлов по JSON
+    function drawTiles() {
+      tileLayer.clearLayers();
+      const z = map.getZoom();
+      const size = 256;
+
+      tileData.forEach(t => {
+        const p0 = L.point(t.x*size, t.y*size);
+        const p1 = L.point((t.x+1)*size, (t.y+1)*size);
+        const bounds = L.latLngBounds(
+          map.unproject(p0, z),
+          map.unproject(p1, z)
+        );
+        const owned = t.has_owner === true || t.has_owner === 'true';
+
+        L.rectangle(bounds, {
+          weight: 0,
+          fill: true,
+          fillOpacity: 0.4,
+          fillColor: owned ? '#ff4444' : '#444444'
+        })
+        .bindPopup(`
+          <strong>Тайл #${t.number}</strong><br>
+          Владелец: ${t.owner || '—'}<br>
+          Клан: ${t.clan_tile}<br>
+          Шахты: ${t.mines}
+        `)
+        .addTo(tileLayer);
+      });
+    }
+
+    // 🔄 Обновления
+    drawGrid();
+    drawTiles();
+    map.on('zoomend moveend', drawGrid);
+    map.on('zoomend', drawTiles);
+  })();
+  </script>
+</body>
+</html>
