@@ -69,10 +69,10 @@
 
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
-    (async function(){
+(async function(){
   const layers = {
     osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
+      attribution: '© OpenStreetMap'
     }),
     carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '© CartoDB'
@@ -80,8 +80,8 @@
   };
 
   const map = L.map('map', {
-    center: [0, 0],
-    zoom: 2,
+    center: [49.25, -123.1], // Ванкувер
+    zoom: 4,
     minZoom: 2,
     maxZoom: 8,
     layers: [layers.osm]
@@ -95,15 +95,28 @@
     layers[selected].addTo(map);
   });
 
+  const PARTS = Array.from({ length: 22 }, (_, i) =>
+    `./data/tiles_${String(i+1).padStart(2,'0')}.json`
+  );
+
   let tileData = [];
   try {
-    const res = await fetch('./data/data-genesis.json');
-    tileData = await res.json();
+    const chunks = await Promise.all(PARTS.map(url => fetch(url).then(r => r.json())));
+    tileData = chunks.flat();
     document.getElementById("count").textContent = `Загружено тайлов: ${tileData.length}`;
   } catch (err) {
     console.error("Ошибка загрузки JSON:", err);
     return;
   }
+
+  tileData.forEach(t => {
+    const id = parseInt(t.id_tile, 10);
+    const idx = id - 1;
+    t.x = idx % 256;
+    t.y = Math.floor(idx / 256);
+    t.lng = -180 + (360 * t.x / 255);
+    t.lat = 85 - (170 * t.y / 255);
+  });
 
   const savedMarks = JSON.parse(localStorage.getItem('tile_marks') || '{}');
   function saveMark(id, status) {
@@ -209,6 +222,6 @@
 
   drawTiles();
 })();
-    </script>
+</script>
 </body>
 </html>
