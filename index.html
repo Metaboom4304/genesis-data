@@ -19,11 +19,6 @@
       font-size: 14px; padding: 5px;
     }
     #panel label { display: flex; align-items: center; gap: 5px; }
-    .tile-label {
-      font-size: 10px;
-      color: rgba(255,255,255,0.8);
-      text-shadow: 0 0 2px black;
-    }
     button.mark-btn {
       margin: 5px 2px; padding: 3px 6px;
       font-size: 12px; cursor: pointer;
@@ -53,6 +48,7 @@
     </label>
     <label>🗺️ Слой:
       <select id="layer-select">
+        <option value="world">Карта мира</option>
         <option value="osm">OpenStreetMap</option>
         <option value="carto">Carto Dark</option>
       </select>
@@ -67,6 +63,7 @@
   <script>
 (async function(){
   const layers = {
+    world: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
     osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
     carto: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
   };
@@ -74,7 +71,7 @@
   const map = L.map('map', {
     center: [49.25, -123.1],
     zoom: 4,
-    layers: [layers.osm],
+    layers: [layers.world],
     minZoom: 2,
     maxZoom: 8
   });
@@ -98,10 +95,9 @@
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Статус ${res.status}`);
       const json = await res.json();
-      console.log(`✅ ${url} загружен (${json.length} тайлов)`);
       tileData.push(...json);
     } catch(err) {
-      console.error(`❌ Ошибка загрузки ${url}`, err);
+      console.error(`Ошибка загрузки ${url}`, err);
     }
   }
 
@@ -182,13 +178,31 @@
   }
 
   function focusTile(idStr) {
-      const id = parseInt(idStr);
+    const id = parseInt(idStr);
     const t = tileData.find(t => parseInt(t.id_tile) === id);
     if (!t) return;
     map.flyTo([t.lat, t.lng], 6);
+
+    const owned = String(t.has_owner).toLowerCase() === "true";
+    const status = savedMarks[t.id_tile];
+
+    const popupHTML = `
+      <strong>Тайл #${t.id_tile}</strong><br>
+      Координаты: lat=${t.lat.toFixed(2)}, lng=${t.lng.toFixed(2)}<br>
+      Владелец: ${owned ? "✅" : "—"}<br>
+      Статус: ${status || "—"}<br>
+      ${['iron','gold','platinum','silver','copper','tungsten','uranium','rare_earth_elements']
+        .filter(r => parseInt(t[r]) > 0)
+        .map(r => `• ${r}: ${t[r]}`).join('<br>') || 'Нет ресурсов'}
+      <br><br>
+      <button class="mark-btn" onclick="saveMark('${t.id_tile}','ally')">🟩 Союзник</button>
+      <button class="mark-btn" onclick="saveMark('${t.id_tile}','enemy')">🟥 Враг</button>
+      <button class="mark-btn" onclick="saveMark('${t.id_tile}','')">⚪ Сбросить</button>
+    `;
+
     setTimeout(() => {
       L.popup().setLatLng([t.lat, t.lng])
-        .setContent(`🧭 Тайл #${id}`)
+        .setContent(popupHTML)
         .openOn(map);
     }, 800);
   }
