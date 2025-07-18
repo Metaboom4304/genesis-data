@@ -16,18 +16,15 @@
       background: #000;
       font-family: sans-serif;
     }
+
     #map {
       position: absolute;
-      top: 60px;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 60px; left: 0; right: 0; bottom: 0;
     }
+
     #panel {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       background: #111;
       color: #fff;
       display: flex;
@@ -38,50 +35,57 @@
       z-index: 1000;
       transition: background .3s;
     }
-    /* при свёрнутой панели остаётся только заголовок, фон прозрачный */
+
+    /* при свёрнутой панели остаётся только заголовок, фон полностью убран */
     #panel.collapsed {
-      background: transparent !important;
+      background: none !important;
     }
     #panel.collapsed > *:not(#map-title) {
       display: none;
     }
+
     #panel select,
     #panel input,
     #panel button {
       font-size: 14px;
       padding: 5px;
     }
+
     #panel label {
       display: flex;
       align-items: center;
       gap: 5px;
     }
+
     #search {
       width: 100px;
       background: #222;
       color: #fff;
       border: 1px solid #444;
     }
+
     #search::placeholder {
       color: #888;
     }
+
     #goto-btn {
       background: #444;
       color: #fff;
       border: none;
       cursor: pointer;
     }
+
     button.mark-btn {
       margin: 5px 2px;
       padding: 3px 6px;
       font-size: 12px;
       cursor: pointer;
     }
-    /* кнопка сворачивания снизу */
+
+    /* кнопка сворачивания панели внизу */
     #toggle-panel {
       position: absolute;
-      bottom: 15px;
-      right: 15px;
+      bottom: 15px; right: 15px;
       background: #111;
       color: #fff;
       border: none;
@@ -91,17 +95,20 @@
       cursor: pointer;
       z-index: 1000;
     }
+
     /* яркие номера тайлов */
     .tile-label {
       font-size: 10px;
       font-weight: bold;
       color: #fff !important;
-      text-shadow: 0 0 3px black;
+      text-shadow: 0 0 3px #000;
     }
-    /* тонкая видимая сетка */
+
+    /* тонкая сетка по всей карте */
     .leaflet-interactive {
-      stroke-width: 1.5 !important;
+      stroke-width: 1.2 !important;
     }
+
     @media (max-width: 600px) {
       #panel {
         flex-direction: column;
@@ -111,7 +118,8 @@
         top: 220px;
       }
     }
-    /* горизонтальный зум-контрол */
+
+    /* горизонтальный зум */
     .leaflet-control-zoom {
       display: flex !important;
       flex-direction: row;
@@ -126,7 +134,8 @@
     <strong id="map-title">🧭 GENESIS WAR MAP</strong>
 
     <label>
-      🔍 <input type="number" id="search" placeholder="Номер тайла" />
+      🔍 
+      <input type="number" id="search" placeholder="Номер тайла" />
       <button id="goto-btn">➡️</button>
     </label>
 
@@ -176,7 +185,7 @@
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
 ;(async function(){
-  // 1) Пафосная фраза в заголовок
+  // 1) Заголовок с пафосной фразой
   const phrases = [
     'Власть через знание',
     'Победители пишут историю',
@@ -188,13 +197,13 @@
       phrases[Math.floor(Math.random()*phrases.length)]
     }`;
 
-  // 2) Переключатель панели
+  // 2) Сворачивание/разворачивание панели
   const panel = document.getElementById('panel');
   document.getElementById('toggle-panel').onclick = () => {
     panel.classList.toggle('collapsed');
   };
 
-  // 3) Инициализация карты без атрибуции Leaflet
+  // 3) Инициализация карты без атрибуций Leaflet
   const layers = {
     neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
     world:   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
@@ -211,13 +220,16 @@
   });
   map.zoomControl.setPosition('bottomleft');
 
+  // 4) Слои и группы
+  const gridLayer = L.layerGroup().addTo(map);
   const tileLayer = L.layerGroup().addTo(map);
+
   document.getElementById('layer-select').onchange = e => {
     Object.values(layers).forEach(l => map.removeLayer(l));
     layers[e.target.value].addTo(map);
   };
 
-  // 4) Загрузка тайлов
+  // 5) Загрузка данных тайлов + официальных координат
   const PARTS = Array.from({length:22}, (_,i) =>
     `./data/tiles_${String(i+1).padStart(2,'0')}.json`
   );
@@ -234,24 +246,41 @@
   document.getElementById('count').textContent =
     `Загружено тайлов: ${tileData.length}`;
 
-  // 5) Калибровка по тайлу #22313
+  // пробуем загрузить точные координаты из официального JSON
+  let officialCoords = {};
+  try {
+    const r = await fetch('./data/official_tile_coords.json');
+    if (r.ok) {
+      const arr = await r.json();
+      officialCoords = arr.reduce((acc, o) => (acc[o.id_tile] = o, acc), {});
+    }
+  } catch {}
+
+  // 6) Калибровка по формуле и официальным данным
   const refId  = 22313;
   const refX   = refId % 256;
-  const refY   = Math.floor(refId/256);
+  const refY   = Math.floor(refId / 256);
   const refLat = 49.25;
   const refLng = -123.10;
-  const degLat = 170/256;
-  const degLng = 360/256;
+  const degLat = 170 / 256;
+  const degLng = 360 / 256;
+
   tileData.forEach(t => {
     const id = +t.id_tile;
-    const x  = id % 256;
-    const y  = Math.floor(id/256);
-    t.lat = refLat - (y - refY)*degLat;
-    t.lng = refLng + (x - refX)*degLng;
+    if (officialCoords[id]) {
+      // используем точные координаты, если есть
+      t.lat = officialCoords[id].lat;
+      t.lng = officialCoords[id].lng;
+    } else {
+      const x = id % 256;
+      const y = Math.floor(id / 256);
+      t.lat = refLat - (y - refY) * degLat;
+      t.lng = refLng + (x - refX) * degLng;
+    }
   });
 
-  // 6) Сохранение меток
-  const saved = JSON.parse(localStorage.getItem('tile_marks')||'{}');
+  // 7) Сохранение меток
+  const saved = JSON.parse(localStorage.getItem('tile_marks') || '{}');
   window.saveMark = (id, status) => {
     if (status) saved[id] = status;
     else delete saved[id];
@@ -259,7 +288,24 @@
     drawTiles();
   };
 
-  // 7) Отрисовка сетки, номеров, попапов
+  // 8) Отрисовка постоянной сетки
+  function drawGrid() {
+    gridLayer.clearLayers();
+    tileData.forEach(t => {
+      const b = L.latLngBounds(
+        [t.lat - degLat/2, t.lng - degLng/2],
+        [t.lat + degLat/2, t.lng + degLng/2]
+      );
+      L.rectangle(b, {
+        stroke: true,
+        weight: 1,
+        color: '#444',
+        fill: false
+      }).addTo(gridLayer);
+    });
+  }
+
+  // 9) Отрисовка тайлов с фильтрами, номерами, попапами
   function drawTiles() {
     tileLayer.clearLayers();
     const resFilt  = document.getElementById('filter').value;
@@ -269,45 +315,47 @@
     tileData.forEach(t => {
       if (resFilt && +t[resFilt] === 0) return;
       const status = saved[t.id_tile] || '';
-      if (statFilt==='ally'  && status!=='ally') return;
-      if (statFilt==='enemy' && status!=='enemy') return;
-      if (statFilt==='clear' && status ) return;
+      if (statFilt === 'ally'  && status !== 'ally') return;
+      if (statFilt === 'enemy' && status !== 'enemy') return;
+      if (statFilt === 'clear' && status) return;
       if (!isNaN(sID) && +t.id_tile !== sID) return;
 
-      const bounds = L.latLngBounds(
+      const b = L.latLngBounds(
         [t.lat - degLat/2, t.lng - degLng/2],
         [t.lat + degLat/2, t.lng + degLng/2]
       );
-      const owned = String(t.has_owner).toLowerCase() === 'true';
-      const fill   = status==='ally'   ? '#33cc33'
-                 : status==='enemy'  ? '#cc3333'
-                 : owned             ? '#3366ff'
-                                     : '#666';
-      const stroke = status==='ally'   ? '#00ff00'
-                 : status==='enemy'  ? '#ff0000'
-                                     : '#000';
 
-      L.rectangle(bounds, {
-        weight: 1.5,
+      const owned = String(t.has_owner).toLowerCase() === 'true';
+      const fill =  status === 'ally'  ? '#33cc33'
+                  : status === 'enemy' ? '#cc3333'
+                  : owned              ? '#3366ff'
+                                       : '#666';
+      const stroke = status === 'ally'  ? '#00ff00'
+                   : status === 'enemy' ? '#ff0000'
+                                        : '#000';
+
+      L.rectangle(b, {
         stroke: true,
+        weight: 1.5,
         color: stroke,
-        dashArray: status? '4' : null,
+        dashArray: status ? '4' : null,
         fillColor: fill,
         fillOpacity: 0.4
       })
       .addTo(tileLayer)
-      .bindTooltip(
-        String(t.id_tile),
-        {permanent:true, direction:'center', className:'tile-label'}
-      )
+      .bindTooltip(String(t.id_tile), {
+        permanent: true,
+        direction: 'center',
+        className: 'tile-label'
+      })
       .bindPopup(`
         <strong>Тайл #${t.id_tile}</strong><br>
         Коорд: ${t.lat.toFixed(2)}, ${t.lng.toFixed(2)}<br>
-        Владелец: ${owned?'✅':'—'}<br>
-        Статус: ${status||'—'}<br>
+        Владелец: ${owned ? '✅' : '—'}<br>
+        Статус: ${status || '—'}<br>
         ${['iron','gold','platinum','silver','copper','tungsten','uranium','rare_earth_elements']
-          .filter(r=> +t[r]>0)
-          .map(r=>`• ${r}: ${t[r]}`)
+          .filter(r => +t[r] > 0)
+          .map(r => `• ${r}: ${t[r]}`)
           .join('<br>') || 'Нет ресурсов'}
         <br><br>
         <button class="mark-btn" onclick="saveMark('${t.id_tile}','ally')">🟩 Союзник</button>
@@ -317,13 +365,14 @@
     });
   }
 
-  // 8) Переход по ID и события
+  // 10) Переход по ID и привязка событий
   function focus(v) {
-    const t = tileData.find(o=> +o.id_tile === +v);
+    const t = tileData.find(o => +o.id_tile === +v);
     if (!t) return;
     map.flyTo([t.lat, t.lng], 6);
-    setTimeout(()=> map.openPopup(), 800);
+    setTimeout(() => map.openPopup(), 800);
   }
+
   document.getElementById('goto-btn').onclick = () => {
     const v = document.getElementById('search').value;
     if (v) focus(v);
@@ -345,19 +394,22 @@
   document.getElementById('export').onclick = () => {
     const rows = [['id_tile','owner','status','resources']];
     tileData.forEach(t => {
-      const s = saved[t.id_tile]||'';
+      const s   = saved[t.id_tile] || '';
       const res = ['iron','gold','platinum','silver','copper','tungsten','uranium','rare_earth_elements']
-        .filter(r=> +t[r]>0).join(',');
+        .filter(r => +t[r] > 0)
+        .join(',');
       rows.push([t.id_tile, t.has_owner, s, res]);
     });
-    const csv = rows.map(r=>r.join(',')).join('\n');
-    const blob = new Blob([csv], {type:'text/csv'});
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'tiles.csv';
     a.click();
   };
 
+  // финальный рендер
+  drawGrid();
   drawTiles();
 })();
   </script>
