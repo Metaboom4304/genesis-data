@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <title>GENESIS WAR MAP</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 
   <link
     rel="stylesheet"
@@ -11,86 +11,58 @@
   />
 
   <style>
-    html, body {
-      margin: 0; padding: 0; height: 100%;
-      background: #000; font-family: sans-serif;
-    }
-    #map {
-      position: absolute;
-      top: 60px; left: 0; right: 0; bottom: 0;
-    }
-    /* Верхняя панель — всегда тёмная */
+    html, body {margin:0; padding:0; height:100%; background:#000; font-family:sans-serif;}
+    #map {position:absolute; top:60px; left:0; right:0; bottom:0;}
+
+    /* Панель как была */
     #panel {
-      position: absolute; top: 0; left: 0; right: 0;
-      background: #111; color: #fff;
-      display: flex; flex-wrap: wrap; align-items: center;
-      padding: 8px 10px; gap: 10px;
-      z-index: 1000; max-height: 300px; overflow: hidden;
-      transition: max-height .3s ease;
+      position:absolute; top:0; left:0; right:0;
+      background:#111; color:#fff;
+      display:flex; flex-wrap:wrap; align-items:center;
+      padding:8px 10px; gap:10px;
+      z-index:1000; max-height:300px; overflow:hidden;
+      transition:max-height .3s ease;
     }
-    #panel.collapsed {
-      max-height: 40px;
-    }
-    #panel.collapsed > *:not(#map-title) {
-      display: none;
-    }
+    #panel.collapsed { max-height:40px; }
+    #panel.collapsed > *:not(#map-title) { display:none; }
+
     #panel select, #panel input, #panel button {
-      font-size: 14px; padding: 5px;
-      background: #222; color: #fff; border: 1px solid #444;
+      font-size:14px; padding:5px;
+      background:#222; color:#fff; border:1px solid #444;
     }
-    #panel label {
-      display: flex; align-items: center; gap: 5px;
-    }
-    #search { width: 100px; }
-    #search::placeholder { color: #888; }
-    #goto-btn { cursor: pointer; }
+    #panel label { display:flex; align-items:center; gap:5px; }
+    #search { width:100px; }
+    #search::placeholder { color:#888; }
+    #goto-btn { cursor:pointer; }
+    button.mark-btn { margin:5px 2px; padding:3px 6px; font-size:12px; cursor:pointer; }
 
-    button.mark-btn {
-      margin: 5px 2px; padding: 3px 6px;
-      font-size: 12px; cursor: pointer;
-    }
-
+    /* Toggle */
     #toggle-panel {
-      position: absolute; bottom: 15px; right: 15px;
-      background: #111; color: #fff;
-      border: none; border-radius: 4px;
-      padding: 8px; font-size: 18px;
-      cursor: pointer; z-index: 1000;
-      transition: transform .3s ease;
+      position:absolute; bottom:15px; right:15px;
+      background:#111; color:#fff; border:none; border-radius:4px;
+      padding:8px; font-size:18px; cursor:pointer; z-index:1000;
     }
 
-    .tile-label {
-      font-size: 10px; font-weight: bold;
-      color: #fff !important; text-shadow: 0 0 3px #000;
+    /* Тайл-лейбл и сетка */
+    .tile-label { font-size:10px; font-weight:bold; color:#fff!important; text-shadow:0 0 3px #000; }
+    .leaflet-interactive { stroke-width:0.8!important; }
+
+    @media(max-width:600px){
+      #panel{flex-direction:column;align-items:flex-start;}
+      #map{top:220px;}
     }
 
-    .leaflet-interactive {
-      stroke-width: 0.8 !important;
-    }
-
-    @media (max-width: 600px) {
-      #panel {
-        flex-direction: column; align-items: flex-start;
-      }
-      #map { top: 220px; }
-    }
-
-    .leaflet-control-zoom {
-      display: flex !important; flex-direction: row;
-    }
-    .leaflet-control-zoom .leaflet-bar-part {
-      width: 30px;
-    }
+    .leaflet-control-zoom{display:flex!important;flex-direction:row;}
+    .leaflet-control-zoom .leaflet-bar-part{width:30px;}
   </style>
 </head>
 <body>
-
   <div id="panel">
     <strong id="map-title">🧭 GENESIS WAR MAP</strong>
 
     <label>
-      🔍 
-      <input type="number" id="search" placeholder="Тайл-ID" />
+      🔍
+      <input type="number" id="search" placeholder="Тайл-ID"/>
       <button id="goto-btn">➡️</button>
     </label>
 
@@ -113,9 +85,9 @@
       🎯 Метка:
       <select id="status-filter">
         <option value="">— Все —</option>
-        <option value="ally">🟩 Союзники</option>
-        <option value="enemy">🟥 Враги</option>
-        <option value="clear">⚪ Без метки</option>
+        <option value="ally">Союзники</option>
+        <option value="enemy">Враги</option>
+        <option value="clear">Без метки</option>
       </select>
     </label>
 
@@ -130,7 +102,7 @@
     </label>
 
     <button id="reset">♻️ Сбросить</button>
-    <button id="export">💾 Экспорт CSV</button>
+    <button id="export">💾 CSV</button>
     <span id="count">Загрузка тайлов…</span>
   </div>
 
@@ -140,7 +112,7 @@
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
 ;(async function(){
-  // 1) Рандомная пафос-фраза
+  // 1. Пафос в заголовке
   const phrases = [
     'Власть через знание',
     'Победители пишут историю',
@@ -150,15 +122,15 @@
   document.getElementById('map-title').textContent =
     `🧭 GENESIS WAR MAP — ${phrases[Math.floor(Math.random()*phrases.length)]}`;
 
-  // 2) Сворачивание панели
-  const panel  = document.getElementById('panel');
-  const toggle = document.getElementById('toggle-panel');
-  toggle.onclick = () => {
-    const col = panel.classList.toggle('collapsed');
-    toggle.textContent = col ? '🔽' : '🔼';
+  // 2. Toggle панели
+  const panel = document.getElementById('panel');
+  const tp = document.getElementById('toggle-panel');
+  tp.onclick = () => {
+    const c = panel.classList.toggle('collapsed');
+    tp.textContent = c ? '🔽' : '🔼';
   };
 
-  // 3) Инициализация Leaflet
+  // 3. Leaflet
   const layers = {
     neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
     world:   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
@@ -166,14 +138,11 @@
     carto:   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
   };
   const map = L.map('map', {
-    center: [49.25, -123.10],
-    zoom: 4, minZoom: 2, maxZoom: 10,
-    layers: [layers.neutral],
-    attributionControl: false
+    center:[49.25,-123.10], zoom:4, minZoom:2, maxZoom:10,
+    layers:[layers.neutral], attributionControl:false
   });
   map.zoomControl.setPosition('bottomleft');
 
-  // 4) Слои сетки и тайлов
   const gridLayer = L.layerGroup().addTo(map);
   const tileLayer = L.layerGroup().addTo(map);
   document.getElementById('layer-select').onchange = e => {
@@ -181,7 +150,7 @@
     layers[e.target.value].addTo(map);
   };
 
-  // 5) «Загрузочные» фразы
+  // 4. Загрузочные фразы
   const loadMsgs = [
     'Шахматный гроссмейстер ждёт хода…',
     'Поднимаем паруса эмпирии…',
@@ -191,15 +160,15 @@
     'Оракулы предсказывают битву…'
   ];
   let lmIx = 0;
-  const countEl      = document.getElementById('count');
-  const loadInterval = setInterval(()=>{
+  const countEl = document.getElementById('count');
+  const li = setInterval(()=>{
     countEl.textContent = loadMsgs[lmIx++];
-    if(lmIx>=loadMsgs.length) lmIx = 0;
-  }, 1200);
+    if(lmIx>=loadMsgs.length) lmIx=0;
+  },1200);
 
-  // 6) Путь и загрузка 22 файлов
-  const BASE  = './data/';
-  const PARTS = Array.from({length:22}, (_,i)=>
+  // 5. Загрузка 22 файлов
+  const BASE = './data/';
+  const PARTS = Array.from({length:22},(_,i)=>
     `${BASE}tiles_${String(i+1).padStart(2,'0')}.json`
   );
   let tileData = [];
@@ -211,25 +180,22 @@
     }));
     tileData = parts.flat();
   } catch(err){
-    console.error('Ошибка загрузки JSON:', err);
+    console.error('Ошибка загрузки частей:', err);
   }
-  clearInterval(loadInterval);
+  clearInterval(li);
   countEl.textContent = `Загружено тайлов: ${tileData.length}`;
 
-  // 7) Калибровка по ref-тайлу
-  const refId = 22313;
-  const refX  = refId % 256;
-  const refY  = Math.floor(refId/256);
-  const refLat = 49.25, refLng = -123.10;
+  // 6. Калибровка
+  const refId = 22313, refLat=49.25, refLng=-123.10;
+  const refX = refId%256, refY=Math.floor(refId/256);
   const degLat = 170/256, degLng = 360/256;
   tileData.forEach(t=>{
-    const id = +t.id_tile;
-    const x  = id % 256, y = Math.floor(id/256);
-    t.lat = refLat - (y - refY)*degLat;
-    t.lng = refLng + (x - refX)*degLng;
+    const id=+t.id_tile, x=id%256, y=Math.floor(id/256);
+    t.lat = refLat - (y-refY)*degLat;
+    t.lng = refLng + (x-refX)*degLng;
   });
 
-  // 8) Метки в localStorage
+  // 7. Метки
   const saved = JSON.parse(localStorage.getItem('tile_marks')||'{}');
   window.saveMark = (id,status)=>{
     if(status) saved[id]=status; else delete saved[id];
@@ -237,7 +203,7 @@
     drawTiles();
   };
 
-  // 9) Отрисовка сетки
+  // 8. Сетка
   function drawGrid(){
     gridLayer.clearLayers();
     tileData.forEach(t=>{
@@ -245,39 +211,40 @@
         [t.lat-degLat/2, t.lng-degLng/2],
         [t.lat+degLat/2, t.lng+degLng/2]
       );
-      L.rectangle(b,{stroke:true,weight:0.8,color:'#666',fill:false})
-       .addTo(gridLayer);
+      L.rectangle(b,{stroke:true,weight:0.8,color:'#666',fill:false}).addTo(gridLayer);
     });
   }
 
-  // 10) Отрисовка тайлов (без принудительного поиска)
+  // 9. Тайлы (исправленный фильтр по поиску!)
   function drawTiles(){
     tileLayer.clearLayers();
 
     const resFilt  = document.getElementById('filter').value;
     const statFilt = document.getElementById('status-filter').value;
-    const sVal     = document.getElementById('search').value.trim();
-    const sID      = sVal!=='' ? +sVal : null;
+    const sRaw     = document.getElementById('search').value.trim();
+    const byID     = sRaw!=='' && !isNaN(Number(sRaw));
+    const sVal     = sRaw;
 
     tileData.forEach(t=>{
       // ресурс
       if(resFilt && +t[resFilt]===0) return;
       // статус
       const status = saved[t.id_tile]||'';
-      if(statFilt==='ally' && status!=='ally')     return;
-      if(statFilt==='enemy'&& status!=='enemy')    return;
-      if(statFilt==='clear'&& status)              return;
-      // поиск по ID — только если введено число
-      if(sID!==null && +t.id_tile!==sID)           return;
+      if(statFilt==='ally'  && status!=='ally')  return;
+      if(statFilt==='enemy' && status!=='enemy') return;
+      if(statFilt==='clear' && status)           return;
+      // поиск — только когда введено число
+      if(byID && t.id_tile!==sVal)              return;
 
+      // рисуем
       const b = L.latLngBounds(
         [t.lat-degLat/2, t.lng-degLng/2],
         [t.lat+degLat/2, t.lng+degLng/2]
       );
-      const owned = String(t.has_owner).toLowerCase()==='true';
-      const fill  = status==='ally'? '#33cc33'
-                  : status==='enemy'? '#cc3333'
-                  : owned? '#3366ff':'#444';
+      const owned  = String(t.has_owner).toLowerCase()==='true';
+      const fill   = status==='ally'? '#33cc33'
+                   : status==='enemy'? '#cc3333'
+                   : owned? '#3366ff':'#444';
       const stroke = status==='ally'? '#00ff00'
                    : status==='enemy'? '#ff0000':'#000';
 
@@ -287,67 +254,54 @@
         fillColor:fill, fillOpacity:0.4
       }).addTo(tileLayer);
 
-      rect.bindTooltip(String(t.id_tile), {
-        permanent:true, direction:'center',
-        className:'tile-label'
-      });
-
+      rect.bindTooltip(String(t.id_tile),{permanent:true,direction:'center',className:'tile-label'});
       rect.bindPopup(`
         <strong>Тайл #${t.id_tile}</strong><br/>
         Статус: ${owned?'занят':'свободен'}<br/>
         Метка: ${status||'—'}
       `);
-
-      rect.on('click', ()=>{
-        rect.setStyle({weight:3, color:'#FFD700'});
-        rect.openPopup();
-      });
-      rect.on('mouseout', ()=>{
-        rect.setStyle({weight:1.2, color:stroke});
-      });
+      rect.on('click',()=>{ rect.setStyle({weight:3,color:'#FFD700'}); rect.openPopup(); });
+      rect.on('mouseout',()=>{ rect.setStyle({weight:1.2,color:stroke}); });
     });
   }
 
-  // 11) Поиск с flyTo
+  // 10. Поиск + flyTo
   document.getElementById('goto-btn').onclick = ()=>{
     const v = document.getElementById('search').value.trim();
-    if(!v) return drawTiles();
-    const t = tileData.find(o=>+o.id_tile===+v);
+    if(v==='') return drawTiles();
+    const t = tileData.find(o=>o.id_tile===v);
     if(!t) return;
-    map.flyTo([t.lat,t.lng], 6, {animate:true, duration:1.2});
-    setTimeout(drawTiles, 800);
+    map.flyTo([t.lat,t.lng],6,{animate:true,duration:1.2});
+    setTimeout(drawTiles,800);
   };
 
-  // прочие события
+  // 11. События фильтров и кнопок
   ['input','change'].forEach(ev=>{
-    document.getElementById('filter').addEventListener(ev, drawTiles);
-    document.getElementById('status-filter').addEventListener(ev, drawTiles);
-    document.getElementById('search').addEventListener(ev, drawTiles);
+    document.getElementById('filter').addEventListener(ev,drawTiles);
+    document.getElementById('status-filter').addEventListener(ev,drawTiles);
+    document.getElementById('search').addEventListener(ev,drawTiles);
   });
   document.getElementById('reset').onclick = ()=>{
     ['search','filter','status-filter'].forEach(id=>document.getElementById(id).value='');
     drawTiles();
   };
   document.getElementById('export').onclick = ()=>{
-    const rows = [['id_tile','status','resources']];
+    const rows=[['id_tile','status','resources']];
     tileData.forEach(t=>{
-      const st = String(t.has_owner).toLowerCase()==='true'? 'занят':'свободен';
+      const st = String(t.has_owner).toLowerCase()==='true'?'занят':'свободен';
       const res = ['iron','gold','platinum','silver','copper','tungsten','uranium','rare_earth_elements']
         .filter(r=>+t[r]>0).map(r=>`${r}:${t[r]}`).join(';');
-      rows.push([t.id_tile, st, res]);
+      rows.push([t.id_tile,st,res]);
     });
     const csv = rows.map(r=>r.join(',')).join('\n');
     const blob= new Blob([csv],{type:'text/csv'});
-    const a   = document.createElement('a');
-    a.href  = URL.createObjectURL(blob);
-    a.download = 'tiles.csv';
-    a.click();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='tiles.csv'; a.click();
   };
 
-  // стартовый рендер
+  // финальный рендер
   drawGrid();
   drawTiles();
-
 })();
   </script>
 </body>
