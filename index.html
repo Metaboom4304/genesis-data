@@ -1,20 +1,24 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8"/>
+  <meta charset="UTF-8" />
   <title>GENESIS WAR MAP</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+  />
   <style>
     html, body {
       margin: 0; padding: 0; height: 100%;
       background: #000; font-family: sans-serif;
     }
+
     #map {
       position: absolute;
       top: 60px; left: 0; right: 0; bottom: 0;
     }
+
     #panel {
       position: absolute; top: 0; left: 0; right: 0;
       background: #111; color: #fff;
@@ -22,10 +26,9 @@
       padding: 8px 10px; gap: 10px;
       z-index: 1000; overflow: hidden;
       max-height: 500px;
-      transition: background .3s ease,
-                  max-height .3s ease;
+      transition: background .3s ease, max-height .3s ease;
     }
-    /* при свёрнутом виде — прозрачный фон, уменьшаем max-height */
+    /* прозрачный фон и только заголовок при свёрнутой панели */
     #panel.collapsed {
       background: none !important;
       max-height: 40px;
@@ -33,15 +36,17 @@
     #panel.collapsed > *:not(#map-title) {
       display: none;
     }
-    #panel select, #panel input, #panel button {
+
+    #panel select,
+    #panel input,
+    #panel button {
       font-size: 14px; padding: 5px;
     }
     #panel label {
       display: flex; align-items: center; gap: 5px;
     }
     #search {
-      width: 100px;
-      background: #222; color: #fff;
+      width: 100px; background: #222; color: #fff;
       border: 1px solid #444;
     }
     #search::placeholder { color: #888; }
@@ -53,7 +58,8 @@
       margin: 5px 2px; padding: 3px 6px;
       font-size: 12px; cursor: pointer;
     }
-    /* кнопка сворачивания — без фонового квадрата */
+
+    /* стрелка сворачивания — без фона */
     #toggle-panel {
       position: absolute; bottom: 15px; right: 15px;
       background: none !important; color: #fff;
@@ -61,26 +67,27 @@
       z-index: 1000;
       transition: transform .3s ease;
     }
-    /* номера тайлов — белые и чёткие */
+
     .tile-label {
       font-size: 10px; font-weight: bold;
-      color: #fff !important;
-      text-shadow: 0 0 3px #000;
+      color: #fff !important; text-shadow: 0 0 3px #000;
     }
-    /* тонкая, но заметная сетка */
+
+    /* тонкая сетка */
     .leaflet-interactive {
       stroke-width: 1.2 !important;
     }
+
     @media (max-width: 600px) {
       #panel {
         flex-direction: column; align-items: flex-start;
       }
       #map { top: 220px; }
     }
-    /* горизонтальный зум-контрол */
+
+    /* горизонтальный зум */
     .leaflet-control-zoom {
-      display: flex !important;
-      flex-direction: row;
+      display: flex !important; flex-direction: row;
     }
     .leaflet-control-zoom .leaflet-bar-part {
       width: 30px;
@@ -93,7 +100,7 @@
 
     <label>
       🔍
-      <input type="number" id="search" placeholder="Номер тайла"/>
+      <input type="number" id="search" placeholder="Номер тайла" />
       <button id="goto-btn">➡️</button>
     </label>
 
@@ -143,7 +150,7 @@
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
 ;(async function(){
-  // — пафосная фраза в заголовок
+  // 1) Пафосная фраза в заголовке
   const phrases = [
     'Власть через знание',
     'Победители пишут историю',
@@ -156,25 +163,22 @@
       phrases[Math.floor(Math.random()*phrases.length)]
     }`;
 
-  // — анимация сворачивания/разворачивания + стрелка
-  const panel   = document.getElementById('panel');
-  const toggle  = document.getElementById('toggle-panel');
+  // 2) Анимация панели + смена стрелки
+  const panel = document.getElementById('panel');
+  const toggle = document.getElementById('toggle-panel');
   toggle.onclick = () => {
     const collapsed = panel.classList.toggle('collapsed');
     toggle.textContent = collapsed ? '🔽' : '🔼';
-    toggle.style.transform = collapsed
-      ? 'translateY(0) rotate(0deg)'
-      : 'translateY(0) rotate(0deg)';
   };
 
-  // — слои карты без атрибуции
+  // 3) Подготовка карты
   const layers = {
     neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
     world:   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
     osm:     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
     carto:   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
   };
-  const map = L.map('map', {
+  const map = L.map('map',{
     center: [49.25, -123.10],
     zoom: 4, minZoom: 2, maxZoom: 8,
     layers: [layers.neutral],
@@ -182,15 +186,15 @@
   });
   map.zoomControl.setPosition('bottomleft');
 
+  // слои сетки и тайлов
   const gridLayer = L.layerGroup().addTo(map);
   const tileLayer = L.layerGroup().addTo(map);
-
   document.getElementById('layer-select').onchange = e => {
     Object.values(layers).forEach(l=>map.removeLayer(l));
     layers[e.target.value].addTo(map);
   };
 
-  // — ротация «загружающей» строки
+  // 4) Загрузка с ротацией «интересных» фраз
   const loadMsgs = [
     'Шахматный гроссмейстер ждёт хода…',
     'Поднимаем паруса эмпирии…',
@@ -212,7 +216,7 @@
     if (lmIx >= loadMsgs.length) lmIx = 0;
   }, 1200);
 
-  // — загрузка тайлов
+  // 5) Загрузка данных тайлов
   const PARTS = Array.from({length:22},(_,i)=>
     `./data/tiles_${String(i+1).padStart(2,'0')}.json`
   );
@@ -229,16 +233,14 @@
   clearInterval(loadInterval);
   countEl.textContent = `Загружено тайлов: ${tileData.length}`;
 
-  // — попытка взять точные координаты
+  // 6) Попытка взять официальные координаты
   let official = {};
   try {
     const r = await fetch('./data/official_tile_coords.json');
-    if (r.ok) {
-      (await r.json()).forEach(o => official[o.id_tile] = o);
-    }
+    if (r.ok) (await r.json()).forEach(o => official[o.id_tile] = o);
   } catch {}
 
-  // — калибровка координат
+  // 7) Калибровка по референс-тайлу #22313
   const refId  = 22313;
   const refX   = refId % 256;
   const refY   = Math.floor(refId/256);
@@ -251,12 +253,12 @@
       t.lng = official[id].lng;
     } else {
       const x = id % 256, y = Math.floor(id/256);
-      t.lat = refLat - (y-refY)*degLat;
-      t.lng = refLng + (x-refX)*degLng;
+      t.lat = refLat - (y - refY) * degLat;
+      t.lng = refLng + (x - refX) * degLng;
     }
   });
 
-  // — сохранение меток
+  // 8) Сохранение меток
   const saved = JSON.parse(localStorage.getItem('tile_marks')||'{}');
   window.saveMark = (id,status) => {
     if (status) saved[id] = status;
@@ -265,20 +267,24 @@
     drawTiles();
   };
 
-  // — отрисовка постоянной сетки
+  // 9) Отрисовка постоянной сетки
   function drawGrid() {
     gridLayer.clearLayers();
     tileData.forEach(t => {
       const b = L.latLngBounds(
-        [t.lat-degLat/2, t.lng-degLng/2],
-        [t.lat+degLat/2, t.lng+degLng/2]
+        [t.lat - degLat/2, t.lng - degLng/2],
+        [t.lat + degLat/2, t.lng + degLng/2]
       );
-      L.rectangle(b,{ stroke:true, weight:1, color:'#444', fill:false })
-       .addTo(gridLayer);
+      L.rectangle(b, {
+        stroke: true,
+        weight: 1,
+        color: '#444',
+        fill: false
+      }).addTo(gridLayer);
     });
   }
 
-  // — отрисовка тайлов с фильтрами, номерами и попапами
+  // 10) Отрисовка тайлов с фильтрами, номерами и попапами
   function drawTiles() {
     tileLayer.clearLayers();
     const resFilt  = document.getElementById('filter').value;
@@ -286,145 +292,39 @@
     const sID      = +document.getElementById('search').value;
 
     tileData.forEach(t => {
-      if (resFilt && +t[resFilt]===0) return;
-      const status = saved[t.id_tile]||'';
+      if (resFilt && +t[resFilt] === 0) return;
+      const status = saved[t.id_tile] || '';
       if (statFilt==='ally'  && status!=='ally') return;
       if (statFilt==='enemy' && status!=='enemy') return;
       if (statFilt==='clear' && status) return;
-      if (!isNaN(sID) && +t.id_tile!==sID) return;
+      if (!isNaN(sID) && +t.id_tile !== sID) return;
 
       const b = L.latLngBounds(
-        [t.lat-degLat/2, t.lng-degLng/2],
-        [t.lat+degLat/2, t.lng+degLng/2]
+        [t.lat - degLat/2, t.lng - degLng/2],
+        [t.lat + degLat/2, t.lng + degLng/2]
       );
-      const owned  = String(t.has_owner).toLowerCase()==='true';
-      const fill   = status==='ally'? '#33cc33'
-                   : status==='enemy'? '#cc3333'
-                   : owned? '#3366ff':'#666';
-      const stroke = status==='ally'? '#00ff00'
-                   : status==='enemy'? '#ff0000':'#000';
+      const owned  = String(t.has_owner).toLowerCase() === 'true';
+      const fill   = status==='ally'  ? '#33cc33'
+                   : status==='enemy' ? '#cc3333'
+                   : owned            ? '#3366ff'
+                                      : '#666';
+      const stroke = status==='ally'  ? '#00ff00'
+                   : status==='enemy' ? '#ff0000'
+                                      : '#000';
 
-      L.rectangle(b,{
-        stroke:true, weight:1.5,
+      L.rectangle(b, {
+        stroke: true,
+        weight: 1.5,
         color: stroke,
-        dashArray: status?'4':null,
+        dashArray: status ? '4' : null,
         fillColor: fill,
         fillOpacity: 0.4
       })
       .addTo(tileLayer)
       .bindTooltip(String(t.id_tile), {
-        permanent:true, direction:'center',
-        className:'tile-label'
-      })
-      .bindPopup(`
-        <strong>Тайл #${t.id_tile}</strong><br>
-        Координаты: ${t.lat.toFixed(2)}, ${t.lng.toFixed(2)}<br>
-        = 0;
-  }, 1200);
-
-  // — загрузка тайлов
-  const PARTS = Array.from({length:22},(_,i)=>
-    `./data/tiles_${String(i+1).padStart(2,'0')}.json`
-  );
-  let tileData = [];
-  for (const url of PARTS) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(res.status);
-      tileData.push(...await res.json());
-    } catch(err) {
-      console.error('Ошибка загрузки', url, err);
-    }
-  }
-  clearInterval(loadInterval);
-  countEl.textContent = `Загружено тайлов: ${tileData.length}`;
-
-  // — попытка взять точные координаты
-  let official = {};
-  try {
-    const r = await fetch('./data/official_tile_coords.json');
-    if (r.ok) {
-      (await r.json()).forEach(o => official[o.id_tile] = o);
-    }
-  } catch {}
-
-  // — калибровка координат
-  const refId  = 22313;
-  const refX   = refId % 256;
-  const refY   = Math.floor(refId/256);
-  const refLat = 49.25, refLng = -123.10;
-  const degLat = 170/256, degLng = 360/256;
-  tileData.forEach(t => {
-    const id = +t.id_tile;
-    if (official[id]) {
-      t.lat = official[id].lat;
-      t.lng = official[id].lng;
-    } else {
-      const x = id % 256, y = Math.floor(id/256);
-      t.lat = refLat - (y-refY)*degLat;
-      t.lng = refLng + (x-refX)*degLng;
-    }
-  });
-
-  // — сохранение меток
-  const saved = JSON.parse(localStorage.getItem('tile_marks')||'{}');
-  window.saveMark = (id,status) => {
-    if (status) saved[id] = status;
-    else delete saved[id];
-    localStorage.setItem('tile_marks', JSON.stringify(saved));
-    drawTiles();
-  };
-
-  // — отрисовка постоянной сетки
-  function drawGrid() {
-    gridLayer.clearLayers();
-    tileData.forEach(t => {
-      const b = L.latLngBounds(
-        [t.lat-degLat/2, t.lng-degLng/2],
-        [t.lat+degLat/2, t.lng+degLng/2]
-      );
-      L.rectangle(b,{ stroke:true, weight:1, color:'#444', fill:false })
-       .addTo(gridLayer);
-    });
-  }
-
-  // — отрисовка тайлов с фильтрами, номерами и попапами
-  function drawTiles() {
-    tileLayer.clearLayers();
-    const resFilt  = document.getElementById('filter').value;
-    const statFilt = document.getElementById('status-filter').value;
-    const sID      = +document.getElementById('search').value;
-
-    tileData.forEach(t => {
-      if (resFilt && +t[resFilt]===0) return;
-      const status = saved[t.id_tile]||'';
-      if (statFilt==='ally'  && status!=='ally') return;
-      if (statFilt==='enemy' && status!=='enemy') return;
-      if (statFilt==='clear' && status) return;
-      if (!isNaN(sID) && +t.id_tile!==sID) return;
-
-      const b = L.latLngBounds(
-        [t.lat-degLat/2, t.lng-degLng/2],
-        [t.lat+degLat/2, t.lng+degLng/2]
-      );
-      const owned  = String(t.has_owner).toLowerCase()==='true';
-      const fill   = status==='ally'? '#33cc33'
-                   : status==='enemy'? '#cc3333'
-                   : owned? '#3366ff':'#666';
-      const stroke = status==='ally'? '#00ff00'
-                   : status==='enemy'? '#ff0000':'#000';
-
-      L.rectangle(b,{
-        stroke:true, weight:1.5,
-        color: stroke,
-        dashArray: status?'4':null,
-        fillColor: fill,
-        fillOpacity: 0.4
-      })
-      .addTo(tileLayer)
-      .bindTooltip(String(t.id_tile), {
-        permanent:true, direction:'center',
-        className:'tile-label'
+        permanent: true,
+        direction: 'center',
+        className: 'tile-label'
       })
       .bindPopup(`
         <strong>Тайл #${t.id_tile}</strong><br>
@@ -441,48 +341,47 @@
     });
   }
 
-  // — переход по ID
+  // 11) Переход по ID и события
   function focus(v) {
     const t = tileData.find(o=>+o.id_tile===+v);
     if (!t) return;
     map.flyTo([t.lat, t.lng], 6);
     setTimeout(()=> map.openPopup(), 800);
   }
-  document.getElementById('goto-btn').onclick = ()=>{
+  document.getElementById('goto-btn').onclick = () => {
     const v = document.getElementById('search').value;
     if (v) focus(v);
   };
-
   ['input','change'].forEach(ev=>{
     document.getElementById('search').addEventListener(ev, drawTiles);
     document.getElementById('filter').addEventListener(ev, drawTiles);
     document.getElementById('status-filter').addEventListener(ev, drawTiles);
   });
-  document.getElementById('reset').onclick = ()=>{
+  document.getElementById('reset').onclick = () => {
     ['search','filter','status-filter'].forEach(id=>{
       document.getElementById(id).value = '';
     });
     drawTiles();
   };
-  document.getElementById('export').onclick = ()=>{
-    const rows=[['id_tile','has_owner','status','resources']];
+  document.getElementById('export').onclick = () => {
+    const rows = [['id_tile','has_owner','status','resources']];
     tileData.forEach(t=>{
-      const s = saved[t.id_tile]||'';
+      const s   = saved[t.id_tile] || '';
       const res = ['iron','gold','platinum','silver','copper','tungsten','uranium','rare_earth_elements']
         .filter(r=>+t[r]>0).join(',');
-      rows.push([t.id_tile,t.has_owner,s,res]);
+      rows.push([t.id_tile, t.has_owner, s, res]);
     });
     const csv = rows.map(r=>r.join(',')).join('\n');
-    const blob= new Blob([csv],{type:'text/csv'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='tiles.csv';
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'tiles.csv';
     a.click();
   };
 
   drawGrid();
   drawTiles();
-})();
+})();  
   </script>
 </body>
 </html>
