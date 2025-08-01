@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "message": "Genesis сейчас в эфире!",
+  "theme": "auto",          // auto, morning, day, night, holiday
+  "disableUntil": "2025-08-03T09:00:00"
+}
