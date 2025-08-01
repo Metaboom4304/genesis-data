@@ -320,5 +320,45 @@
 
 })();
   </script>
+  <script>
+fetch('map-status.json')
+  .then(r => r.json())
+  .then(status => {
+    const now = new Date();
+    const until = new Date(status.disableUntil);
+    const themes = {
+      morning: { bg: "#ffe8b0", color: "#000", icon: "🌅", tagline: "Genesis проснётся позже" },
+      day:     { bg: "#f0f0f0", color: "#222", icon: "🌞", tagline: "Genesis на перезагрузке" },
+      night:   { bg: "#0f0f0f", color: "#fff", icon: "🌙", tagline: "Genesis отдыхает" },
+      holiday: { bg: "#ff4d4d", color: "#fff", icon: "🎉", tagline: "Genesis празднует!" }
+    };
+
+    const autoTheme = (() => {
+      const hour = now.getHours();
+      if (hour >= 6 && hour < 12) return "morning";
+      if (hour >= 12 && hour < 18) return "day";
+      return "night";
+    })();
+
+    const currentTheme = status.theme === "auto" ? autoTheme : status.theme;
+    const theme = themes[currentTheme] || themes.night;
+
+    if (!status.enabled || now < until) {
+      document.body.innerHTML = `
+        <div style="
+          background:${theme.bg};
+          color:${theme.color};
+          text-align:center;
+          padding:60px;
+          font-family:Arial,sans-serif;
+        ">
+          <h1 style="font-size:2em;">${theme.icon} ${status.message}</h1>
+          <p style="font-size:1.2em;">${theme.tagline}</p>
+          <p style="margin-top:20px;font-style:italic;">Команда Genesis готовит обновление…</p>
+        </div>
+      `;
+    }
+  });
+</script>
 </body>
 </html>
