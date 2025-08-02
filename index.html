@@ -196,7 +196,7 @@
         'Власть через знание',
         'Победители пишут историю',
         'Наша земля — наше богатство',
-        'Стратегия рождается на карте',
+        'Стратегия рождается на карте'
       ];
       const titleEl = document.getElementById('map-title');
       titleEl.textContent = `🧭 GENESIS WAR MAP — ${
@@ -217,7 +217,7 @@
         zoom: 6,
         minZoom: 3,
         maxZoom: 10,
-        attributionControl: false,
+        attributionControl: false
       });
       const layers = {
         neutral: L.tileLayer(
@@ -227,7 +227,7 @@
         satellite: L.tileLayer(
           'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
           { attribution: 'Esri' }
-        ),
+        )
       };
       layers.neutral.addTo(map);
       map.zoomControl.setPosition('bottomleft');
@@ -282,9 +282,7 @@
       })();
 
       // 6. Сохранение меток
-      const saved = JSON.parse(
-        localStorage.getItem('tile_marks') || '{}'
-      );
+      const saved = JSON.parse(localStorage.getItem('tile_marks') || '{}');
       window.saveMark = (id, status) => {
         if (status) saved[id] = status;
         else delete saved[id];
@@ -312,7 +310,7 @@
             stroke: true,
             weight: 0.8,
             color: '#666',
-            fill: false,
+            fill: false
           }).addTo(gridLayer);
         });
       }
@@ -349,23 +347,24 @@
           );
 
           const owned = String(t.has_owner).toLowerCase() === 'true';
-          const fill = status === 'ally'
-            ? '#33cc33'
-            : status === 'enemy'
-            ? '#cc3333'
-            : status === 'favorite'
-            ? '#ff0'
-            : owned
-            ? '#3366ff'
-            : '#444';
-
-          const stroke = status === 'ally'
-            ? '#00ff00'
-            : status === 'enemy'
-            ? '#ff0000'
-            : status === 'favorite'
-            ? '#ff0'
-            : '#000';
+          const fill =
+            status === 'ally'
+              ? '#33cc33'
+              : status === 'enemy'
+              ? '#cc3333'
+              : status === 'favorite'
+              ? '#ff0'
+              : owned
+              ? '#3366ff'
+              : '#444';
+          const stroke =
+            status === 'ally'
+              ? '#00ff00'
+              : status === 'enemy'
+              ? '#ff0000'
+              : status === 'favorite'
+              ? '#ff0'
+              : '#000';
 
           const rect = L.rectangle(rectBounds, {
             stroke: true,
@@ -373,14 +372,14 @@
             color: stroke,
             dashArray: status ? '4' : null,
             fillColor: fill,
-            fillOpacity: 0.4,
+            fillOpacity: 0.4
           }).addTo(tileLayer);
 
           if (zoom >= 5) {
             rect.bindTooltip(String(t.id_tile), {
               permanent: true,
               direction: 'center',
-              className: 'tile-label',
+              className: 'tile-label'
             });
           }
 
@@ -419,7 +418,7 @@
 
         map.flyTo([tile.lat, tile.lng], 6, {
           animate: true,
-          duration: 1.2,
+          duration: 1.2
         });
         setTimeout(drawTiles, 800);
       });
