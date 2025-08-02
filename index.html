@@ -4,10 +4,7 @@
   <meta charset="UTF-8"/>
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
 
   <style>
     html, body {
@@ -83,17 +80,17 @@
     .tile-label {
       font-size: 10px;
       font-weight: bold;
-      color: #fff!important;
-      background: none!important;
-      padding: 0!important;
-      border: none!important;
+      color: #fff !important;
+      background: none !important;
+      padding: 0 !important;
+      border: none !important;
       text-shadow: 0 0 3px #000;
     }
     .leaflet-interactive {
-      stroke-width: 0.8!important;
+      stroke-width: 0.8 !important;
     }
     .leaflet-control-zoom {
-      display: flex!important;
+      display: flex !important;
       flex-direction: row;
     }
     .leaflet-control-zoom .leaflet-bar-part {
@@ -109,16 +106,22 @@
       }
     }
   </style>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <!-- html2canvas for screenshots -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Telegram WebApp API -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
+
 <body>
   <div id="panel">
-    <strong id="map-title">🫍 GENESIS WAR MAP</strong>
-
+    <strong id="map-title">🪐 GENESIS WAR MAP</strong>
     <label>
       🔍<input type="number" id="search" placeholder="Тайл-ID"/>
       <button id="goto-btn">➡️</button>
     </label>
-
     <label>
       🎯 Метка:
       <select id="status-filter">
@@ -129,7 +132,6 @@
         <option value="clear">⚪ Без метки</option>
       </select>
     </label>
-
     <label>
       🗺️ Слой:
       <select id="layer-select">
@@ -138,36 +140,33 @@
         <option value="satellite">Спутник</option>
       </select>
     </label>
-
     <button id="reset">♻️ Сбросить</button>
     <button id="export">💾 CSV</button>
     <button id="screenshot-btn">📸 Сделать снимок</button>
-
     <span id="count">Загрузка тайлов…</span>
   </div>
 
   <div id="map"></div>
-  <button id="toggle-panel">🔼</button>
+  <button id="toggle-panel">🔽</button>
 
-  <!-- Leaflet библиотека -->
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <!-- html2canvas для скриншотов -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-  <!-- Инициализация карты после полной загрузки страницы -->
   <script>
-    window.addEventListener('load', async () => {
-      console.log('GENESIS WAR MAP — инициализация после load');
-
-      if (typeof L === 'undefined') {
-        console.error('Leaflet не загружен! Проверьте подключение скрипта.');
+    ;(async function () {
+      // Telegram WebApp initialization & per-user storage key
+      const tg = window.Telegram.WebApp;
+      tg.expand();
+      tg.MainButton.hide();
+      const user = tg.initDataUnsafe?.user;
+      if (!user) {
+        alert('Доступ только через Telegram-бота.');
         return;
       }
+      const userId = user.id;
+      const storageKey = `tile_marks_${userId}`;
 
-      // Случайный заголовок
+      // phrases for title
       const phrases = [
         'Каждый ход важен',
-        'Мощь в координациях',
+        'Мощь в координатах',
         'Победа за гранью горизонта',
         'Твори историю на карте',
         'География решает судьбу',
@@ -182,27 +181,24 @@
         'Стратегия рождается на карте'
       ];
       document.getElementById('map-title').textContent =
-        `🫍 GENESIS WAR MAP — ${phrases[Math.floor(Math.random()*phrases.length)]}`;
+        `🪐 GENESIS WAR MAP — ${phrases[Math.floor(Math.random() * phrases.length)]}`;
 
-      // Переключатель панели
+      // toggle panel
       const panel = document.getElementById('panel');
       const toggle = document.getElementById('toggle-panel');
       toggle.onclick = () => {
         const collapsed = panel.classList.toggle('collapsed');
-        toggle.textContent = collapsed ? '🔽' : '🔼';
+        toggle.textContent = collapsed ? '🔼' : '🔽';
       };
 
-      // Создание карты
+      // init map & layers
       const map = L.map('map', {
         center: [49.25, -123.10],
         zoom: 6,
         minZoom: 3,
         maxZoom: 10,
-        zoomControl: false,
         attributionControl: false
       });
-
-      // Базовые слои
       const layers = {
         neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
         world: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
@@ -213,54 +209,52 @@
       };
       layers.neutral.addTo(map);
       map.zoomControl.setPosition('bottomleft');
-
       document.getElementById('layer-select').onchange = e => {
         Object.values(layers).forEach(l => map.removeLayer(l));
         layers[e.target.value].addTo(map);
       };
 
-      // Слои для сетки и тайлов
-      const gridLayer = L.layerGroup().addTo(map);
-      const tileLayer = L.layerGroup().addTo(map);
-
-      // Загрузка данных тайлов
+      // load tile data
       const BASE = './data/';
       const countEl = document.getElementById('count');
       let tileData = [];
       try {
         for (let i = 1; i <= 22; i++) {
           countEl.textContent = `Загрузка ${i}/22…`;
-          const url = `${BASE}tiles_${String(i).padStart(2,'0')}.json`;
+          const url = `${BASE}tiles_${String(i).padStart(2, '0')}.json`;
           const res = await fetch(url);
           if (!res.ok) throw new Error(`Ошибка ${res.status} при ${url}`);
           tileData.push(...await res.json());
         }
       } catch (e) {
         console.error(e);
-        alert('Ошибка загрузки данных: ' + e.message);
+        alert('Ошибка загрузки тайлов: ' + e.message);
       }
       countEl.textContent = `Загружено тайлов: ${tileData.length}`;
 
-      // Перевод tileId в координаты
+      // compute lat/lng for each tile
       const refId = 22313, refLat = 49.25, refLng = -123.10;
       const refX = refId % 256, refY = Math.floor(refId / 256);
-      const degLat = 170/256, degLng = 360/256;
+      const degLat = 170 / 256, degLng = 360 / 256;
       tileData.forEach(t => {
-        const x = t.id_tile % 256;
-        const y = Math.floor(t.id_tile / 256);
-        t.lat = refLat - (y - refY)*degLat;
-        t.lng = refLng + (x - refX)*degLng;
+        const id = +t.id_tile;
+        const x = id % 256, y = Math.floor(id / 256);
+        t.lat = refLat - (y - refY) * degLat;
+        t.lng = refLng + (x - refX) * degLng;
       });
 
-      // Метки из localStorage
-      const saved = JSON.parse(localStorage.getItem('tile_marks') || '{}');
+      // per-user saved marks from localStorage
+      const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
       window.saveMark = (id, status) => {
         if (status) saved[id] = status;
         else delete saved[id];
-        localStorage.setItem('tile_marks', JSON.stringify(saved));
+        localStorage.setItem(storageKey, JSON.stringify(saved));
         drawGrid();
         drawTiles();
       };
+
+      const gridLayer = L.layerGroup().addTo(map);
+      const tileLayer = L.layerGroup().addTo(map);
 
       function drawGrid() {
         gridLayer.clearLayers();
@@ -272,50 +266,47 @@
             [t.lat + degLat/2, t.lng + degLng/2]
           );
           L.rectangle(b, { stroke: true, weight: 0.8, color: '#666', fill: false })
-           .addTo(gridLayer);
+            .addTo(gridLayer);
         });
       }
 
       function drawTiles() {
         tileLayer.clearLayers();
-        const statusFilter = document.getElementById('status-filter').value;
-        const searchRaw = document.getElementById('search').value.trim();
-        const byID = searchRaw !== '';
-        const searchID = +searchRaw;
-        const zoom = map.getZoom();
-        const vb = map.getBounds();
+        const stF = document.getElementById('status-filter').value;
+        const sRaw = document.getElementById('search').value.trim();
+        const byID = sRaw !== '', ID = +sRaw;
+        const zoom = map.getZoom(), vb = map.getBounds();
 
         tileData.forEach(t => {
           const status = saved[t.id_tile] || '';
-          if (statusFilter==='ally' && status!=='ally') return;
-          if (statusFilter==='enemy' && status!=='enemy') return;
-          if (statusFilter==='favorite' && status!=='favorite') return;
-          if (statusFilter==='clear' && status) return;
-          if (byID) {
-            if (t.id_tile !== searchID) return;
-          } else {
-            if (!vb.contains([t.lat, t.lng])) return;
-          }
+          if (stF === 'ally'     && status !== 'ally')     return;
+          if (stF === 'enemy'    && status !== 'enemy')    return;
+          if (stF === 'favorite' && status !== 'favorite') return;
+          if (stF === 'clear'    && status)                return;
+          if (byID && +t.id_tile !== ID) return;
+          if (!byID && !vb.contains([t.lat, t.lng])) return;
+
           const b = L.latLngBounds(
             [t.lat - degLat/2, t.lng - degLng/2],
             [t.lat + degLat/2, t.lng + degLng/2]
           );
           const owned = String(t.has_owner).toLowerCase() === 'true';
-          const fillColor = status==='ally' ? '#33cc33'
-                          : status==='enemy' ? '#cc3333'
-                          : status==='favorite' ? '#ff0'
-                          : owned ? '#3366ff'
-                          : '#444';
-          const strokeColor = status==='ally' ? '#00ff00'
-                           : status==='enemy' ? '#ff0000'
-                           : status==='favorite' ? '#ff0'
-                           : '#000';
+          const fill = status === 'ally'     ? '#33cc33'
+                     : status === 'enemy'    ? '#cc3333'
+                     : status === 'favorite' ? '#ff0'
+                     : owned                  ? '#3366ff'
+                                             : '#444';
+          const stroke = status === 'ally'     ? '#00ff00'
+                       : status === 'enemy'    ? '#ff0000'
+                       : status === 'favorite' ? '#ff0'
+                       : '#000';
+
           const rect = L.rectangle(b, {
             stroke: true,
             weight: 1.2,
-            color: strokeColor,
+            color: stroke,
             dashArray: status ? '4' : null,
-            fillColor: fillColor,
+            fillColor: fill,
             fillOpacity: 0.4
           }).addTo(tileLayer);
 
@@ -326,89 +317,93 @@
               className: 'tile-label'
             });
           }
-          rect.bindPopup(
-            `<strong>Тайл #${t.id_tile}</strong><br/>
-             Статус: ${owned ? 'занят' : 'свободен'}<br/>
-             Метка: ${status || '—'}<br/><br/>
-             <button class="mark-btn" onclick="saveMark(${t.id_tile},'ally')">🟩 Союзник</button>
-             <button class="mark-btn" onclick="saveMark(${t.id_tile},'enemy')">🟥 Враг</button>
-             <button class="mark-btn" onclick="saveMark(${t.id_tile},'favorite')">⭐ Избранное</button>
-             <button class="mark-btn" onclick="saveMark(${t.id_tile},'')">⚪ Сброс</button><br/><br/>
-             <a href="https://genesis-of-ages.site/ru/гео-эксплорер/?tileId=${t.id_tile}" target="_blank">
-               🌐 Оф. страница тайла
-             </a>`
-          );
-          rect.on('click',    () => { rect.setStyle({weight:3, color:'#FFD700'}); rect.openPopup(); });
-          rect.on('mouseout', () => { rect.setStyle({weight:1.2, color: strokeColor}); });
+
+          rect.bindPopup(`
+            <strong>Тайл #${t.id_tile}</strong><br/>
+            Статус: ${owned ? 'занят' : 'свободен'}<br/>
+            Метка: ${status || '—'}<br/><br/>
+            <button class="mark-btn" onclick="saveMark(${t.id_tile},'ally')">🟩 Союзник</button>
+            <button class="mark-btn" onclick="saveMark(${t.id_tile},'enemy')">🟥 Враг</button>
+            <button class="mark-btn" onclick="saveMark(${t.id_tile},'favorite')">⭐ Избранное</button>
+            <button class="mark-btn" onclick="saveMark(${t.id_tile},'')">⚪ Сбросить</button><br/><br/>
+            <a href="https://genesis-of-ages.site/ru/гео-эксплорер/?tileId=${t.id_tile}" target="_blank">
+              🌐 Оф. страница тайла
+            </a>
+          `);
+
+          rect.on('click', () => {
+            rect.setStyle({ weight: 3, color: '#FFD700' });
+          });
+          rect.on('mouseout', () => {
+            rect.setStyle({ weight: 1.2, color: stroke });
+          });
         });
       }
 
+      // controls
       document.getElementById('goto-btn').onclick = () => {
         const v = document.getElementById('search').value.trim();
         if (!v) return drawTiles();
-        const tile = tileData.find(o => +o.id_tile === +v);
-        if (!tile) return;
-        map.flyTo([tile.lat, tile.lng], 6, { animate: true, duration: 1.2 });
+        const t = tileData.find(o => +o.id_tile === +v);
+        if (!t) return;
+        map.flyTo([t.lat, t.lng], 6, { animate: true, duration: 1.2 });
         setTimeout(drawTiles, 800);
       };
-
       document.getElementById('reset').onclick = () => {
         document.getElementById('search').value = '';
         document.getElementById('status-filter').value = '';
         drawGrid();
         drawTiles();
       };
-
       document.getElementById('export').onclick = () => {
         const rows = [['id_tile','has_owner','status']];
         tileData.forEach(t => {
           const st = saved[t.id_tile] || '';
           rows.push([t.id_tile, t.has_owner, st]);
         });
-        const csv  = rows.map(r => r.join(',')).join('\n');
-        const blob = new Blob([csv], {type:'text/csv'});
-        const a    = document.createElement('a');
-        a.href     = URL.createObjectURL(blob);
+        const csv = rows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
         a.download = 'tiles.csv';
         a.click();
       };
-
       document.getElementById('screenshot-btn').onclick = () => {
         html2canvas(document.getElementById('map')).then(canvas => {
           const link = document.createElement('a');
-          link.href    = canvas.toDataURL('image/png');
-          link.download= 'map.png';
+          link.href = canvas.toDataURL('image/png');
+          link.download = 'map.png';
           link.click();
         });
       };
 
-      map.on('moveend', () => {
-        drawGrid();
-        drawTiles();
-      });
+      // redraw on pan/zoom/filter
+      map.on('moveend', () => { drawGrid(); drawTiles(); });
       ['change','input'].forEach(ev => {
         document.getElementById('status-filter').addEventListener(ev, drawTiles);
         document.getElementById('search').addEventListener(ev, drawTiles);
       });
 
+      // initial render
       drawGrid();
       drawTiles();
 
-      // Показать версию внизу
-      document.body.insertAdjacentHTML('beforeend',
-        `<div style="
+      // version label
+      document.body.insertAdjacentHTML('beforeend', `
+        <div style="
           position: fixed;
-          bottom: 6px; left: 10px;
+          bottom: 6px;
+          left: 10px;
           font-size: 12px;
           font-family: monospace;
           color: #888;
           z-index: 999;
           pointer-events: none;
-        ">ver 0.13</div>`
-      );
-
-      console.log('Leaflet и карта успешно инициализированы.');
-    });
+        ">
+          ver 0.13.3-final ‹Gatekeeper›
+        </div>
+      `);
+    })();
   </script>
 </body>
 </html>
