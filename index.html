@@ -14,52 +14,125 @@
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Скрываем карту и панель до авторизации -->
+  <!-- Стили страницы -->
   <style>
-    #panel, #map { display: none; }
     html, body {
-      margin:0; padding:0; height:100%; background:#000; font-family:sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      color: #fff;
+      font-family: sans-serif;
+      overflow: hidden;
     }
+
+    /* Страница авторизации */
+    #loginPage {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      text-align: center;
+      z-index: 1002;
+    }
+    #loginPage h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    #loginPage p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      max-width: 80%;
+      line-height: 1.4;
+    }
+    #loginBtn {
+      padding: 0.8rem 2rem;
+      font-size: 1.1rem;
+      background: #0088cc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background .2s ease;
+    }
+    #loginBtn:hover {
+      background: #0099dd;
+    }
+
+    /* Скрываем панель и карту до авторизации */
+    #panel, #map {
+      display: none;
+    }
+
+    /* Стили панели управления (оригинальные) */
     #panel {
-      position:absolute; top:0; left:0; right:0;
-      background:#111; color:#fff;
-      display:flex; flex-wrap:wrap; align-items:center;
-      padding:8px 10px; gap:10px;
-      z-index:1000; max-height:300px; overflow:hidden;
-      transition:max-height .3s ease;
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      background: #111;
+      color: #fff;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 8px 10px;
+      gap: 10px;
+      z-index: 1000;
+      max-height: 300px;
+      overflow: hidden;
+      transition: max-height .3s ease;
     }
-    #panel.collapsed { max-height:40px; }
-    #panel.collapsed > *:not(#map-title) { display:none; }
+    #panel.collapsed { max-height: 40px; }
+    #panel.collapsed > *:not(#map-title) { display: none; }
     #panel select, #panel input, #panel button {
-      font-size:14px; padding:5px;
-      background:#222; color:#fff; border:1px solid #444;
+      font-size: 14px;
+      padding: 5px;
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
     }
-    #panel label { display:flex; align-items:center; gap:5px; }
-    #search { width:100px; }
-    #search::placeholder { color:#888; }
+    #panel label { display: flex; align-items: center; gap: 5px; }
+    #search { width: 100px; }
+    #search::placeholder { color: #888; }
     #toggle-panel {
-      position:absolute; bottom:15px; right:15px;
-      background:#111; color:#fff; border:none;
-      padding:8px; font-size:18px; cursor:pointer;
-      z-index:1000; transition:transform .3s ease;
+      position: absolute; bottom: 15px; right: 15px;
+      background: #111; color: #fff; border: none;
+      padding: 8px; font-size: 18px; cursor: pointer;
+      z-index: 1000; transition: transform .3s ease;
     }
     .tile-label {
-      font-size:10px; font-weight:bold; color:#fff!important;
-      background:none!important; padding:0!important; border:none!important;
-      text-shadow:0 0 3px #000;
+      font-size: 10px; font-weight: bold; color: #fff!important;
+      background: none!important; padding: 0!important; border: none!important;
+      text-shadow: 0 0 3px #000;
     }
-    .leaflet-interactive { stroke-width:0.8!important; }
-    .leaflet-control-zoom { display:flex!important; flex-direction:row; }
-    .leaflet-control-zoom .leaflet-bar-part { width:30px; }
-    @media (max-width:600px) {
-      #panel { flex-direction:column; align-items:flex-start; }
-      #map { top:180px; }
+    .leaflet-interactive { stroke-width: 0.8!important; }
+    .leaflet-control-zoom { display: flex!important; flex-direction: row; }
+    .leaflet-control-zoom .leaflet-bar-part { width: 30px; }
+    @media (max-width: 600px) {
+      #panel { flex-direction: column; align-items: flex-start; }
+      #map { top: 180px; }
+    }
+
+    /* Карта */
+    #map {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0; left: 0;
+      z-index: 1;
     }
   </style>
 </head>
 <body>
+  <!-- Страница авторизации -->
+  <div id="loginPage">
+    <h1>Добро пожаловать в GENESIS WAR MAP</h1>
+    <p>Авторизуйтесь через Telegram, чтобы получить доступ к интерактивной карте войн миров Genesis.</p>
+    <button id="loginBtn">Войти через Telegram</button>
+  </div>
 
-  <!-- Панель управления картой (скрыта до авторизации) -->
+  <!-- Панель управления картой -->
   <div id="panel">
     <strong id="map-title">🧝‍ GENESIS WAR MAP</strong>
     <label>
@@ -88,55 +161,45 @@
     <button id="export">💾 CSV</button>
     <button id="screenshot-btn">📸 Снимок</button>
     <span id="count">Загрузка тайлов…</span>
+    <button id="toggle-panel">🗜️</button>
   </div>
 
-  <!-- Контейнер для карты (скрыт до авторизации) -->
+  <!-- Контейнер карты -->
   <div id="map"></div>
 
   <!-- Скрипты Leaflet и html2canvas -->
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- Блок авторизации и инициализации карты -->
+  <!-- Логика авторизации и инициализации карты -->
   <script>
-    // Дожидаемся готовности Telegram WebApp
     Telegram.WebApp.ready();
-
     const initData = Telegram.WebApp.initData;
 
-    // Если пользователь не авторизован, показываем кнопку
     if (!initData) {
-      const btn = document.createElement('button');
-      btn.id = 'authBtn';
-      btn.textContent = 'Войти через Telegram';
-      Object.assign(btn.style, {
-        position:'absolute', top:'20px', left:'20px',
-        padding:'10px 16px', fontSize:'16px',
-        background:'#0088cc', color:'#fff', border:'none',
-        borderRadius:'4px', cursor:'pointer',
-        zIndex:1001
-      });
-      document.body.append(btn);
+      // Показываем страницу входа
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('panel').style.display = 'none';
+      document.getElementById('map').style.display = 'none';
 
-      btn.addEventListener('click', () => {
-        Telegram.WebApp.openLink(
-          'tg://resolve?domain=GENESIS_AUTH_BOT&start=warportal'
-        );
+      document.getElementById('loginBtn').addEventListener('click', () => {
+        // Если мы внутри Telegram WebApp — открываем WebApp ссылку
+        if (Telegram.WebApp.openLink) {
+          Telegram.WebApp.openLink('https://t.me/GENESIS_AUTH_BOT?start=warportal');
+        } else {
+          // Иначе — открываем в новой вкладке обычную ссылку
+          window.open('https://t.me/GENESIS_AUTH_BOT?start=warportal', '_blank');
+        }
       });
-
     } else {
-      // Пользователь авторизовался — показываем панель и карту
+      // Скрываем экран входа, показываем панель и карту
+      document.getElementById('loginPage').style.display = 'none';
       document.getElementById('panel').style.display = 'flex';
       document.getElementById('map').style.display   = 'block';
 
-      // Запускаем оригинальную логику карты
+      // Начинаем отрисовку карты после авторизации
       (async function () {
-        // --- исходный код вашего IIFE ---
-        // Здесь копируется весь тот большой скрипт,
-        // который подгружает данные тайлов, рисует сетку,
-        // создает Leaflet-карту и т. д.
-        //
-        // Начало:
+        // --- Ваш оригинальный IIFE-код отрисовки карты ---
         const phrases = [
           'Каждый ход важен','Мощь в координациях','Победа за гранью горизонта',
           'Твори историю на карте','География решает судьбу','Командуй с высоты',
@@ -166,7 +229,7 @@
           world: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
           satellite: L.tileLayer(
             'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            { attribution:'Esri' }
+            { attribution: 'Esri' }
           )
         };
         layers.neutral.addTo(map);
@@ -181,7 +244,6 @@
         const gridLayer = L.layerGroup().addTo(map),
               tileLayer = L.layerGroup().addTo(map);
 
-        // Загрузка и отрисовка тайлов
         const BASE = './data/',
               countEl = document.getElementById('count');
         let tileData = [];
@@ -199,7 +261,6 @@
         }
         countEl.textContent = `Загружено тайлов: ${tileData.length}`;
 
-        // Вычисление координат
         const refId = 22313,
               refLat = 49.25, refLng = -123.10,
               refX = refId % 256, refY = Math.floor(refId / 256),
@@ -211,13 +272,9 @@
           t.lng = refLng + (x - refX)*degLng;
         });
 
-        // Метки из localStorage
-        const saved = JSON.parse(
-          localStorage.getItem('tile_marks')||'{}'
-        );
+        const saved = JSON.parse(localStorage.getItem('tile_marks')||'{}');
         window.saveMark = (id,status) => {
-          if (status) saved[id]=status;
-          else delete saved[id];
+          if (status) saved[id]=status; else delete saved[id];
           localStorage.setItem('tile_marks', JSON.stringify(saved));
           drawGrid(); drawTiles();
         };
@@ -343,14 +400,14 @@
         drawGrid(); drawTiles();
         document.body.insertAdjacentHTML('beforeend', `
           <div style="
-            position:fixed; bottom:6px; left:10px;
-            font-size:12px; font-family:monospace; color:#888;
-            z-index:999; pointer-events:none;
+            position: fixed; bottom: 6px; left: 10px;
+            font-size: 12px; font-family: monospace; color: #888;
+            z-index: 999; pointer-events: none;
           ">
             ver 0.13
           </div>
         `);
-        // --- конец оригинального IIFE ---
+        // --- Конец оригинального IIFE-кода ---
       })();
     }
   </script>
