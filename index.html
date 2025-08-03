@@ -5,122 +5,32 @@
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <!-- Подключаем стили консольного шлюза и базовые стили -->
+  <!-- Подключаем стили -->
   <link rel="stylesheet" href="styles.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-
-  <style>
-    /* Существующие стили для карты и панели управления */
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #000;
-      font-family: sans-serif;
-    }
-    #map {
-      position: absolute;
-      top: 60px;
-      left: 0;
-      right: 0;
-      bottom: 0;
-    }
-    #panel {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: #111;
-      color: #fff;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      padding: 8px 10px;
-      gap: 10px;
-      z-index: 1000;
-      max-height: 300px;
-      overflow: hidden;
-      transition: max-height .3s ease;
-    }
-    #panel.collapsed {
-      max-height: 40px;
-    }
-    #panel.collapsed > *:not(#map-title) {
-      display: none;
-    }
-    #panel select,
-    #panel input,
-    #panel button {
-      font-size: 14px;
-      padding: 5px;
-      background: #222;
-      color: #fff;
-      border: 1px solid #444;
-    }
-    #panel label {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    #search {
-      width: 100px;
-    }
-    #search::placeholder {
-      color: #888;
-    }
-    #toggle-panel {
-      position: absolute;
-      bottom: 15px;
-      right: 15px;
-      background: #111;
-      color: #fff;
-      border: none;
-      padding: 8px;
-      font-size: 18px;
-      cursor: pointer;
-      z-index: 1000;
-      transition: transform .3s ease;
-    }
-    .tile-label {
-      font-size: 10px;
-      font-weight: bold;
-      color: #fff !important;
-      background: none !important;
-      padding: 0 !important;
-      border: none !important;
-      text-shadow: 0 0 3px #000;
-    }
-    .leaflet-interactive {
-      stroke-width: 0.8 !important;
-    }
-    .leaflet-control-zoom {
-      display: flex !important;
-      flex-direction: row;
-    }
-    .leaflet-control-zoom .leaflet-bar-part {
-      width: 30px;
-    }
-    @media (max-width: 600px) {
-      #panel {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      #map {
-        top: 180px;
-      }
-    }
-  </style>
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
 </head>
 <body>
 
-  <!-- Новый интерфейс: Консольный Шлюз -->
-  <div class="console-gate">
-    <div class="console-logo">🛡️ Genesis War</div>
-    <button class="auth-button">Войти в Шлюз</button>
-    <p class="subtitle">Доступ открыт инженерам, хронистам и хранителям</p>
+  <!-- 1. Loading Overlay с легендарными фразами -->
+  <div id="loadingOverlay">
+    <span id="loadingText">Загрузка тайлов...</span>
   </div>
 
-  <!-- Существующая панель управления -->
+  <!-- 2. Консольный шлюз -->
+  <div class="console-gate" style="display: none;">
+    <div class="console-logo">🛡️ Genesis War Map</div>
+    <a class="auth-button"
+       href="https://t.me/Goamap_bot?start=map"
+       target="_blank">
+      Genesis War Map
+    </a>
+    <p class="subtitle">
+      Доступ открыт инженерам, хронистам и хранителям
+    </p>
+  </div>
+
+  <!-- 3. Существующая панель управления -->
   <div id="panel">
     <strong id="map-title">🧭 GENESIS WAR MAP</strong>
 
@@ -149,30 +59,59 @@
       </select>
     </label>
 
+    <!-- Кнопка для списка избранного -->
+    <button id="favorites-button">⭐ Избранные</button>
+
     <button id="reset">♻️ Сбросить</button>
     <button id="export">💾 CSV</button>
     <button id="screenshot-btn">📸 Сделать снимок</button>
     <span id="count">Загрузка тайлов…</span>
   </div>
 
-  <div id="map"></div>
+  <div id="map" class="locked"></div>
   <button id="toggle-panel">🔼</button>
 
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- Скрипт для открытия консольного шлюза -->
-  <script>
-    document.querySelector('.auth-button').addEventListener('click', function(){
-      document.querySelector('.console-gate').style.display = 'none';
-    });
-  </script>
-
-  <!-- Основной скрипт загрузки и отрисовки карты (без изменений) -->
   <script>
     ;(async function () {
-      // Загрузчик случайных фраз для заголовка
-      const phrases = [
+      // === 1. Проверка Telegram WebApp авторизации ===
+      const tg = window.Telegram?.WebApp;
+      const user = tg?.initDataUnsafe?.user;
+      const gate = document.querySelector('.console-gate');
+      const mapEl = document.getElementById('map');
+
+      if (!user) {
+        // Показываем шлюз и прекращаем инициализацию карты
+        gate.style.display = 'block';
+        return;
+      } else {
+        // Скрываем шлюз, разблокируем карту
+        gate.style.display = 'none';
+        mapEl.classList.remove('locked');
+      }
+
+      // === 2. Запускаем Loading Overlay с легендарными фразами ===
+      const loadingPhrases = [
+        "Орден поднимает завесу тумана...",
+        "Тайлы собираются из глубин эпохи...",
+        "Созвездия маршрутов сверяются с хрониками...",
+        "Фрагменты легенд восстанавливаются..."
+      ];
+      let loadIdx = 0;
+      const loadingText = document.getElementById('loadingText');
+      const loadingInterval = setInterval(() => {
+        loadingText.textContent = loadingPhrases[loadIdx++ % loadingPhrases.length];
+      }, 2000);
+
+      function hideLoading() {
+        clearInterval(loadingInterval);
+        document.getElementById('loadingOverlay').style.display = 'none';
+      }
+
+      // === 3. Инициализация заголовка карты ===
+      const titlePhrases = [
         'Каждый ход важен',
         'Мощь в координатах',
         'Победа за гранью горизонта',
@@ -189,17 +128,19 @@
         'Стратегия рождается на карте'
       ];
       document.getElementById('map-title').textContent =
-        `🧭 GENESIS WAR MAP — ${phrases[Math.floor(Math.random() * phrases.length)]}`;
+        `🧭 GENESIS WAR MAP — ${titlePhrases[
+          Math.floor(Math.random() * titlePhrases.length)
+        ]}`;
 
-      // Тоггл панели
+      // === 4. Тоггл панели ===
       const panel = document.getElementById('panel'),
             toggle = document.getElementById('toggle-panel');
       toggle.onclick = () => {
-        const c = panel.classList.toggle('collapsed');
-        toggle.textContent = c ? '🔽' : '🔼';
+        const collapsed = panel.classList.toggle('collapsed');
+        toggle.textContent = collapsed ? '🔽' : '🔼';
       };
 
-      // Инициализация карты (zoom=6)
+      // === 5. Инициализация карты (zoom=6) ===
       const map = L.map('map', {
         center: [49.25, -123.10],
         zoom: 6,
@@ -222,11 +163,7 @@
         layers[e.target.value].addTo(map);
       };
 
-      // Слои сетки и тайлов
-      const gridLayer = L.layerGroup().addTo(map),
-            tileLayer = L.layerGroup().addTo(map);
-
-      // Загрузка данных
+      // === 6. Загрузка данных тайлов ===
       const BASE = './data/',
             countEl = document.getElementById('count');
       let tileData = [];
@@ -244,7 +181,10 @@
       }
       countEl.textContent = `Загружено тайлов: ${tileData.length}`;
 
-      // Преобразование координат
+      // Скрываем Loading Overlay после загрузки тайлов
+      hideLoading();
+
+      // === 7. Преобразование координат ===
       const refId = 22313, refLat = 49.25, refLng = -123.10,
             refX = refId % 256, refY = Math.floor(refId / 256),
             degLat = 170 / 256, degLng = 360 / 256;
@@ -254,7 +194,7 @@
         t.lng = refLng + (x - refX) * degLng;
       });
 
-      // LocalStorage для меток
+      // === 8. LocalStorage и сохранение меток ===
       const saved = JSON.parse(localStorage.getItem('tile_marks') || '{}');
       window.saveMark = (id, status) => {
         if (status) saved[id] = status;
@@ -262,6 +202,10 @@
         localStorage.setItem('tile_marks', JSON.stringify(saved));
         drawGrid(); drawTiles();
       };
+
+      // === 9. Отрисовка сетки и тайлов ===
+      const gridLayer = L.layerGroup().addTo(map),
+            tileLayer = L.layerGroup().addTo(map);
 
       function drawGrid() {
         gridLayer.clearLayers();
@@ -272,12 +216,8 @@
             [t.lat - degLat / 2, t.lng - degLng / 2],
             [t.lat + degLat / 2, t.lng + degLng / 2]
           );
-          L.rectangle(b, {
-            stroke: true,
-            weight: 0.8,
-            color: '#666',
-            fill: false
-          }).addTo(gridLayer);
+          L.rectangle(b, { stroke: true, weight: 0.8, color: '#666', fill: false })
+           .addTo(gridLayer);
         });
       }
 
@@ -301,20 +241,21 @@
           } else {
             if (!vb.contains([t.lat, t.lng])) return;
           }
+
           const b = L.latLngBounds(
             [t.lat - degLat / 2, t.lng - degLng / 2],
             [t.lat + degLat / 2, t.lng + degLng / 2]
           );
           const owned = String(t.has_owner).toLowerCase() === 'true';
-          const fill = status === 'ally'   ? '#33cc33'
-                     : status === 'enemy'  ? '#cc3333'
+          const fill = status === 'ally'    ? '#33cc33'
+                     : status === 'enemy'   ? '#cc3333'
                      : status === 'favorite'? '#ff0'
-                     : owned                ? '#3366ff'
-                                            : '#444';
-          const stroke = status === 'ally'   ? '#00ff00'
-                      : status === 'enemy'  ? '#ff0000'
-                      : status === 'favorite'? '#ff0'
-                      : '#000';
+                     : owned                 ? '#3366ff'
+                                             : '#444';
+          const stroke = status === 'ally'    ? '#00ff00'
+                       : status === 'enemy'   ? '#ff0000'
+                       : status === 'favorite'? '#ff0'
+                       : '#000';
 
           const rect = L.rectangle(b, {
             stroke: true,
@@ -355,7 +296,7 @@
         });
       }
 
-      // Поиск и перелет
+      // === 10. Поиск и перелет ===
       document.getElementById('goto-btn').onclick = () => {
         const v = document.getElementById('search').value.trim();
         if (!v) return drawTiles();
@@ -365,7 +306,7 @@
         setTimeout(drawTiles, 800);
       };
 
-      // Сброс и экспорт
+      // === 11. Reset, Export, Screenshot ===
       document.getElementById('reset').onclick = () => {
         document.getElementById('search').value = '';
         document.getElementById('status-filter').value = '';
@@ -384,8 +325,6 @@
         a.download = 'tiles.csv';
         a.click();
       };
-
-      // Снимок экрана
       document.getElementById('screenshot-btn').onclick = () => {
         html2canvas(document.getElementById('map')).then(canvas => {
           const link = document.createElement('a');
@@ -395,7 +334,7 @@
         });
       };
 
-      // Обновление отрисовки при движении карты и смене фильтров
+      // === 12. Фильтры и финальный рендер ===
       map.on('moveend', () => { drawGrid(); drawTiles(); });
       ['change','input'].forEach(ev => {
         document.getElementById('status-filter')
@@ -404,8 +343,19 @@
                 .addEventListener(ev, drawTiles);
       });
 
-      // Финальный рендер + версия
       drawGrid(); drawTiles();
+
+      // === 13. Список избранных тайлов ===
+      document.getElementById('favorites-button').onclick = () => {
+        const favs = Object.keys(saved).filter(id => saved[id] === 'favorite');
+        if (!favs.length) {
+          alert('Нет избранных тайлов');
+        } else {
+          alert(`⭐ Избранные тайлы: ${favs.map(id => `#${id}`).join(', ')}`);
+        }
+      };
+
+      // === 14. Версия внизу экрана ===
       document.body.insertAdjacentHTML('beforeend', `
         <div style="
           position: fixed;
@@ -416,10 +366,12 @@
           color: #888;
           z-index: 999;
           pointer-events: none;
-        ">ver 0.13</div>
+        ">
+          ver 0.13
+        </div>
       `);
+
     })();
   </script>
-
 </body>
 </html>
