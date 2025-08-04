@@ -4,11 +4,8 @@
   <meta charset="UTF-8"/>
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-  />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
 
   <style>
     /* ——— Original Reset ——— */
@@ -26,8 +23,7 @@
 
     /* ——— Login Overlay Styles ——— */
     #login-container {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
       display: flex; flex-direction: column;
       justify-content: center; align-items: center;
       background: radial-gradient(circle at top left, #0d1b2a, #1b263b);
@@ -76,9 +72,7 @@
       font-size: 14px; padding: 5px;
       background: #222; color: #fff; border: 1px solid #444;
     }
-    #panel label {
-      display: flex; align-items: center; gap: 5px;
-    }
+    #panel label { display: flex; align-items: center; gap: 5px; }
     #search { width: 100px; }
     #search::placeholder { color: #888; }
     #toggle-panel {
@@ -88,18 +82,16 @@
       z-index: 1000; transition: transform .3s ease;
     }
     .tile-label {
-      font-size: 10px; font-weight: bold;
-      color: #fff!important; background: none!important;
-      padding: 0!important; border: none!important;
+      font-size: 10px; font-weight: bold; color: #fff!important;
+      background: none!important; padding: 0!important; border: none!important;
       text-shadow: 0 0 3px #000;
     }
     .leaflet-interactive { stroke-width: 0.8!important; }
     .leaflet-control-zoom {
       display: flex!important; flex-direction: row;
     }
-    .leaflet-control-zoom .leaflet-bar-part {
-      width: 30px;
-    }
+    .leaflet-control-zoom .leaflet-bar-part { width: 30px; }
+
     @media (max-width:600px) {
       #panel { flex-direction: column; align-items: flex-start; }
       #map { top: 180px; }
@@ -107,11 +99,22 @@
   </style>
 </head>
 <body>
+  <!-- Audio for Auth -->
+  <audio id="authSound" src="echo-login.mp3" preload="auto"></audio>
+  <script>
+    // Auto-auth if opened inside Telegram WebApp
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initData) {
+      console.log("Auto-auth via Telegram WebApp");
+      document.body.classList.add('logged-in');
+      document.getElementById('authSound').play();
+    }
+  </script>
+
   <!-- Login Overlay -->
   <div id="login-container">
     <h1>Добро пожаловать в GENESIS WAR MAP</h1>
     <p>Нажмите кнопку, чтобы войти через Telegram</p>
-    <button id="login-button">🔐 Войти через Telegram</button>
+    <button id="login-button">🔒 Войти через Telegram</button>
   </div>
 
   <!-- Main Panel & Map -->
@@ -126,8 +129,8 @@
         <option value="">— Все —</option>
         <option value="ally">🟩 Союзники</option>
         <option value="enemy">🟥 Враги</option>
-        <option value="favorite">⭐ Избранные</option>
-        <option value="clear">⚪ Без метки</option>
+        <option value="favorite">⭐️ Избранные</option>
+        <option value="clear">⚪️ Без метки</option>
       </select>
     </label>
     <label>
@@ -147,12 +150,15 @@
   <div id="map"></div>
   <button id="toggle-panel">🔽</button>
 
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <!-- html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
+  <!-- Main App Script -->
   <script>
-    ;(async function () {
-      // 1. Динамический заголовок
+    (async function () {
+      // 1. Dynamic title phrases
       const phrases = [
         'Каждый ход важен','Мощь в координатах','Победа за гранью горизонта',
         'Твори историю на карте','География решает судьбу','Командуй с высоты',
@@ -164,7 +170,7 @@
       document.getElementById('map-title').textContent =
         `🧭 GENESIS WAR MAP — ${phrases[Math.floor(Math.random()*phrases.length)]}`;
 
-      // 2. Toggle панели
+      // 2. Panel toggle
       const panel = document.getElementById('panel'),
             toggle = document.getElementById('toggle-panel');
       toggle.onclick = () => {
@@ -172,7 +178,7 @@
         toggle.textContent = collapsed ? '🔼' : '🔽';
       };
 
-      // 3. Инициализация карты и слоёв
+      // 3. Initialize map & layers
       const map = L.map('map', {
         center: [49.25, -123.10], zoom: 6, minZoom: 3, maxZoom: 10,
         attributionControl: false
@@ -192,101 +198,99 @@
         layers[e.target.value].addTo(map);
       };
 
-      // 4. Загрузка данных тайлов
+      // 4. Load tile data
       const gridLayer = L.layerGroup().addTo(map),
             tileLayer = L.layerGroup().addTo(map),
-            BASE = './data/',
-            countEl = document.getElementById('count');
+            BASE = './data/', countEl = document.getElementById('count');
       let tileData = [];
       try {
-        for (let i = 1; i <= 22; i++) {
+        for (let i=1; i<=22; i++){
           countEl.textContent = `Загрузка ${i}/22…`;
           const url = `${BASE}tiles_${String(i).padStart(2,'0')}.json`,
                 res = await fetch(url);
           if (!res.ok) throw new Error(`Ошибка ${res.status} при ${url}`);
           tileData.push(...await res.json());
         }
-      } catch (e) {
+      } catch(e){
         console.error(e);
-        alert('Ошибка загрузки: ' + e.message);
+        alert('Ошибка загрузки тайлов: '+e.message);
       }
       countEl.textContent = `Загружено тайлов: ${tileData.length}`;
 
-      // 5. Преобразование в геокоординаты
-      const refId = 22313, refLat = 49.25, refLng = -123.10,
-            refX = refId % 256, refY = Math.floor(refId/256),
-            degLat = 170/256, degLng = 360/256;
-      tileData.forEach(t => {
-        const id = +t.id_tile,
-              x = id % 256, y = Math.floor(id/256);
-        t.lat = refLat - (y - refY)*degLat;
-        t.lng = refLng + (x - refX)*degLng;
+      // 5. Compute lat/lng for each tile
+      const refId=22313, refLat=49.25, refLng=-123.10,
+            refX=refId%256, refY=Math.floor(refId/256),
+            degLat=170/256, degLng=360/256;
+      tileData.forEach(t=>{
+        const id=+t.id_tile,
+              x=id%256, y=Math.floor(id/256);
+        t.lat = refLat  - (y-refY)*degLat;
+        t.lng = refLng + (x-refX)*degLng;
       });
 
-      // 6. Управление метками
+      // 6. Save marks in localStorage
       const saved = JSON.parse(localStorage.getItem('tile_marks')||'{}');
-      window.saveMark = (id, status) => {
-        if (status) saved[id] = status; else delete saved[id];
+      window.saveMark = (id, status)=>{
+        if (status) saved[id]=status; else delete saved[id];
         localStorage.setItem('tile_marks', JSON.stringify(saved));
         drawGrid(); drawTiles();
       };
 
-      // 7. Отрисовка сетки
-      function drawGrid() {
+      // 7. Draw grid
+      function drawGrid(){
         gridLayer.clearLayers();
         const vb = map.getBounds();
-        tileData.forEach(t => {
+        tileData.forEach(t=>{
           if (!vb.contains([t.lat,t.lng])) return;
           const b = L.latLngBounds(
-            [t.lat - degLat/2, t.lng - degLng/2],
-            [t.lat + degLat/2, t.lng + degLng/2]
+            [t.lat-degLat/2, t.lng-degLng/2],
+            [t.lat+degLat/2, t.lng+degLng/2]
           );
-          L.rectangle(b, { stroke: true, weight: 0.8, color: '#666', fill: false })
-           .addTo(gridLayer);
+          L.rectangle(b,{stroke:true,weight:0.8,color:'#666',fill:false})
+            .addTo(gridLayer);
         });
       }
 
-      // 8. Отрисовка тайлов
-      function drawTiles() {
+      // 8. Draw tiles
+      function drawTiles(){
         tileLayer.clearLayers();
         const filter = document.getElementById('status-filter').value,
               sRaw = document.getElementById('search').value.trim(),
-              byID = sRaw !== '', ID = +sRaw,
-              zoom = map.getZoom(), vb = map.getBounds();
-
-        tileData.forEach(t => {
-          const status = saved[t.id_tile] || '';
-          if (filter==='ally'     && status!=='ally')    return;
-          if (filter==='enemy'    && status!=='enemy')   return;
-          if (filter==='favorite' && status!=='favorite')return;
-          if (filter==='clear'    && status)            return;
+              byID = sRaw!=='', ID=+sRaw,
+              zoom=map.getZoom(), vb=map.getBounds();
+        tileData.forEach(t=>{
+          const status = saved[t.id_tile]||'';
+          if (filter==='ally'    && status!=='ally')    return;
+          if (filter==='enemy'   && status!=='enemy')   return;
+          if (filter==='favorite'&& status!=='favorite')return;
+          if (filter==='clear'   && status)             return;
           if (byID && +t.id_tile!==ID) return;
           if (!byID && !vb.contains([t.lat,t.lng])) return;
 
           const b = L.latLngBounds(
-            [t.lat - degLat/2, t.lng - degLng/2],
-            [t.lat + degLat/2, t.lng + degLng/2]
+            [t.lat-degLat/2, t.lng-degLng/2],
+            [t.lat+degLat/2, t.lng+degLng/2]
           );
           const owned = String(t.has_owner).toLowerCase()==='true';
-          const fill = status==='ally'    ? '#33cc33'
-                     : status==='enemy'   ? '#cc3333'
+          const fill = status==='ally'? '#33cc33'
+                     : status==='enemy'? '#cc3333'
                      : status==='favorite'? '#ff0'
-                     : owned              ? '#3366ff'
-                                          : '#444';
-          const stroke = status==='ally'    ? '#00ff00'
-                       : status==='enemy'   ? '#ff0000'
+                     : owned? '#3366ff'
+                     : '#444';
+          const stroke = status==='ally'? '#00ff00'
+                       : status==='enemy'? '#ff0000'
                        : status==='favorite'? '#ff0'
-                                            : '#000';
+                       : '#000';
 
-          const rect = L.rectangle(b, {
-            stroke: true, weight: 1.2, color: stroke,
-            dashArray: status ? '4' : null,
-            fillColor: fill, fillOpacity: 0.4
+          const rect = L.rectangle(b,{
+            stroke:true, weight:1.2, color: stroke,
+            dashArray: status? '4' : null,
+            fillColor: fill, fillOpacity:0.4
           }).addTo(tileLayer);
 
-          if (zoom >= 5) {
-            rect.bindTooltip(String(t.id_tile), {
-              permanent: true, direction: 'center', className: 'tile-label'
+          if (zoom>=5){
+            rect.bindTooltip(String(t.id_tile),{
+              permanent:true, direction:'center', className:'tile-label'
             });
           }
 
@@ -294,31 +298,36 @@
             <strong>Тайл #${t.id_tile}</strong><br/>
             Статус: ${owned?'занят':'свободен'}<br/>
             Метка: ${status||'—'}<br/><br/>
-            <button onclick="saveMark(${t.id_tile}, 'ally')">🟩 Союзник</button>
-            <button onclick="saveMark(${t.id_tile}, 'enemy')">🟥 Враг</button>
-            <button onclick="saveMark(${t.id_tile}, 'favorite')">⭐ Избранное</button>
-            <button onclick="saveMark(${t.id_tile}, '')">⚪ Сбросить</button><br/><br/>
+            <button onclick="saveMark(${t.id_tile},'ally')">🟩 Союзник</button>
+            <button onclick="saveMark(${t.id_tile},'enemy')">🟥 Враг</button>
+            <button onclick="saveMark(${t.id_tile},'favorite')">⭐️ Избранное</button>
+            <button onclick="saveMark(${t.id_tile},'')">⚪️ Сброс</button><br/><br/>
             <a href="https://genesis-of-ages.site/ru/гео-эксплорер/?tileId=${t.id_tile}" target="_blank">
               🌐 Оф. страница тайла
             </a>
           `);
 
-          rect.on('click',    () => { rect.setStyle({weight:3,color:'#FFD700'}); rect.openPopup(); });
-          rect.on('mouseout', () => rect.setStyle({weight:1.2,color:stroke}));
+          rect.on('click', ()=>{
+            rect.setStyle({weight:3,color:'#FFD700'});
+            rect.openPopup();
+          });
+          rect.on('mouseout', ()=>{
+            rect.setStyle({weight:1.2,color:stroke});
+          });
         });
       }
 
-      // 9. Поиск + flyTo
+      // 9. Search + flyTo
       document.getElementById('goto-btn').onclick = () => {
         const v = document.getElementById('search').value.trim();
         if (!v) return drawTiles();
-        const t = tileData.find(o => +o.id_tile === +v);
+        const t = tileData.find(o=>+o.id_tile===+v);
         if (!t) return;
-        map.flyTo([t.lat, t.lng], 6, { animate: true, duration: 1.2 });
-        setTimeout(drawTiles, 800);
+        map.flyTo([t.lat, t.lng], 6, {animate:true, duration:1.2});
+        setTimeout(drawTiles,800);
       };
 
-      // 10. Сброс и экспорт CSV
+      // 10. Reset & export CSV
       document.getElementById('reset').onclick = () => {
         document.getElementById('search').value = '';
         document.getElementById('status-filter').value = '';
@@ -326,71 +335,60 @@
       };
       document.getElementById('export').onclick = () => {
         const rows = [['id_tile','has_owner','status']];
-        tileData.forEach(t => {
-          const st = saved[t.id_tile] || '';
-          rows.push([t.id_tile, t.has_owner, st]);
+        tileData.forEach(t=>{
+          rows.push([t.id_tile, t.has_owner, saved[t.id_tile]||'']);
         });
-        const csv  = rows.map(r => r.join(',')).join('\n'),
-              blob = new Blob([csv], { type: 'text/csv' }),
-              a    = document.createElement('a');
+        const csv = rows.map(r=>r.join(',')).join('\n'),
+              blob = new Blob([csv],{type:'text/csv'}),
+              a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'tiles.csv'; a.click();
+        a.download = 'tiles.csv';
+        a.click();
       };
 
-      // 11. Скриншот
+      // 11. Screenshot
       document.getElementById('screenshot-btn').onclick = () => {
         html2canvas(document.getElementById('map')).then(canvas => {
           const link = document.createElement('a');
           link.href = canvas.toDataURL('image/png');
-          link.download = 'map.png'; link.click();
+          link.download = 'map.png';
+          link.click();
         });
       };
 
-      // 12. Рендер при движении и фильтрах
-      map.on('moveend', () => { drawGrid(); drawTiles(); });
-      ['change','input'].forEach(ev => {
+      // 12. Re-render on move/filter
+      map.on('moveend', ()=>{ drawGrid(); drawTiles(); });
+      ['change','input'].forEach(ev=>{
         document.getElementById('status-filter').addEventListener(ev, drawTiles);
         document.getElementById('search').addEventListener(ev, drawTiles);
       });
 
-      // 13. Финальный рендер и версия
+      // 13. Final render + version
       drawGrid(); drawTiles();
       document.body.insertAdjacentHTML('beforeend', `
         <div style="
           position:fixed; bottom:6px; left:10px;
           font-size:12px; font-family:monospace;
           color:#888; z-index:999; pointer-events:none;
-        ">
-          ver 0.13
-        </div>`);
+        ">ver 0.13</div>
+      `);
     })();
   </script>
 
-<!-- Login Button Handler -->
-<script>
-  // Проверка при загрузке: если Telegram WebApp уже открыт — сразу авторизуем
-  if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initData) {
-    console.log("Запущено внутри Telegram WebApp — авторизуем автоматически");
-    document.body.classList.add('logged-in');
-  } else {
-    console.log("Telegram WebApp не определён или запущен в браузере");
-  }
-
-  // Обработчик кнопки входа
-  document.getElementById('login-button').addEventListener('click', () => {
-    console.log("Нажата кнопка входа");
-
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-      console.log("Открываем WebApp ссылку");
-      Telegram.WebApp.openLink('https://t.me/Goamap_bot?start=warportal');
-    } else {
-      console.log("Обычный браузер — редиректим на Telegram");
-      window.location.href = 'https://t.me/Goamap_bot?start=warportal';
-    }
-
-    // Пробуем авторизовать сразу — пригодится при тестировании
-    document.body.classList.add('logged-in');
-  });
-</script>
+  <!-- Login Button Handler -->
+  <script>
+    document.getElementById('login-button').addEventListener('click', () => {
+      console.log("Login clicked");
+      if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        console.log("Opening WebApp link");
+        Telegram.WebApp.openLink('https://t.me/Goamap_bot?start=warportal');
+      } else {
+        console.log("Redirecting to Telegram");
+        window.location.href = 'https://t.me/Goamap_bot?start=warportal';
+      }
+      document.body.classList.add('logged-in');
+      document.getElementById('authSound').play();
+    });
+  </script>
 </body>
 </html>
