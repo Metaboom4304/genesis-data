@@ -5,7 +5,10 @@
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+  />
 
   <style>
     /* ——— Original Reset ——— */
@@ -101,10 +104,25 @@
 <body>
   <!-- Audio for Auth -->
   <audio id="authSound" src="echo-login.mp3" preload="auto"></audio>
+
+  <!-- Auto-auth & Debug -->
   <script>
-    // Auto-auth if opened inside Telegram WebApp
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initData) {
-      console.log("Auto-auth via Telegram WebApp");
+    // Debug Telegram SDK presence
+    console.log('🔍 Telegram SDK check:', typeof Telegram !== 'undefined' ? Telegram : 'no Telegram object');
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+      console.log('🔍 Telegram.WebApp:', Telegram.WebApp);
+      console.log('🔍 initData:', Telegram.WebApp.initData);
+      console.log('🔍 initDataUnsafe:', Telegram.WebApp.initDataUnsafe);
+    }
+
+    // Auto-auth if opened inside Telegram WebApp with valid user
+    if (
+      typeof Telegram !== 'undefined' &&
+      Telegram.WebApp &&
+      Telegram.WebApp.initDataUnsafe?.user
+    ) {
+      console.log('✅ Auto-auth via Telegram WebApp, user:', Telegram.WebApp.initDataUnsafe.user);
+      Telegram.WebApp.ready();
       document.body.classList.add('logged-in');
       document.getElementById('authSound').play();
     }
@@ -121,7 +139,8 @@
   <div id="panel">
     <strong id="map-title">🧭 GENESIS WAR MAP</strong>
     <label>
-      🔍<input type="number" id="search" placeholder="Тайл-ID"/><button id="goto-btn">➡️</button>
+      🔍<input type="number" id="search" placeholder="Тайл-ID"/>
+      <button id="goto-btn">➡️</button>
     </label>
     <label>
       🎯 Метка:
@@ -180,7 +199,10 @@
 
       // 3. Initialize map & layers
       const map = L.map('map', {
-        center: [49.25, -123.10], zoom: 6, minZoom: 3, maxZoom: 10,
+        center: [49.25, -123.10],
+        zoom: 6,
+        minZoom: 3,
+        maxZoom: 10,
         attributionControl: false
       });
       const layers = {
@@ -194,7 +216,7 @@
       layers.neutral.addTo(map);
       map.zoomControl.setPosition('bottomleft');
       document.getElementById('layer-select').onchange = e => {
-        Object.values(layers).forEach(l=>map.removeLayer(l));
+        Object.values(layers).forEach(l => map.removeLayer(l));
         layers[e.target.value].addTo(map);
       };
 
@@ -380,14 +402,13 @@
     document.getElementById('login-button').addEventListener('click', () => {
       console.log("Login clicked");
       if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        console.log("Opening WebApp link");
+        console.log("Opening bot via link");
+        // Inline button from bot is preferred — this is a fallback for browsers
         Telegram.WebApp.openLink('https://t.me/Goamap_bot?start=warportal');
       } else {
         console.log("Redirecting to Telegram");
         window.location.href = 'https://t.me/Goamap_bot?start=warportal';
       }
-      document.body.classList.add('logged-in');
-      document.getElementById('authSound').play();
     });
   </script>
 </body>
