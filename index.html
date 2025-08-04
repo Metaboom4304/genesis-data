@@ -366,16 +366,31 @@
     })();
   </script>
 
-  <!-- Login Button Handler -->
-  <script>
-    document.getElementById('login-button').addEventListener('click', () => {
-      if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        Telegram.WebApp.openLink('https://t.me/Goamap_bot?start=warportal');
-      } else {
-        window.location.href = 'https://t.me/Goamap_bot?start=warportal';
-      }
-      document.body.classList.add('logged-in');
-    });
-  </script>
+<!-- Login Button Handler -->
+<script>
+  // Проверка при загрузке: если Telegram WebApp уже открыт — сразу авторизуем
+  if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initData) {
+    console.log("Запущено внутри Telegram WebApp — авторизуем автоматически");
+    document.body.classList.add('logged-in');
+  } else {
+    console.log("Telegram WebApp не определён или запущен в браузере");
+  }
+
+  // Обработчик кнопки входа
+  document.getElementById('login-button').addEventListener('click', () => {
+    console.log("Нажата кнопка входа");
+
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+      console.log("Открываем WebApp ссылку");
+      Telegram.WebApp.openLink('https://t.me/Goamap_bot?start=warportal');
+    } else {
+      console.log("Обычный браузер — редиректим на Telegram");
+      window.location.href = 'https://t.me/Goamap_bot?start=warportal';
+    }
+
+    // Пробуем авторизовать сразу — пригодится при тестировании
+    document.body.classList.add('logged-in');
+  });
+</script>
 </body>
 </html>
