@@ -4,47 +4,67 @@
   <meta charset="UTF-8"/>
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
   <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
   />
 
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
   <style>
     /* ——— Original Reset ——— */
     html, body {
-      margin: 0; padding: 0; height: 100%;
-      background: #000; font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+      font-family: sans-serif;
     }
 
-    /* ——— Hide Map & Panel Until Login ——— */
+    /* Hide Map & Panel Until Auth */
     body:not(.logged-in) #panel,
     body:not(.logged-in) #map,
     body:not(.logged-in) #toggle-panel {
       display: none !important;
     }
 
-    /* ——— Login Overlay Styles ——— */
+    /* Login Overlay Styles */
     #login-container {
-      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-      display: flex; flex-direction: column;
-      justify-content: center; align-items: center;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       background: radial-gradient(circle at top left, #0d1b2a, #1b263b);
-      color: #e0e1dd; z-index: 2000;
+      color: #e0e1dd;
+      z-index: 2000;
       backdrop-filter: blur(6px);
       border: 1px solid rgba(255,255,255,0.1);
       box-shadow: 0 0 30px rgba(0,0,0,0.6);
     }
     #login-container h1 {
-      margin-bottom: 16px; font-size: 2rem; letter-spacing: 1px;
+      margin-bottom: 16px;
+      font-size: 2rem;
+      letter-spacing: 1px;
     }
     #login-container p {
-      margin-bottom: 24px; font-size: 1rem; opacity: 0.8;
+      margin-bottom: 24px;
+      font-size: 1rem;
+      opacity: 0.8;
     }
     #login-button {
-      background-color: #0088cc; color: #fff; border: none;
-      border-radius: 8px; padding: 15px 30px; font-size: 1.1rem;
-      cursor: pointer; box-shadow: 0 4px 12px rgba(0,136,204,0.5);
+      background-color: #0088cc;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 15px 30px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,136,204,0.5);
       transition: box-shadow 0.2s ease-in-out;
       animation: pulse 2s infinite;
     }
@@ -57,82 +77,100 @@
       100% { transform: scale(1); }
     }
 
-    /* ——— Map & Panel Styles ——— */
+    /* Map & Panel Styles */
     #map {
-      position: absolute; top: 60px; left: 0; right: 0; bottom: 0;
+      position: absolute;
+      top: 60px; left: 0; right: 0; bottom: 0;
     }
     #panel {
-      position: absolute; top: 0; left: 0; right: 0;
+      position: absolute;
+      top: 0; left: 0; right: 0;
       background: #111; color: #fff;
-      display: flex; flex-wrap: wrap; align-items: center;
-      padding: 8px 10px; gap: 10px;
-      z-index: 1000; max-height: 300px; overflow: hidden;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 8px 10px;
+      gap: 10px;
+      z-index: 1000;
+      max-height: 300px;
+      overflow: hidden;
       transition: max-height .3s ease;
     }
-    #panel.collapsed { max-height: 40px; }
-    #panel.collapsed > *:not(#map-title) { display: none; }
-    #panel select, #panel input, #panel button {
-      font-size: 14px; padding: 5px;
-      background: #222; color: #fff; border: 1px solid #444;
+    #panel.collapsed {
+      max-height: 40px;
     }
-    #panel label { display: flex; align-items: center; gap: 5px; }
-    #search { width: 100px; }
-    #search::placeholder { color: #888; }
+    #panel.collapsed > *:not(#map-title) {
+      display: none;
+    }
+    #panel select,
+    #panel input,
+    #panel button {
+      font-size: 14px;
+      padding: 5px;
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+    }
+    #panel label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #search {
+      width: 100px;
+    }
+    #search::placeholder {
+      color: #888;
+    }
     #toggle-panel {
-      position: absolute; bottom: 15px; right: 15px;
-      background: #111; color: #fff; border: none;
-      padding: 8px; font-size: 18px; cursor: pointer;
-      z-index: 1000; transition: transform .3s ease;
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+      background: #111;
+      color: #fff;
+      border: none;
+      padding: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 1000;
+      transition: transform .3s ease;
     }
     .tile-label {
-      font-size: 10px; font-weight: bold; color: #fff!important;
-      background: none!important; padding: 0!important; border: none!important;
+      font-size: 10px;
+      font-weight: bold;
+      color: #fff !important;
+      background: none !important;
+      padding: 0 !important;
+      border: none !important;
       text-shadow: 0 0 3px #000;
     }
-    .leaflet-interactive { stroke-width: 0.8!important; }
-    .leaflet-control-zoom {
-      display: flex!important; flex-direction: row;
+    .leaflet-interactive {
+      stroke-width: 0.8 !important;
     }
-    .leaflet-control-zoom .leaflet-bar-part { width: 30px; }
-
+    .leaflet-control-zoom {
+      display: flex !important;
+      flex-direction: row;
+    }
+    .leaflet-control-zoom .leaflet-bar-part {
+      width: 30px;
+    }
     @media (max-width:600px) {
-      #panel { flex-direction: column; align-items: flex-start; }
-      #map { top: 180px; }
+      #panel {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      #map {
+        top: 180px;
+      }
     }
   </style>
 </head>
 <body>
-  <!-- Audio for Auth -->
-  <audio id="authSound" src="echo-login.mp3" preload="auto"></audio>
-
-  <!-- Auto-auth & Debug -->
-  <script>
-    // Debug Telegram SDK presence
-    console.log('🔍 Telegram SDK check:', typeof Telegram !== 'undefined' ? Telegram : 'no Telegram object');
-    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-      console.log('🔍 Telegram.WebApp:', Telegram.WebApp);
-      console.log('🔍 initData:', Telegram.WebApp.initData);
-      console.log('🔍 initDataUnsafe:', Telegram.WebApp.initDataUnsafe);
-    }
-
-    // Auto-auth if opened inside Telegram WebApp with valid user
-    if (
-      typeof Telegram !== 'undefined' &&
-      Telegram.WebApp &&
-      Telegram.WebApp.initDataUnsafe?.user
-    ) {
-      console.log('✅ Auto-auth via Telegram WebApp, user:', Telegram.WebApp.initDataUnsafe.user);
-      Telegram.WebApp.ready();
-      document.body.classList.add('logged-in');
-      document.getElementById('authSound').play();
-    }
-  </script>
-
   <!-- Login Overlay -->
   <div id="login-container">
     <h1>Добро пожаловать в GENESIS WAR MAP</h1>
     <p>Нажмите кнопку, чтобы войти через Telegram</p>
-    <button id="login-button">🔒 Войти через Telegram</button>
+    <button id="login-button">🔐 Войти через Telegram</button>
   </div>
 
   <!-- Main Panel & Map -->
@@ -165,19 +203,52 @@
     <button id="screenshot-btn">📸 Сделать снимок</button>
     <span id="count">Загрузка тайлов…</span>
   </div>
-
   <div id="map"></div>
-  <button id="toggle-panel">🔽</button>
+  <button id="toggle-panel">⏫</button>
 
-  <!-- Leaflet JS -->
+  <!-- Dependencies -->
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <!-- html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- Main App Script -->
+  <!-- Telegram Auth & UI Toggle -->
+  <script>
+    // Initialize Telegram WebApp
+    window.Telegram.WebApp.ready();
+    const initData = window.Telegram.WebApp.initData;
+
+    if (initData && initData.length > 0) {
+      console.log('✅ Telegram initData:', initData);
+      document.body.classList.add('logged-in');
+      document.getElementById('login-container').style.display = 'none';
+
+      // Welcome badge
+      const badge = document.createElement('div');
+      badge.textContent = `🛡️ Авторизован как ${JSON.parse(atob(initData.split('.')[1])).user?.first_name || 'пользователь'}`;
+      Object.assign(badge.style, {
+        position: 'fixed',
+        top: '10px',
+        right: '10px',
+        color: '#0f0',
+        fontWeight: 'bold',
+        zIndex: 999
+      });
+      document.body.appendChild(badge);
+    }
+
+    // Login button fallback
+    document.getElementById('login-button').addEventListener('click', () => {
+      if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.openLink('https://t.me/Metaboom4304bot?start=webapp');
+      } else {
+        window.location.href = 'https://t.me/Metaboom4304bot?start=webapp';
+      }
+    });
+  </script>
+
+  <!-- Main Map Logic -->
   <script>
     (async function () {
-      // 1. Dynamic title phrases
+      // 1. Random subtitle
       const phrases = [
         'Каждый ход важен','Мощь в координатах','Победа за гранью горизонта',
         'Твори историю на карте','География решает судьбу','Командуй с высоты',
@@ -194,17 +265,19 @@
             toggle = document.getElementById('toggle-panel');
       toggle.onclick = () => {
         const collapsed = panel.classList.toggle('collapsed');
-        toggle.textContent = collapsed ? '🔼' : '🔽';
+        toggle.textContent = collapsed ? '⏬' : '⏫';
       };
 
-      // 3. Initialize map & layers
+      // 3. Initialize Leaflet map
       const map = L.map('map', {
         center: [49.25, -123.10],
         zoom: 6,
         minZoom: 3,
         maxZoom: 10,
-        attributionControl: false
+        attributionControl: false,
+        zoomControl: false
       });
+
       const layers = {
         neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
         world:   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
@@ -214,7 +287,7 @@
         )
       };
       layers.neutral.addTo(map);
-      map.zoomControl.setPosition('bottomleft');
+      L.control.zoom({ position: 'bottomleft' }).addTo(map);
       document.getElementById('layer-select').onchange = e => {
         Object.values(layers).forEach(l => map.removeLayer(l));
         layers[e.target.value].addTo(map);
@@ -223,97 +296,102 @@
       // 4. Load tile data
       const gridLayer = L.layerGroup().addTo(map),
             tileLayer = L.layerGroup().addTo(map),
-            BASE = './data/', countEl = document.getElementById('count');
+            BASE = './data/',
+            countEl = document.getElementById('count');
       let tileData = [];
+
       try {
-        for (let i=1; i<=22; i++){
+        for (let i = 1; i <= 22; i++) {
           countEl.textContent = `Загрузка ${i}/22…`;
           const url = `${BASE}tiles_${String(i).padStart(2,'0')}.json`,
                 res = await fetch(url);
           if (!res.ok) throw new Error(`Ошибка ${res.status} при ${url}`);
           tileData.push(...await res.json());
         }
-      } catch(e){
+      } catch (e) {
         console.error(e);
-        alert('Ошибка загрузки тайлов: '+e.message);
+        alert('Ошибка загрузки: ' + e.message);
       }
-      countEl.textContent = `Загружено тайлов: ${tileData.length}`;
+      countEl.textContent = `Тайлов загружено: ${tileData.length}`;
 
-      // 5. Compute lat/lng for each tile
-      const refId=22313, refLat=49.25, refLng=-123.10,
-            refX=refId%256, refY=Math.floor(refId/256),
-            degLat=170/256, degLng=360/256;
-      tileData.forEach(t=>{
-        const id=+t.id_tile,
-              x=id%256, y=Math.floor(id/256);
-        t.lat = refLat  - (y-refY)*degLat;
-        t.lng = refLng + (x-refX)*degLng;
+      // 5. Compute lat/lng per tile
+      const refId = 22313, refLat = 49.25, refLng = -123.10,
+            refX = refId % 256, refY = Math.floor(refId/256),
+            degLat = 170/256, degLng = 360/256;
+      tileData.forEach(t => {
+        const x = t.id_tile % 256,
+              y = Math.floor(t.id_tile / 256);
+        t.lat = refLat - (y - refY)*degLat;
+        t.lng = refLng + (x - refX)*degLng;
       });
 
-      // 6. Save marks in localStorage
+      // 6. Saved marks
       const saved = JSON.parse(localStorage.getItem('tile_marks')||'{}');
-      window.saveMark = (id, status)=>{
-        if (status) saved[id]=status; else delete saved[id];
+      window.saveMark = (id, status) => {
+        if (status) saved[id] = status;
+        else delete saved[id];
         localStorage.setItem('tile_marks', JSON.stringify(saved));
         drawGrid(); drawTiles();
       };
 
       // 7. Draw grid
-      function drawGrid(){
+      function drawGrid() {
         gridLayer.clearLayers();
         const vb = map.getBounds();
-        tileData.forEach(t=>{
-          if (!vb.contains([t.lat,t.lng])) return;
+        tileData.forEach(t => {
+          if (!vb.contains([t.lat, t.lng])) return;
           const b = L.latLngBounds(
-            [t.lat-degLat/2, t.lng-degLng/2],
-            [t.lat+degLat/2, t.lng+degLng/2]
+            [t.lat - degLat/2, t.lng - degLng/2],
+            [t.lat + degLat/2, t.lng + degLng/2]
           );
-          L.rectangle(b,{stroke:true,weight:0.8,color:'#666',fill:false})
+          L.rectangle(b, { stroke: true, weight: 0.8, color: '#666', fill: false })
             .addTo(gridLayer);
         });
       }
 
       // 8. Draw tiles
-      function drawTiles(){
+      function drawTiles() {
         tileLayer.clearLayers();
         const filter = document.getElementById('status-filter').value,
-              sRaw = document.getElementById('search').value.trim(),
-              byID = sRaw!=='', ID=+sRaw,
-              zoom=map.getZoom(), vb=map.getBounds();
-        tileData.forEach(t=>{
+              sRaw   = document.getElementById('search').value.trim(),
+              byID   = !!sRaw, ID = +sRaw,
+              zoom   = map.getZoom(), vb = map.getBounds();
+
+        tileData.forEach(t => {
           const status = saved[t.id_tile]||'';
           if (filter==='ally'    && status!=='ally')    return;
           if (filter==='enemy'   && status!=='enemy')   return;
           if (filter==='favorite'&& status!=='favorite')return;
           if (filter==='clear'   && status)             return;
-          if (byID && +t.id_tile!==ID) return;
-          if (!byID && !vb.contains([t.lat,t.lng])) return;
+          if (byID && t.id_tile!==ID) return;
+          if (!byID && !vb.contains([t.lat, t.lng])) return;
 
           const b = L.latLngBounds(
-            [t.lat-degLat/2, t.lng-degLng/2],
-            [t.lat+degLat/2, t.lng+degLng/2]
+            [t.lat - degLat/2, t.lng - degLng/2],
+            [t.lat + degLat/2, t.lng + degLng/2]
           );
           const owned = String(t.has_owner).toLowerCase()==='true';
           const fill = status==='ally'? '#33cc33'
-                     : status==='enemy'? '#cc3333'
-                     : status==='favorite'? '#ff0'
-                     : owned? '#3366ff'
-                     : '#444';
+                     : status==='enemy'?'#cc3333'
+                     : status==='favorite'?'#ff0'
+                     : owned?'#3366ff'
+                     :'#444';
           const stroke = status==='ally'? '#00ff00'
-                       : status==='enemy'? '#ff0000'
-                       : status==='favorite'? '#ff0'
-                       : '#000';
+                       : status==='enemy'?'#ff0000'
+                       : status==='favorite'?'#ff0'
+                       :'#000';
 
-          const rect = L.rectangle(b,{
-            stroke:true, weight:1.2, color: stroke,
-            dashArray: status? '4' : null,
-            fillColor: fill, fillOpacity:0.4
+          const rect = L.rectangle(b, {
+            stroke: true, weight: 1.2, color: stroke,
+            dashArray: status? '4': null,
+            fillColor: fill, fillOpacity: 0.4
           }).addTo(tileLayer);
 
-          if (zoom>=5){
-            rect.bindTooltip(String(t.id_tile),{
-              permanent:true, direction:'center', className:'tile-label'
-            });
+          if (zoom >= 5) {
+            rect.bindTooltip(
+              String(t.id_tile),
+              { permanent: true, direction: 'center', className: 'tile-label' }
+            );
           }
 
           rect.bindPopup(`
@@ -325,31 +403,26 @@
             <button onclick="saveMark(${t.id_tile},'favorite')">⭐️ Избранное</button>
             <button onclick="saveMark(${t.id_tile},'')">⚪️ Сброс</button><br/><br/>
             <a href="https://genesis-of-ages.site/ru/гео-эксплорер/?tileId=${t.id_tile}" target="_blank">
-              🌐 Оф. страница тайла
+              🌐 Оф. страница
             </a>
           `);
 
-          rect.on('click', ()=>{
-            rect.setStyle({weight:3,color:'#FFD700'});
-            rect.openPopup();
-          });
-          rect.on('mouseout', ()=>{
-            rect.setStyle({weight:1.2,color:stroke});
-          });
+          rect.on('click',   () => { rect.setStyle({ weight: 3, color: '#FFD700' }); rect.openPopup(); });
+          rect.on('mouseout',() => rect.setStyle({ weight:1.2, color: stroke }));
         });
       }
 
-      // 9. Search + flyTo
+      // 9. Goto + flyTo
       document.getElementById('goto-btn').onclick = () => {
         const v = document.getElementById('search').value.trim();
         if (!v) return drawTiles();
-        const t = tileData.find(o=>+o.id_tile===+v);
+        const t = tileData.find(o => +o.id_tile === +v);
         if (!t) return;
-        map.flyTo([t.lat, t.lng], 6, {animate:true, duration:1.2});
-        setTimeout(drawTiles,800);
+        map.flyTo([t.lat, t.lng], 6, { animate: true, duration: 1.2 });
+        setTimeout(drawTiles, 800);
       };
 
-      // 10. Reset & export CSV
+      // 10. Reset & CSV export
       document.getElementById('reset').onclick = () => {
         document.getElementById('search').value = '';
         document.getElementById('status-filter').value = '';
@@ -357,11 +430,11 @@
       };
       document.getElementById('export').onclick = () => {
         const rows = [['id_tile','has_owner','status']];
-        tileData.forEach(t=>{
+        tileData.forEach(t => {
           rows.push([t.id_tile, t.has_owner, saved[t.id_tile]||'']);
         });
-        const csv = rows.map(r=>r.join(',')).join('\n'),
-              blob = new Blob([csv],{type:'text/csv'}),
+        const csv = rows.map(r => r.join(',')).join('\n'),
+              blob = new Blob([csv], { type: 'text/csv' }),
               a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = 'tiles.csv';
@@ -378,38 +451,25 @@
         });
       };
 
-      // 12. Re-render on move/filter
-      map.on('moveend', ()=>{ drawGrid(); drawTiles(); });
-      ['change','input'].forEach(ev=>{
+      // 12. Re-draw on move / filter change
+      map.on('moveend', () => { drawGrid(); drawTiles(); });
+      ['change','input'].forEach(ev => {
         document.getElementById('status-filter').addEventListener(ev, drawTiles);
         document.getElementById('search').addEventListener(ev, drawTiles);
       });
 
-      // 13. Final render + version
+      // 13. Initial render & footer
       drawGrid(); drawTiles();
       document.body.insertAdjacentHTML('beforeend', `
         <div style="
           position:fixed; bottom:6px; left:10px;
           font-size:12px; font-family:monospace;
           color:#888; z-index:999; pointer-events:none;
-        ">ver 0.13</div>
+        ">
+          ver 0.13
+        </div>
       `);
     })();
-  </script>
-
-  <!-- Login Button Handler -->
-  <script>
-    document.getElementById('login-button').addEventListener('click', () => {
-      console.log("Login clicked");
-      if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-        console.log("Opening bot via link");
-        // Inline button from bot is preferred — this is a fallback for browsers
-        Telegram.WebApp.openLink('https://t.me/Goamap_bot?start=warportal');
-      } else {
-        console.log("Redirecting to Telegram");
-        window.location.href = 'https://t.me/Goamap_bot?start=warportal';
-      }
-    });
   </script>
 </body>
 </html>
