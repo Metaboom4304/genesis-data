@@ -95,3 +95,66 @@ body {
   50%  { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
+/* 2.1 Скрываем экспорт CSV */
+#export-csv {
+  display: none !important;
+}
+
+/* 2.2 Поисковый блок */
+.search-wrapper {
+  position: relative;
+  width: 200px;
+  margin-bottom: 10px;
+}
+#tile-search {
+  width: 100%;
+  padding-right: 24px;
+  box-sizing: border-box;
+}
+#search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 18px;
+  color: #666;
+  user-select: none;
+}
+
+/* 2.3 Блок избранного */
+#favorites-container {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+#favorites-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+#favorites-list button {
+  margin-left: 6px;
+  cursor: pointer;
+}
+
+/* 2.4 Кнопка слоёв внизу */
+#custom-layer-toggle {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  font-size: 12px;
+}
+
+/* 2.5 Убираем чёрный фон при свернутой панели (если такая появляется) */
+.collapsed-panel, .leaflet-control-container.collapsed {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
