@@ -42,6 +42,11 @@
       background: rgba(0, 0, 0, 0.85);
       color: #fff;
       z-index: 2000;
+      text-align: center;
+    }
+    #login-container h1 {
+      margin: 0;
+      font-size: 1.5em;
     }
     #login-button {
       margin-top: 1em;
@@ -57,8 +62,7 @@
       max-width: 80%;
     }
     @keyframes pulse {
-      0%,
-      100% {
+      0%, 100% {
         transform: scale(1);
       }
       50% {
@@ -248,298 +252,298 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <script>
-    // 0. Telegram WebApp login & expand
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.expand();
-    }
+    (function() {
+      // Telegram WebApp object
+      const tg = window.Telegram?.WebApp;
 
-    const loginBtn = document.getElementById('login-button');
-    loginBtn.addEventListener('click', () => {
-      if (!tg) {
-        alert('Telegram WebApp не обнаружен.');
-        return;
-      }
-      // initData для бэкенда
-      const initData = tg.initData;
-      fetch('/auth/telegram', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ initData })
-      })
-        .then(res => res.json())
-        .then(user => {
-          // успешная авторизация
-          document.body.classList.add('logged-in');
-          initMap(user);
-        })
-        .catch(err => {
-          console.error('Auth error:', err);
-          alert('Ошибка авторизации. Попробуйте ещё раз.');
-        });
-    });
+      // Всегда разворачиваем WebApp, если доступно
+      if (tg?.expand) tg.expand();
 
-    // 1–13. Вся логика карты завёрнута в initMap
-    async function initMap(user) {
-      // 1. Рандомная подпись
-      const phrases = [
-        'Каждый ход важен',
-        'Мощь в координатах',
-        'Победа за гранью горизонта',
-        'Твори историю на карте',
-        'География решает судьбу',
-        'Командуй с высоты'
-      ];
-      document.getElementById('map-title').textContent =
-        `🧭 GENESIS WAR MAP — ${phrases[Math.floor(Math.random() * phrases.length)]}`;
+      // Обработчик кнопки логина
+      const loginBtn = document.getElementById('login-button');
+      loginBtn.addEventListener('click', () => {
+        // Если WebApp доступен и есть initData — авторизуемся
+        if (tg?.initData) {
+          fetch('/auth/telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData: tg.initData })
+          })
+            .then(res => res.json())
+            .then(user => {
+              document.body.classList.add('logged-in');
+              initMap(user);
+            })
+            .catch(err => {
+              console.error('Auth error:', err);
+              alert('Ошибка авторизации. Попробуйте ещё раз.');
+            });
 
-      // 2. Toggle панели
-      const panel = document.getElementById('panel');
-      const toggle = document.getElementById('toggle-panel');
-      toggle.onclick = () => {
-        const collapsed = panel.classList.toggle('collapsed');
-        toggle.textContent = collapsed ? '🔼' : '🔽';
-      };
-
-      // 3. Инициализация Leaflet
-      const map = L.map('map', {
-        center: [49.25, -123.10],
-        zoom: 6,
-        minZoom: 3,
-        maxZoom: 10,
-        attributionControl: false,
-        zoomControl: false
-      });
-      const layers = {
-        neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
-        world:   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
-        satellite: L.tileLayer(
-          'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-          { attribution: 'Esri' }
-        )
-      };
-      layers.neutral.addTo(map);
-      map.zoomControl.setPosition('bottomleft');
-      const layerSelect = document.getElementById('layer-select-small');
-      layerSelect.onchange = e => {
-        Object.values(layers).forEach(l => map.removeLayer(l));
-        layers[e.target.value].addTo(map);
-      };
-
-      // 4. Поиск/очистка
-      const searchInput = document.getElementById('search');
-      document.getElementById('search-clear').onclick = () => {
-        searchInput.value = '';
-        drawTiles();
-      };
-      document.getElementById('goto-btn').onclick = () => {
-        const v = searchInput.value.trim();
-        if (!v) return drawTiles();
-        const t = tileData.find(o => +o.id_tile === +v);
-        if (!t) return;
-        map.flyTo([t.lat, t.lng], 6, { animate: true, duration: 1 });
-        setTimeout(drawTiles, 800);
-      };
-      searchInput.addEventListener('input', () => drawTiles());
-
-      // 5. Загрузка данных тайлов
-      const gridLayer = L.layerGroup().addTo(map),
-            tileLayer = L.layerGroup().addTo(map),
-            countEl   = document.createElement('div');
-      countEl.style =
-        'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;z-index:1000;';
-      countEl.textContent = 'Загрузка тайлов…';
-      document.body.append(countEl);
-
-      let tileData = [];
-      try {
-        for (let i = 1; i <= 22; i++) {
-          const url = `./data/tiles_${String(i).padStart(2, '0')}.json`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`Ошибка ${res.status}`);
-          tileData.push(...await res.json());
+        } else {
+          // Фоллбэк: перенаправляем в бот, чтобы открыть WebApp контекст
+          window.location.href = 'https://t.me/Metaboom4304bot?start=webapp';
         }
-      } catch (e) {
-        alert('Ошибка загрузки данных: ' + e.message);
-      }
-      countEl.textContent = `Тайлов: ${tileData.length}`;
-      setTimeout(() => countEl.remove(), 1500);
-
-      // 6. Преобразуем в координаты
-      const refId = 22313,
-            refLat = 49.25,
-            refLng = -123.10,
-            refX = refId % 256,
-            refY = Math.floor(refId / 256),
-            degLat = 170 / 256,
-            degLng = 360 / 256;
-      tileData.forEach(t => {
-        const x = t.id_tile % 256,
-              y = Math.floor(t.id_tile / 256);
-        t.lat = refLat - (y - refY) * degLat;
-        t.lng = refLng + (x - refX) * degLng;
       });
 
-      // 7. Локальное хранилище
-      let saved    = JSON.parse(localStorage.getItem('tile_marks')   || '{}'),
-          favs     = JSON.parse(localStorage.getItem('favorites')    || '[]'),
-          comments = JSON.parse(localStorage.getItem('comments')     || '{}');
+      // Основная функция инициализации карты
+      async function initMap(user) {
+        // 1. Рандомная подпись
+        const phrases = [
+          'Каждый ход важен',
+          'Мощь в координатах',
+          'Победа за гранью горизонта',
+          'Твори историю на карте',
+          'География решает судьбу',
+          'Командуй с высоты'
+        ];
+        document.getElementById('map-title').textContent =
+          `🧭 GENESIS WAR MAP — ${phrases[Math.floor(Math.random() * phrases.length)]}`;
 
-      function saveMark(id, status) {
-        if (status) saved[id] = status;
-        else delete saved[id];
-        localStorage.setItem('tile_marks', JSON.stringify(saved));
-        drawGrid(); drawTiles();
-      }
-      function saveComment(id) {
-        const txt = document.getElementById(`comment-${id}`).value.trim();
-        if (txt) comments[id] = txt;
-        else delete comments[id];
-        localStorage.setItem('comments', JSON.stringify(comments));
-        drawTiles();
-      }
-      function toggleFav(id, label) {
-        const idx = favs.findIndex(f => f.id === id);
-        if (idx < 0) favs.push({ id, label });
-        else favs.splice(idx, 1);
-        localStorage.setItem('favorites', JSON.stringify(favs));
-        renderFavorites();
-        drawTiles();
-      }
-      function renderFavorites() {
-        const ul = document.getElementById('favorites-list');
-        ul.innerHTML = favs.map(f => `
-          <li data-id="${f.id}">
-            ${f.label}
-            <button onclick="goToFav(${f.id})">➡️</button>
-            <button onclick="toggleFav(${f.id},'${f.label.replace(/'/g,"\\'")}')">×</button>
-          </li>
-        `).join('');
-      }
-      window.goToFav = id => {
-        const t = tileData.find(o => o.id_tile === id);
-        if (!t) return;
-        map.flyTo([t.lat, t.lng], 6, { animate: true, duration: 1 });
-        setTimeout(drawTiles, 800);
-      };
-      renderFavorites();
+        // 2. Toggle панели
+        const panel = document.getElementById('panel');
+        const toggle = document.getElementById('toggle-panel');
+        toggle.onclick = () => {
+          const collapsed = panel.classList.toggle('collapsed');
+          toggle.textContent = collapsed ? '🔼' : '🔽';
+        };
 
-      // 8. Рисуем сетку
-      function drawGrid() {
-        gridLayer.clearLayers();
-        const vb = map.getBounds();
-        tileData.forEach(t => {
-          if (!vb.contains([t.lat, t.lng])) return;
-          const b = L.latLngBounds(
-            [t.lat - degLat / 2, t.lng - degLng / 2],
-            [t.lat + degLat / 2, t.lng + degLng / 2]
-          );
-          L.rectangle(b, { stroke: true, weight: 0.6, color: '#666', fill: false })
-           .addTo(gridLayer);
+        // 3. Инициализация Leaflet
+        const map = L.map('map', {
+          center: [49.25, -123.10],
+          zoom: 6,
+          minZoom: 3,
+          maxZoom: 10,
+          attributionControl: false,
+          zoomControl: false
         });
-      }
+        const layers = {
+          neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
+          world:   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
+          satellite: L.tileLayer(
+            'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            { attribution: 'Esri' }
+          )
+        };
+        layers.neutral.addTo(map);
+        map.zoomControl.setPosition('bottomleft');
+        document.getElementById('layer-select-small').onchange = e => {
+          Object.values(layers).forEach(l => map.removeLayer(l));
+          layers[e.target.value].addTo(map);
+        };
 
-      // 9. Рисуем тайлы
-      function drawTiles() {
-        tileLayer.clearLayers();
-        const filter = document.getElementById('status-filter').value;
-        const vb     = map.getBounds();
-        const zoom   = map.getZoom();
+        // 4. Поиск/очистка
+        const searchInput = document.getElementById('search');
+        document.getElementById('search-clear').onclick = () => {
+          searchInput.value = '';
+          drawTiles();
+        };
+        document.getElementById('goto-btn').onclick = () => {
+          const v = searchInput.value.trim();
+          if (!v) return drawTiles();
+          const t = tileData.find(o => +o.id_tile === +v);
+          if (!t) return;
+          map.flyTo([t.lat, t.lng], 6, { animate: true, duration: 1 });
+          setTimeout(drawTiles, 800);
+        };
+        searchInput.addEventListener('input', () => drawTiles());
 
-        tileData.forEach(t => {
-          const st = saved[t.id_tile] || '';
-          if (filter === 'ally'     && st !== 'ally')      return;
-          if (filter === 'enemy'    && st !== 'enemy')     return;
-          if (filter === 'favorite' && st !== 'favorite')  return;
-          if (filter === 'clear'    && st)                 return;
-          if (filter === '' &&
-              !vb.contains([t.lat, t.lng]) &&
-              searchInput.value === '') return;
+        // 5. Загрузка данных тайлов
+        const gridLayer = L.layerGroup().addTo(map),
+              tileLayer = L.layerGroup().addTo(map),
+              countEl   = document.createElement('div');
+        countEl.style =
+          'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;z-index:1000;';
+        countEl.textContent = 'Загрузка тайлов…';
+        document.body.append(countEl);
 
-          const b = L.latLngBounds(
-            [t.lat - degLat / 2, t.lng - degLng / 2],
-            [t.lat + degLat / 2, t.lng + degLng / 2]
-          );
-          const owned = String(t.has_owner).toLowerCase() === 'true';
-          const fill   = st === 'ally'    ? '#33cc33'
-                       : st === 'enemy'   ? '#cc3333'
-                       : st === 'favorite'? '#ff0'
-                       : owned            ? '#3366ff'
-                                          : '#444';
-          const stroke = st === 'ally'    ? '#00ff00'
-                       : st === 'enemy'   ? '#ff0000'
-                       : st === 'favorite'? '#ff0'
-                                          : '#000';
-
-          const rect = L.rectangle(b, {
-            stroke:     true,
-            weight:     1.2,
-            color:      stroke,
-            dashArray:  st ? '4' : null,
-            fillColor:  fill,
-            fillOpacity: 0.4
-          }).addTo(tileLayer);
-
-          if (zoom >= 5) {
-            rect.bindTooltip(
-              String(t.id_tile),
-              { permanent: true, direction: 'center', className: 'tile-label' }
-            );
+        let tileData = [];
+        try {
+          for (let i = 1; i <= 22; i++) {
+            const url = `./data/tiles_${String(i).padStart(2, '0')}.json`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`Ошибка ${res.status}`);
+            tileData.push(...await res.json());
           }
+        } catch (e) {
+          alert('Ошибка загрузки данных: ' + e.message);
+        }
+        countEl.textContent = `Тайлов: ${tileData.length}`;
+        setTimeout(() => countEl.remove(), 1500);
 
-          // Popup: статус, избранное, комментарий
-          const isFav = !!favs.find(f => f.id === t.id_tile);
-          const label = `#${t.id_tile}`;
-          const popupHtml = `
-            <strong>Тайл ${label}</strong><br/>
-            Статус: ${owned ? 'занят' : 'свободен'}<br/>
-            Метка: ${st || '—'}<br/>
-            Комментарий: ${comments[t.id_tile] || '—'}<br/><br/>
-            <button onclick="saveMark(${t.id_tile},'ally')">🟩</button>
-            <button onclick="saveMark(${t.id_tile},'enemy')">🟥</button>
-            <button onclick="saveMark(${t.id_tile},'favorite')">⭐️</button>
-            <button onclick="saveMark(${t.id_tile},'')">⚪️</button><br/><br/>
-            <button onclick="toggleFav(${t.id_tile},'${label}')">
-              ${isFav ? 'Удалить избранное' : 'Добавить избранное'}
-            </button><br/><br/>
-            <textarea id="comment-${t.id_tile}" placeholder="Комментарий"></textarea>
-            <button onclick="saveComment(${t.id_tile})">💾</button>
-          `;
-          rect.bindPopup(popupHtml);
-          rect.on('click', () => rect.openPopup());
+        // 6. Преобразуем в координаты
+        const refId = 22313,
+              refLat = 49.25,
+              refLng = -123.10,
+              refX = refId % 256,
+              refY = Math.floor(refId / 256),
+              degLat = 170 / 256,
+              degLng = 360 / 256;
+        tileData.forEach(t => {
+          const x = t.id_tile % 256,
+                y = Math.floor(t.id_tile / 256);
+          t.lat = refLat - (y - refY) * degLat;
+          t.lng = refLng + (x - refX) * degLng;
         });
+
+        // 7. Локальное хранилище
+        let saved    = JSON.parse(localStorage.getItem('tile_marks')   || '{}'),
+            favs     = JSON.parse(localStorage.getItem('favorites')    || '[]'),
+            comments = JSON.parse(localStorage.getItem('comments')     || '{}');
+
+        function saveMark(id, status) {
+          if (status) saved[id] = status;
+          else delete saved[id];
+          localStorage.setItem('tile_marks', JSON.stringify(saved));
+          drawGrid(); drawTiles();
+        }
+        function saveComment(id) {
+          const txt = document.getElementById(`comment-${id}`).value.trim();
+          if (txt) comments[id] = txt;
+          else delete comments[id];
+          localStorage.setItem('comments', JSON.stringify(comments));
+          drawTiles();
+        }
+        function toggleFav(id, label) {
+          const idx = favs.findIndex(f => f.id === id);
+          if (idx < 0) favs.push({ id, label });
+          else favs.splice(idx, 1);
+          localStorage.setItem('favorites', JSON.stringify(favs));
+          renderFavorites();
+          drawTiles();
+        }
+        function renderFavorites() {
+          const ul = document.getElementById('favorites-list');
+          ul.innerHTML = favs.map(f => `
+            <li data-id="${f.id}">
+              ${f.label}
+              <button onclick="goToFav(${f.id})">➡️</button>
+              <button onclick="toggleFav(${f.id},'${f.label.replace(/'/g,"\\'")}')">×</button>
+            </li>
+          `).join('');
+        }
+        window.goToFav = id => {
+          const t = tileData.find(o => o.id_tile === id);
+          if (!t) return;
+          map.flyTo([t.lat, t.lng], 6, { animate: true, duration: 1 });
+          setTimeout(drawTiles, 800);
+        };
+        renderFavorites();
+
+        // 8. Рисуем сетку
+        function drawGrid() {
+          gridLayer.clearLayers();
+          const vb = map.getBounds();
+          tileData.forEach(t => {
+            if (!vb.contains([t.lat, t.lng])) return;
+            const b = L.latLngBounds(
+              [t.lat - degLat / 2, t.lng - degLng / 2],
+              [t.lat + degLat / 2, t.lng + degLng / 2]
+            );
+            L.rectangle(b, { stroke: true, weight: 0.6, color: '#666', fill: false })
+             .addTo(gridLayer);
+          });
+        }
+
+        // 9. Рисуем тайлы
+        function drawTiles() {
+          tileLayer.clearLayers();
+          const filter = document.getElementById('status-filter').value;
+          const vb     = map.getBounds();
+          const zoom   = map.getZoom();
+
+          tileData.forEach(t => {
+            const st = saved[t.id_tile] || '';
+            if (filter === 'ally'     && st !== 'ally')      return;
+            if (filter === 'enemy'    && st !== 'enemy')     return;
+            if (filter === 'favorite' && st !== 'favorite')  return;
+            if (filter === 'clear'    && st)                 return;
+            if (filter === '' &&
+                !vb.contains([t.lat, t.lng]) &&
+                searchInput.value === '') return;
+
+            const b = L.latLngBounds(
+              [t.lat - degLat / 2, t.lng - degLng / 2],
+              [t.lat + degLat / 2, t.lng + degLng / 2]
+            );
+            const owned = String(t.has_owner).toLowerCase() === 'true';
+            const fill   = st === 'ally'     ? '#33cc33'
+                         : st === 'enemy'    ? '#cc3333'
+                         : st === 'favorite' ? '#ff0'
+                         : owned             ? '#3366ff'
+                                             : '#444';
+            const stroke = st === 'ally'     ? '#00ff00'
+                         : st === 'enemy'    ? '#ff0000'
+                         : st === 'favorite' ? '#ff0'
+                                             : '#000';
+
+            const rect = L.rectangle(b, {
+              stroke:      true,
+              weight:      1.2,
+              color:       stroke,
+              dashArray:   st ? '4' : null,
+              fillColor:   fill,
+              fillOpacity: 0.4
+            }).addTo(tileLayer);
+
+            if (zoom >= 5) {
+              rect.bindTooltip(
+                String(t.id_tile),
+                { permanent: true, direction: 'center', className: 'tile-label' }
+              );
+            }
+
+            // Popup: статус, избранное, комментарий
+            const isFav = !!favs.find(f => f.id === t.id_tile);
+            const label = `#${t.id_tile}`;
+            const popupHtml = `
+              <strong>Тайл ${label}</strong><br/>
+              Статус: ${owned ? 'занят' : 'свободен'}<br/>
+              Метка: ${st || '—'}<br/>
+              Комментарий: ${comments[t.id_tile] || '—'}<br/><br/>
+              <button onclick="saveMark(${t.id_tile},'ally')">🟩</button>
+              <button onclick="saveMark(${t.id_tile},'enemy')">🟥</button>
+              <button onclick="saveMark(${t.id_tile},'favorite')">⭐️</button>
+              <button onclick="saveMark(${t.id_tile},'')">⚪️</button><br/><br/>
+              <button onclick="toggleFav(${t.id_tile},'${label}')">
+                ${isFav ? 'Удалить избранное' : 'Добавить избранное'}
+              </button><br/><br/>
+              <textarea id="comment-${t.id_tile}" placeholder="Комментарий"></textarea>
+              <button onclick="saveComment(${t.id_tile})">💾</button>
+            `;
+            rect.bindPopup(popupHtml);
+            rect.on('click', () => rect.openPopup());
+          });
+        }
+
+        // 10. Сброс
+        document.getElementById('reset').onclick = () => {
+          document.getElementById('search').value = '';
+          document.getElementById('status-filter').value = '';
+          drawGrid();
+          drawTiles();
+        };
+
+        // 11. Снимок
+        document.getElementById('screenshot-btn').onclick = () => {
+          html2canvas(document.getElementById('map')).then(canvas => {
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'map.png';
+            link.click();
+          });
+        };
+
+        // 12. Перерисовка при каждом окончании движения
+        map.on('moveend', () => {
+          drawGrid();
+          drawTiles();
+        });
+
+        // 13. Начальный рендер
+        drawGrid();
+        drawTiles();
       }
-
-      // 10. Сброс
-      document.getElementById('reset').onclick = () => {
-        searchInput.value = '';
-        document.getElementById('status-filter').value = '';
-        drawGrid();
-        drawTiles();
-      };
-
-      // 11. Снимок
-      document.getElementById('screenshot-btn').onclick = () => {
-        html2canvas(document.getElementById('map')).then(canvas => {
-          const link = document.createElement('a');
-          link.href = canvas.toDataURL('image/png');
-          link.download = 'map.png';
-          link.click();
-        });
-      };
-
-      // 12. Ререндер при движении
-      map.on('moveend', () => {
-        drawGrid();
-        drawTiles();
-      });
-
-      // 13. Начальный рендер
-      drawGrid();
-      drawTiles();
-    }
+    })();
   </script>
 </body>
 </html>
