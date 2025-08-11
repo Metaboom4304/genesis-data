@@ -16,22 +16,16 @@ const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
 
 // 🧠 Сохраняем пользователя в Supabase
 async function syncUser(user) {
-  const { data: existingUser, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('telegram_id', user.id)
-    .single();
+  console.log(`[user sync] ${user.id} - ${user.username}`);
 
-  if (!existingUser) {
-    const { error: insertError } = await supabase
-      .from('users')
-      .insert([{
-        telegram_id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        username: user.username,
-        language_code: user.language_code
-      }]);
+  await supabase.from('users').insert([{
+    telegram_id: user.id,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    username: user.username
+  }]);
+}
+
 
     if (insertError) {
       console.error('❌ Ошибка при добавлении пользователя:', insertError);
