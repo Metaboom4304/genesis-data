@@ -1,4 +1,5 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import { addMark } from './markService.js';
 
 // 🔐 Подключение к Supabase
 const supabase = createClient(
