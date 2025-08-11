@@ -1,5 +1,3 @@
-/services/supabaseClient.js
-
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 // ✅ Безопасно храним ключи в переменных
