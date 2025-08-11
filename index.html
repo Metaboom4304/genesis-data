@@ -4,9 +4,10 @@
   <meta charset="UTF-8" />
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script type="module" src="./index.js"></script>
 
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script type="module" src="./index.js"></script>
 
   <!-- Leaflet CSS -->
   <link
@@ -110,7 +111,6 @@
       cursor: pointer;
       color: #ccc;
       font-size: 18px;
-      line-height: 1;
       user-select: none;
     }
 
@@ -242,7 +242,6 @@
     const loginContainer = document.getElementById('login-container');
     const loginBtn       = document.getElementById('login-button');
 
-    // Если WebApp — проверяем готовность
     loginBtn.addEventListener('click', () => {
       if (!tg) {
         alert('Пожалуйста, откройте этого бота в мобильном приложении Telegram.');
@@ -252,17 +251,16 @@
         alert('Web App работает только в мобильных клиентах Telegram.\nИспользуйте мобильное приложение.');
         return;
       }
-      // Переходим по deep-link, Telegram вернёт нас сюда с initData
       tg.openLink('https://t.me/Metaboom4304bot?start=webapp');
     });
 
     // Основная функция: инициализация карты
     window.initMap = async function(user) {
-      // прячем оверлей логина
+      // убираем оверлей логина  
       loginContainer.remove();
       document.body.classList.add('logged-in');
 
-      // 1. Случайная подпись
+      // 1. Рандомная подпись
       const phrases = [
         'Каждый ход важен',
         'Мощь в координатах',
@@ -286,6 +284,7 @@
 
       // 3. Инициализация Leaflet
       const drawnMarkers = new Map(); // tileId → массив маркеров
+
       const map = L.map('map', {
         center: [49.25, -123.10],
         zoom: 6,
@@ -294,6 +293,7 @@
         attributionControl: false,
         zoomControl: false
       });
+
       const layers = {
         neutral:   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
         world:     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
@@ -303,30 +303,40 @@
         )
       };
       layers.neutral.addTo(map);
-      map.on('click', async function (e) {
-  const lat = e.latlng.lat;
-  const lng = e.latlng.lng;
 
-  // Пример tile_id — можно заменить на реальную логику
-  const tileId = `${Math.floor(lat)}-${Math.floor(lng)}`;
-
-  const title = prompt('Название отметки:');
-  const description = prompt('Описание:');
-  const resourceType = prompt('Тип ресурса:');
-
-  const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 0;
-
-  await addMark(userId, tileId, lat, lng, title, description, resourceType);
-
-  L.marker([lat, lng])
-    .addTo(map)
-    .bindPopup(`<b>${title}</b><br>${description}`);
-});
       map.zoomControl.setPosition('bottomleft');
       document.getElementById('layer-select-small').onchange = e => {
         Object.values(layers).forEach(l => map.removeLayer(l));
         layers[e.target.value].addTo(map);
       };
+
+      // 3.1 Функция-заглушка: замени на реальную логику Supabase
+      async function loadTileMarks(tileId) {
+        return [
+          { lat: 49.25, lng: -123.10, title: 'Пример A', description: 'Описание A' },
+          { lat: 49.30, lng: -123.00, title: 'Пример B', description: 'Описание B' }
+        ];
+      }
+
+      // 3.2 Загрузка маркеров по тайлу (без дублей)
+      map.on('moveend', async () => {
+        const center = map.getCenter();
+        const tileId = `${Math.floor(center.lat)}-${Math.floor(center.lng)}`;
+
+        if (drawnMarkers.has(tileId)) return;
+
+        const marks = await loadTileMarks(tileId);
+        const tileMarkers = [];
+
+        marks.forEach(mark => {
+          const marker = L.marker([mark.lat, mark.lng])
+            .addTo(map)
+            .bindPopup(`<b>${mark.title}</b><br>${mark.description}`);
+          tileMarkers.push(marker);
+        });
+
+        drawnMarkers.set(tileId, tileMarkers);
+      });
 
       // 4. Поиск и очистка
       const searchInput = document.getElementById('search');
@@ -368,7 +378,7 @@
       countEl.textContent = `Тайлов: ${tileData.length}`;
       setTimeout(() => countEl.remove(), 1500);
 
-      // 6. Преобразование в координаты
+      // 6. Преобразование в coord
       const refId = 22313, refLat = 49.25, refLng = -123.10,
             refX  = refId % 256, refY = Math.floor(refId/256),
             degLat = 170/256, degLng = 360/256;
@@ -384,8 +394,7 @@
           comments = JSON.parse(localStorage.getItem('comments')  || '{}');
 
       function saveMark(id, status) {
-        if (status) saved[id] = status;
-        else delete saved[id];
+        if (status) saved[id] = status; else delete saved[id];
         localStorage.setItem('tile_marks', JSON.stringify(saved));
         drawGrid(); drawTiles();
       }
@@ -437,9 +446,9 @@
       // 9. Тайлы + Popups
       function drawTiles() {
         tileLayer.clearLayers();
-        const filter = document.getElementById('status-filter').value;
-        const vb     = map.getBounds();
-        const zoom   = map.getZoom();
+        const filter = document.getElementById('status-filter').value,
+              vb     = map.getBounds(),
+              zoom   = map.getZoom();
 
         tileData.forEach(t => {
           const st = saved[t.id_tile] || '';
@@ -515,11 +524,12 @@
         });
       };
 
-      // 12. Перерисовка
-      map.on('moveend', ()=>{ drawGrid(); drawTiles(); });
+      // 12. Перерисовка сетки и тайлов
+      map.on('moveend', () => { drawGrid(); drawTiles(); });
 
       // 13. Первый рендер
-      drawGrid(); drawTiles();
+      drawGrid();
+      drawTiles();
     };
 
     // Авто-инициализация если есть initDataUnsafe
