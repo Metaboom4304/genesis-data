@@ -302,6 +302,25 @@
         )
       };
       layers.neutral.addTo(map);
+      map.on('click', async function (e) {
+  const lat = e.latlng.lat;
+  const lng = e.latlng.lng;
+
+  // Пример tile_id — можно заменить на реальную логику
+  const tileId = `${Math.floor(lat)}-${Math.floor(lng)}`;
+
+  const title = prompt('Название отметки:');
+  const description = prompt('Описание:');
+  const resourceType = prompt('Тип ресурса:');
+
+  const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 0;
+
+  await addMark(userId, tileId, lat, lng, title, description, resourceType);
+
+  L.marker([lat, lng])
+    .addTo(map)
+    .bindPopup(`<b>${title}</b><br>${description}`);
+});
       map.zoomControl.setPosition('bottomleft');
       document.getElementById('layer-select-small').onchange = e => {
         Object.values(layers).forEach(l => map.removeLayer(l));
