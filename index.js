@@ -4,6 +4,11 @@ const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
 console.log('tgUser:', tgUser); // 💥 Должно показать ID, имя и т.д.
 syncUser(tgUser);
 
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient('https://nysjreargnvyjmcirinp.supabase.co', 'eyJhbGciOiJI...');
+window.supabase = supabase; // 👈 чтобы он стал доступен из DevTools
+
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 import { addMark } from './markService.js';
 import { loadTileMarks } from './services/tileCacheService.js'; // ✅ добавлено
