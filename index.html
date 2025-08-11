@@ -285,6 +285,7 @@
       };
 
       // 3. Инициализация Leaflet
+      const drawnMarkers = new Map(); // tileId → массив маркеров
       const map = L.map('map', {
         center: [49.25, -123.10],
         zoom: 6,
