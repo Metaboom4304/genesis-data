@@ -4,6 +4,19 @@
   <meta charset="UTF-8" />
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script type="module">
+  import { syncUser } from './syncUser.js'
+
+  window.Telegram.WebApp.ready()
+
+  const tgUser = window.Telegram.WebApp.initDataUnsafe?.user
+  console.log('tgUser:', tgUser)
+
+  if (tgUser) {
+    syncUser(tgUser)
+  }
+</script>
 
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
