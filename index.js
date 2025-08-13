@@ -1,14 +1,17 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// 🔐 Supabase Init
+// 🔐 Supabase Init (anon-key)
 const supabase = createClient(
   'https://nysjreargnvyjmcirinp.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55c2pyZWFyZ252eWptY2lyaW5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDgxNDIsImV4cCI6MjA3MDM4NDE0Mn0.UZpiU_nM_ACF8bILAGF4oa-WSHaU38KX6Dtz_srZK9Q'
 );
 window.supabase = supabase;
 
-// глобальные слои и карта
-let map, gridLayer, tileLayerGroup, userMarksLayer;
+//  глобальные переменные
+let map;
+let gridLayer;
+let tileLayerGroup;
+let userMarksLayer;
 
 // 🚀 Запуск после загрузки DOM
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,21 +47,24 @@ function initMap() {
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
+    attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
   gridLayer       = L.layerGroup().addTo(map);
   tileLayerGroup  = L.layerGroup().addTo(map);
   userMarksLayer  = L.layerGroup().addTo(map);
 
-  map.on('moveend', debounce(updateLayers, 300));
-  map.on('click', onMapClick);
+  // при паннинге и зуме — обновляем сетку и метки
+  map
+    .on('moveend', debounce(updateLayers, 200))
+    .on('zoomend', debounce(updateLayers, 200))
+    .on('click', onMapClick);
 
-  // первая загрузка
+  // первая отрисовка
   updateLayers();
 }
 
-// 📦 Переводим координаты в ID тайла 0.05°
+// 📦 Переводим координаты в ID тайла (шаг 0.05°)
 function getTileId(lat, lng) {
   const ts = 0.05;
   const x  = Math.floor(lat / ts);
@@ -66,7 +72,7 @@ function getTileId(lat, lng) {
   return `${x}-${y}`;
 }
 
-// 🔄 Основная функция: рисуем сетку, подсвечиваем тайлы из кэша и грузим метки
+// 🔄 Основная функция: рисуем сетку, подсвечиваем тайлы и загружаем метки
 async function updateLayers() {
   gridLayer.clearLayers();
   tileLayerGroup.clearLayers();
@@ -74,8 +80,8 @@ async function updateLayers() {
 
   drawGrid();
 
-  const { lat, lng } = map.getCenter();
-  const tileId = getTileId(lat, lng);
+  const center = map.getCenter();
+  const tileId = getTileId(center.lat, center.lng);
 
   // 1) Подсветка тайлов и точки из кэша
   try {
@@ -100,7 +106,9 @@ async function updateLayers() {
       if (Array.isArray(info.points)) {
         info.points.forEach(p => {
           L.circleMarker([p.lat, p.lng], {
-            radius: 4, color: '#f60', fillOpacity: 1
+            radius: 4,
+            color: '#f60',
+            fillOpacity: 1
           })
           .addTo(tileLayerGroup)
           .bindPopup(p.label || 'Point');
@@ -146,6 +154,7 @@ async function updateLayers() {
 
 // ✏️ Рисуем сетку тайлов 0.05°
 function drawGrid() {
+  console.log('▶️ drawGrid called');
   const ts     = 0.05;
   const b      = map.getBounds();
   const xStart = Math.floor(b.getSouth() / ts);
@@ -158,9 +167,9 @@ function drawGrid() {
       const lat = xi * ts;
       const lng = yi * ts;
       L.rectangle([[lat, lng], [lat + ts, lng + ts]], {
-        color: '#3388ff',
-        weight: 1,
-        fill: false,
+        color:      '#3388ff',
+        weight:     1,
+        fill:       false,
         interactive: false
       }).addTo(gridLayer);
     }
@@ -173,7 +182,7 @@ async function onMapClick(e) {
   const title        = prompt('Название метки:');
   if (!title) return;
 
-  const description  = prompt('Описание метки:') || '';
+  const description  = prompt('Описание метки:')     || '';
   const resourceType = prompt('Тип ресурса (gold, wood):') || 'unknown';
   const tileId       = getTileId(lat, lng);
 
@@ -209,6 +218,6 @@ function debounce(fn, ms) {
 function tileToBounds(z, x, y) {
   const size = 256;
   const nw   = map.unproject([x * size,     y * size],     z);
-  const se   = map.unproject([(x+1) * size, (y+1) * size], z);
+  const se   = map.unproject([(x + 1) * size, (y + 1) * size], z);
   return [nw, se];
 }
