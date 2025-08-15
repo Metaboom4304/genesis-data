@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 window.supabase = supabase;
 
-// глобальные переменные
+// Глобальные переменные
 let map;
 let gridLayer;
 let tileLayerGroup;
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.__tgUser = tgUser;
   }
 
-  // Убираем скрытие карты
+  // Разблокируем карту
   document.body.classList.add('logged-in');
 
   // Инициализация карты с передачей ID
@@ -45,7 +45,7 @@ async function syncUser(user) {
   if (error) console.error('syncUser error:', error);
 }
 
-// Функция для вывода в debug-окно
+// 📜 Лог в debug-окно
 function log(msg) {
   const el = document.getElementById('debug-log');
   if (el) el.innerHTML += msg + '<br>';
@@ -71,22 +71,18 @@ function initMap(user) {
   osm.addTo(map);
   log('🧱 Базовый слой добавлен');
 
-  // Создаём группы слоёв
-  gridLayer       = L.layerGroup().addTo(map);
-  tileLayerGroup  = L.layerGroup().addTo(map);
-  userMarksLayer  = L.layerGroup().addTo(map);
+  // Группы слоёв
+  gridLayer = L.layerGroup().addTo(map);
+  tileLayerGroup = L.layerGroup().addTo(map);
+  userMarksLayer = L.layerGroup().addTo(map);
 
-  // Обновляем слои после перемещения/зумирования
   map.on('moveend', debounce(updateLayers, 300));
-
-  // Добавляем возможность клика для меток
   map.on('click', onMapClick);
 
-  // Первичная отрисовка
   updateLayers();
 }
 
-// 🔢 Переводим координаты в ID тайла (шаг 0.05°)
+// 🔢 Переводим координаты в ID тайла
 function getTileId(lat, lng) {
   const ts = 0.05;
   const x = Math.floor(lat / ts);
@@ -94,7 +90,7 @@ function getTileId(lat, lng) {
   return `${x}-${y}`;
 }
 
-// 🔄 Основная функция: рисуем сетку, тайлы и метки юзеров
+// 🔄 Обновление слоёв
 async function updateLayers() {
   gridLayer.clearLayers();
   tileLayerGroup.clearLayers();
@@ -105,7 +101,7 @@ async function updateLayers() {
   const center = map.getCenter();
   const tileId = getTileId(center.lat, center.lng);
 
-  // 1) Подгружаем тайловую инфу
+  // 1) Тайловая инфа
   try {
     const res = await fetch(`/services/api/get_tile_info_cached.php?id=${tileId}`);
     if (res.ok) {
@@ -140,7 +136,7 @@ async function updateLayers() {
     console.error('Failed to load tile cache:', err);
   }
 
-  // 2) Подгружаем метки пользователей
+  // 2) Метки пользователей
   try {
     const { data: marks, error } = await supabase
       .from('user_marks')
@@ -163,14 +159,14 @@ async function updateLayers() {
   }
 }
 
-// ✏️ Рисуем сетку тайлов 0.05°
+// ✏️ Рисуем сетку
 function drawGrid() {
   const ts = 0.05;
-  const b  = map.getBounds();
+  const b = map.getBounds();
   const x0 = Math.floor(b.getSouth() / ts);
   const x1 = Math.floor(b.getNorth() / ts);
-  const y0 = Math.floor(b.getWest()  / ts);
-  const y1 = Math.floor(b.getEast()  / ts);
+  const y0 = Math.floor(b.getWest() / ts);
+  const y1 = Math.floor(b.getEast() / ts);
 
   for (let xi = x0; xi <= x1; xi++) {
     for (let yi = y0; yi <= y1; yi++) {
@@ -186,28 +182,25 @@ function drawGrid() {
   }
 }
 
-// 🖱️ Добавление метки по клику
+// 🖱️ Клик по карте — добавление метки
 async function onMapClick(e) {
   const { lat, lng } = e.latlng;
   const title = prompt('Название метки:');
   if (!title) return;
-  const description  = prompt('Описание метки:')     || '';
+  const description = prompt('Описание метки:') || '';
   const resourceType = prompt('Тип ресурса (gold, wood):') || 'unknown';
-  const tileId       = getTileId(lat, lng);
+  const tileId = getTileId(lat, lng);
 
   try {
-    const { error } = await supabase
-      .from('user_marks')
-      .insert([{
-        user_id:      window.__tgUser?.id ?? null,
-        tile_id:      tileId,
-        lat,
-        lng,
-        title,
-        description,
-        resource_type: resourceType
-      }]);
-
+    const { error } = await supabase.from('user_marks').insert([{
+      user_id: window.__tgUser?.id ?? null,
+      tile_id: tileId,
+      lat,
+      lng,
+      title,
+      description,
+      resource_type: resourceType
+    }]);
     if (error) throw error;
     updateLayers();
   } catch (err) {
@@ -216,7 +209,7 @@ async function onMapClick(e) {
   }
 }
 
-// 🔧 Утилита для дебаунса
+// ⏳ Дебаунс
 function debounce(fn, ms) {
   let timer;
   return (...args) => {
@@ -225,7 +218,7 @@ function debounce(fn, ms) {
   };
 }
 
-// 🔧 Переводим z/x/y в LatLngBounds
+// ↔️ Перевод z/x/y в границы
 function tileToBounds(z, x, y) {
   const size = 256;
   const nw = map.unproject([x * size, y * size], z);
