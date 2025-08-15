@@ -4,28 +4,30 @@
   <meta charset="UTF-8" />
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+
   <style>
-    html, body 
-    <div id="debug-log" style="
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0,0,0,0.7);
-  color: #0f0;
-  padding: 6px;
-  font-size: 12px;
-  z-index: 9999;
-  border-radius: 4px;
-  max-width: 300px;
-"></div>
-    {
+    html, body {
       margin: 0;
       padding: 0;
       height: 100%;
       background: #000;
       font-family: sans-serif;
       overflow: hidden;
+    }
+    #debug-log {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      color: #0f0;
+      padding: 6px;
+      font-size: 12px;
+      z-index: 9999;
+      border-radius: 4px;
+      max-width: 300px;
     }
     body:not(.logged-in) #panel,
     body:not(.logged-in) #map,
@@ -40,7 +42,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0,0,0,0.85);
       color: #fff;
       z-index: 2000;
       text-align: center;
@@ -77,23 +79,10 @@
       overflow: hidden;
       transition: max-height 0.3s ease, background 0.3s ease;
     }
-    #panel.collapsed {
-      max-height: 40px;
-      background: transparent !important;
-    }
-    #panel.collapsed *:not(#map-title) {
-      display: none !important;
-    }
-    .search-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-    #search {
-      width: 120px;
-      padding-right: 20px;
-      box-sizing: border-box;
-    }
+    #panel.collapsed { max-height: 40px; background: transparent !important; }
+    #panel.collapsed *:not(#map-title) { display: none !important; }
+    .search-wrapper { position: relative; display: flex; align-items: center; }
+    #search { width: 120px; padding-right: 20px; box-sizing: border-box; }
     #search-clear {
       position: absolute;
       right: 4px;
@@ -110,14 +99,8 @@
       border-radius: 4px;
       font-size: 14px;
     }
-    #favorites-container h4 {
-      margin: 4px 0;
-      color: #fff;
-    }
-    #favorites-list {
-      list-style: none;
-      margin: 0; padding: 0;
-    }
+    #favorites-container h4 { margin: 4px 0; color: #fff; }
+    #favorites-list { list-style: none; margin: 0; padding: 0; }
     #favorites-list li {
       display: flex;
       justify-content: space-between;
@@ -131,13 +114,8 @@
       color: #f90;
       cursor: pointer;
     }
-    #map {
-      position: absolute;
-      top: 60px; bottom: 0; left: 0; right: 0;
-    }
-    #reset, #screenshot-btn {
-      cursor: pointer;
-    }
+    #map { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; }
+    #reset, #screenshot-btn { cursor: pointer; }
     #toggle-panel {
       position: absolute;
       bottom: 10px;
@@ -165,6 +143,7 @@
       text-align: center;
       cursor: pointer;
     }
+    .tile-label { background: transparent; border: none; color: #fff; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -172,6 +151,7 @@
     <h1>Добро пожаловать в GENESIS WAR MAP</h1>
     <button id="login-button">🔐 Войти через Telegram</button>
   </div>
+
   <div id="panel">
     <strong id="map-title">🧭 GENESIS WAR MAP</strong>
     <div class="search-wrapper">
@@ -196,6 +176,7 @@
       <ul id="favorites-list"></ul>
     </div>
   </div>
+
   <div id="map"></div>
   <button id="toggle-panel">🔽</button>
   <select id="layer-select-small">
@@ -203,10 +184,11 @@
     <option value="world">W</option>
     <option value="satellite">S</option>
   </select>
- <!-- Telegram WebApp SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Leaflet & html2canvas -->
+  <div id="debug-log"></div>
+
+  <!-- SDK и библиотеки -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -217,24 +199,24 @@
     const tg = window.Telegram?.WebApp;
     tg?.ready();
     const tgUser = tg?.initDataUnsafe?.user;
-    if (tgUser) {
-      syncUser(tgUser);
-    }
+    if (tgUser) syncUser(tgUser);
 
     (function () {
       const loginContainer = document.getElementById('login-container');
       const loginBtn = document.getElementById('login-button');
       const panel = document.getElementById('panel');
       const toggle = document.getElementById('toggle-panel');
+      let map, tileData = [], gridLayer, tileLayer, saved, favs, comments;
+      const degLat = 170/256, degLng = 360/256;
 
       loginBtn.addEventListener('click', () => {
-        if (!tg) {
+              if (!tg) { 
           alert('Пожалуйста, откройте этого бота в мобильном приложении Telegram.');
-          return;
+          return; 
         }
-        if (tg.platform === 'unknown') {
+        if (tg.platform === 'unknown') { 
           alert('Web App работает только в мобильных клиентах Telegram.\nИспользуйте мобильное приложение.');
-          return;
+          return; 
         }
         tg.openLink('https://t.me/Metaboom4304bot?start=webapp');
       });
@@ -244,6 +226,7 @@
         toggle.textContent = collapsed ? '🔼' : '🔽';
       };
 
+      // ---------------- КАРТА -----------------
       window.initMap = async function (user) {
         loginContainer.remove();
         document.body.classList.add('logged-in');
@@ -259,7 +242,7 @@
         document.getElementById('map-title').textContent =
           `🧭 GENESIS WAR MAP — ${phrases[Math.floor(Math.random() * phrases.length)]}`;
 
-        const map = L.map('map', {
+        map = L.map('map', {
           center: [49.25, -123.10],
           zoom: 6,
           minZoom: 3,
@@ -282,11 +265,9 @@
           layers[e.target.value].addTo(map);
         };
 
-        const drawnMarkers = new Map();
-        const gridLayer = L.layerGroup().addTo(map);
-        const tileLayer = L.layerGroup().addTo(map);
+        gridLayer = L.layerGroup().addTo(map);
+        tileLayer = L.layerGroup().addTo(map);
 
-        let tileData = [];
         const countEl = document.createElement('div');
         countEl.style = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;z-index:1000;';
         countEl.textContent = 'Загрузка тайлов…';
@@ -308,16 +289,15 @@
 
         const refId = 22313, refLat = 49.25, refLng = -123.10;
         const refX = refId % 256, refY = Math.floor(refId / 256);
-        const degLat = 170 / 256, degLng = 360 / 256;
         tileData.forEach(t => {
           const x = t.id_tile % 256, y = Math.floor(t.id_tile / 256);
           t.lat = refLat - (y - refY) * degLat;
           t.lng = refLng + (x - refX) * degLng;
         });
 
-        let saved = JSON.parse(localStorage.getItem('tile_marks') || '{}'),
-            favs = JSON.parse(localStorage.getItem('favorites') || '[]'),
-            comments = JSON.parse(localStorage.getItem('comments') || '{}');
+        saved = JSON.parse(localStorage.getItem('tile_marks') || '{}');
+        favs = JSON.parse(localStorage.getItem('favorites') || '[]');
+        comments = JSON.parse(localStorage.getItem('comments') || '{}');
 
         function saveMark(id, status) {
           if (status) saved[id] = status; else delete saved[id];
@@ -433,9 +413,9 @@
               <button onclick="saveMark(${t.id_tile},'favorite')">⭐️</button>
               <button onclick="saveMark(${t.id_tile},'')">⚪️</button><br/><br/>
               <button onclick="toggleFav(${t.id_tile},'${label}')">
-                ${isFav ? 'Удалить избранное' : 'Добавить избранное'}
+                              ${isFav ? 'Удалить избранное' : 'Добавить избранное'}
               </button><br/><br/>
-              <textarea id="comment-${t.id_tile}" placeholder="Комментарий"></textarea>
+              <textarea id="comment-${t.id_tile}" placeholder="Комментарий">${comments[t.id_tile] || ''}</textarea>
               <button onclick="saveComment(${t.id_tile})">💾</button>
             `;
             rect.bindPopup(popupHtml);
@@ -443,6 +423,7 @@
           });
         }
 
+        // ——— Слушатели панели и поиска
         document.getElementById('search-clear').onclick = () => {
           document.getElementById('search').value = '';
           drawTiles();
@@ -465,6 +446,10 @@
           drawGrid(); drawTiles();
         };
 
+        document.getElementById('status-filter').addEventListener('change', () => {
+          drawGrid(); drawTiles();
+        });
+
         document.getElementById('screenshot-btn').onclick = () => {
           html2canvas(document.getElementById('map')).then(canvas => {
             const link = document.createElement('a');
@@ -474,18 +459,26 @@
           });
         };
 
+        // Перерисовка при движении карты
         map.on('moveend', () => {
           drawGrid(); drawTiles();
         });
 
+        // Первичная отрисовка
         drawGrid();
         drawTiles();
       };
 
+      // ——— Запуск карты
       if (tg && tg.initDataUnsafe) {
         window.initMap(tg.initDataUnsafe.user);
+      } else {
+        // офлайн-режим
+        window.initMap({ id: 'test-user', username: 'offline' });
       }
+
     })();
   </script>
 </body>
-</html> 
+</html>
+
