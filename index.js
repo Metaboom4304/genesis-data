@@ -39,23 +39,30 @@ async function syncUser(user) {
 }
 
 // 🗺️ Инициализация карты и слоёв
-function initMap() {
-  map = L.map('map').setView([50.1109, 8.6821], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
+function log(msg) {
+  const el = document.getElementById('debug-log');
+  if (el) el.innerHTML += msg + '<br>';
+}
 
-  gridLayer = L.layerGroup().addTo(map);
-  tileLayerGroup = L.layerGroup().addTo(map);
-  userMarksLayer = L.layerGroup().addTo(map);
+function initMap(user) {
+  log('🟢 initMap() запущен');
+  log('👤 Пользователь: ' + (user?.id || 'нет данных'));
 
-  map
-    .on('moveend', debounce(updateLayers, 200))
-    .on('zoomend', debounce(updateLayers, 200))
-    .on('click', onMapClick);
+  const map = L.map('map', {
+    center: [49.25, -123.10],
+    zoom: 6,
+    minZoom: 3,
+    maxZoom: 10,
+    attributionControl: false,
+    zoomControl: false
+  });
 
-  updateLayers();
+  log('🗺️ Leaflet карта создана');
+
+  const layer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+  layer.addTo(map);
+
+  log('🧱 Слой добавлен');
 }
 
 // 📦 Переводим координаты в ID тайла (шаг 0.05°)
