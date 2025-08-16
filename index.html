@@ -204,6 +204,34 @@
 
     const tg = window.Telegram?.WebApp;
     tg?.ready();
+
+// 👇 Вставляем отладку прямо сюда
+const debug = (id, msg) => {
+  const el = document.getElementById(id);
+  if (el) el.textContent = `${el.textContent.split(':')[0]}: ${msg}`;
+};
+
+try {
+  if (window.Telegram && window.Telegram.WebApp) {
+    debug('tg-status', '✅ Loaded');
+    const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+    if (tgUser) {
+      debug('user-status', `✅ ${tgUser.first_name} (${tgUser.id})`);
+    } else {
+      debug('user-status', '❌ No user');
+    }
+  } else {
+    debug('tg-status', '❌ Not available');
+  }
+
+  if (typeof initMap === 'function') {
+    debug('map-status', '✅ initMap is defined');
+  } else {
+    debug('map-status', '❌ initMap not found');
+  }
+} catch (err) {
+  debug('error-log', `❌ ${err.message}`);
+}
     const tgUser = tg?.initDataUnsafe?.user;
     if (tgUser) syncUser(tgUser);
 
