@@ -15,7 +15,6 @@ let userMarksLayer;
 
 // 🚀 Запуск после загрузки DOM
 document.addEventListener('DOMContentLoaded', () => {
-  // Гарантируем наличие debug-лога
   if (!document.getElementById('debug-log')) {
     document.body.insertAdjacentHTML('beforeend', `
       <div id="debug-log" style="
@@ -40,10 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
     log('👤 TG user: отсутствует (используем тестовый)');
   }
 
-  // Снимаем скрытие карты CSS-ом
   document.body.classList.add('logged-in');
 
-  // Инициализация карты
+  // теперь initMap доступна и по window.initMap, и здесь локально
   initMap({ id: tgUser?.id || 'test-user' });
 });
 
@@ -88,28 +86,22 @@ function initMap(user) {
     minZoom: 3,
     maxZoom: 10,
     attributionControl: false,
-    zoomControl: false // отключаем дефолтный контрол зума
+    zoomControl: false
   });
-
-  // Добавляем zoom‑control вручную и ставим его вниз слева (фикс падения setPosition)
   L.control.zoom({ position: 'bottomleft' }).addTo(map);
-
   log('🗺️ Leaflet карта создана');
 
   const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
   osm.addTo(map);
   log('🧱 Базовый слой добавлен');
 
-  // Группы слоёв
   gridLayer = L.layerGroup().addTo(map);
   tileLayerGroup = L.layerGroup().addTo(map);
   userMarksLayer = L.layerGroup().addTo(map);
 
-  // Слушатели
   map.on('moveend', debounce(updateLayers, 300));
   map.on('click', onMapClick);
 
-  // Первичная отрисовка
   updateLayers();
 }
 
@@ -267,3 +259,6 @@ function tileToBounds(z, x, y) {
   const se = map.unproject([(x + 1) * size, (y + 1) * size], z);
   return [nw, se];
 }
+
+// 🚩 Экспорт initMap для Telegram WebApp
+window.initMap = initMap;
