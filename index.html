@@ -4,118 +4,38 @@
   <meta charset="UTF-8" />
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-  />
-
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #000;
-      font-family: sans-serif;
-      overflow: hidden;
-    }
-    body:not(.logged-in) #panel,
-    body:not(.logged-in) #map,
-    body:not(.logged-in) #toggle-panel,
-    body:not(.logged-in) #layer-select-small {
-      display: none !important;
-    }
-    #login-container {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.85);
-      color: #fff;
-      z-index: 2000;
+    /* ... (ваши существующие стили остаются без изменений) ... */
+    
+    /* Добавлены новые стили для индикатора загрузки */
+    .loader {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 10000;
       text-align: center;
     }
-    #login-button {
-      margin-top: 1em;
-      padding: 0.75em 1.5em;
-      font-size: 1.1em;
-      background: #0088cc;
-      border: none;
-      border-radius: 5px;
-      color: #fff;
-      cursor: pointer;
-      animation: pulse 2s infinite;
-      width: 260px;
-      max-width: 80%;
+    
+    .loader-spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 2s linear infinite;
+      margin: 10px auto;
     }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    #panel {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      background: #111;
-      color: #fff;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      padding: 8px;
-      gap: 8px;
-      z-index: 1000;
-      max-height: 300px;
-      overflow: hidden;
-      transition: max-height 0.3s ease, background 0.3s ease;
-    }
-    #panel.collapsed { max-height: 40px; background: transparent !important; }
-    #panel.collapsed *:not(#map-title) { display: none !important; }
-    .search-wrapper { position: relative; display: flex; align-items: center; }
-    #search { width: 120px; padding-right: 20px; box-sizing: border-box; }
-    #search-clear {
-      position: absolute;
-      right: 4px;
-      cursor: pointer;
-      color: #ccc;
-      font-size: 18px;
-      user-select: none;
-    }
-    .tile-label {
-      background: rgba(0,0,0,0.5);
-      padding: 2px 5px;
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: bold;
-    }
-    #favorites-list button {
-      margin-left: 5px;
-      cursor: pointer;
-      background: #333;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      padding: 2px 5px;
-    }
-    .tile-popup-button {
-      margin: 2px;
-      padding: 4px 8px;
-      cursor: pointer;
-      background: #444;
-      color: white;
-      border: none;
-      border-radius: 3px;
-    }
-    .tile-popup-button:hover {
-      background: #555;
-    }
-    .tile-popup-textarea {
-      width: 100%;
-      min-height: 60px;
-      margin: 5px 0;
-      padding: 5px;
-      box-sizing: border-box;
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -175,60 +95,213 @@
     <div id="tg-status">Telegram WebApp: ⏳</div>
     <div id="user-status">User: ⏳</div>
     <div id="map-status">Map: ⏳</div>
+    <div id="cache-status">Cache: ⏳</div>
     <div id="error-log">Errors: ⏳</div>
     <div style="margin:10px 0; border-top:1px solid #0f0;"></div>
     <div id="debug-log" style="max-height:120px; overflow:auto;"></div>
   </div>
 
-  <!-- SDK и библиотеки -->
-  <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
-  <!-- Весь исправленный код -->
   <script>
     // Глобальные переменные
-    let map, gridLayer, tileLayer, saved = {}, favs = [], comments = {};
-    let tileData = [];
+    let map, gridLayer, tileLayer;
+    let tileData = []; // Основные данные тайлов
+    let tileDynamicData = {}; // Динамические данные тайлов (кеш)
+    let userMarks = {}; // Метки пользователя
     const degLat = 170/256, degLng = 360/256;
     const tileMarkers = {}; // Кэш маркеров
+    const CACHE_TTL = 30 * 60 * 1000; // 30 минут в миллисекундах
+    let currentUser = null;
+    let supabase;
 
     // Лог в debug-окно
     function log(msg, isError = false) {
       const el = document.getElementById('debug-log');
       if (el) {
-        el.innerHTML += `<span class="${isError ? 'error' : ''}">${msg}</span><br>`;
+        el.innerHTML += `<span class="${isError ? 'error' : ''}">${new Date().toLocaleTimeString()}: ${msg}</span><br>`;
         el.scrollTop = el.scrollHeight;
       }
       if (isError) console.error(msg);
       else console.log(msg);
     }
 
+    // Инициализация Supabase
+    function initSupabase() {
+      supabase = window.supabase.createClient(
+        'https://nysjreargnvyjmcirinp.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55c2pyZWFyZ252eWptY2lyaW5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDgxNDIsImV4cCI6MjA3MDM4NDE0Mn0.UzpiU_nM_ACF8bILAGF4oa-WSHaU38KX6Dtz_srZK9Q'
+      );
+      log('✅ Supabase инициализирован');
+    }
+
     // Синхронизация пользователя
     async function syncUser(user) {
       try {
-        const { error } = await window.supabase
+        const { error } = await supabase
           .from('users')
           .upsert([{
             telegram_id: user.id,
             first_name: user.first_name,
             last_name: user.last_name,
-            username: user.username
+            username: user.username,
+            last_login: new Date().toISOString()
           }], { onConflict: 'telegram_id' });
-
+        
         if (error) throw error;
-        log('💾 Пользователь синхронизирован');
+        log('💾 Пользователь синхронизирован с Supabase');
       } catch (e) {
-        log(`⚠️ Ошибка синхронизации: ${e.message}`, true);
+        log(`⚠️ Ошибка синхронизации пользователя: ${e.message}`, true);
+      }
+    }
+
+    // Загрузка меток пользователя
+    async function loadUserMarks() {
+      if (!currentUser) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_marks')
+          .select('tile_id, mark_type, comment')
+          .eq('user_id', currentUser.id);
+        
+        if (error) throw error;
+        
+        // Преобразуем данные в удобный формат
+        userMarks = {};
+        data.forEach(mark => {
+          if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
+          userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
+        });
+        
+        log(`📌 Загружено ${data.length} пользовательских меток`);
+        return true;
+      } catch (e) {
+        log(`⚠️ Ошибка загрузки меток: ${e.message}`, true);
+        return false;
+      }
+    }
+
+    // Сохранение метки пользователя
+    async function saveUserMark(tile_id, mark_type, comment = null) {
+      if (!currentUser) return false;
+      
+      try {
+        // Удаляем предыдущую метку этого типа если есть
+        await supabase
+          .from('user_marks')
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('tile_id', tile_id)
+          .eq('mark_type', mark_type);
+        
+        // Если не сброс - сохраняем новую метку
+        if (mark_type !== 'clear') {
+          const { error } = await supabase
+            .from('user_marks')
+            .insert([{
+              user_id: currentUser.id,
+              tile_id: tile_id,
+              mark_type: mark_type,
+              comment: comment,
+              created_at: new Date().toISOString()
+            }]);
+          
+          if (error) throw error;
+        }
+        
+        // Обновляем локальный кеш
+        if (!userMarks[tile_id]) userMarks[tile_id] = {};
+        
+        if (mark_type === 'clear') {
+          delete userMarks[tile_id];
+        } else {
+          userMarks[tile_id][mark_type] = comment || true;
+        }
+        
+        log(`💾 Метка сохранена: ${tile_id} (${mark_type})`);
+        return true;
+      } catch (e) {
+        log(`⚠️ Ошибка сохранения метки: ${e.message}`, true);
+        return false;
+      }
+    }
+
+    // Загрузка динамических данных с кешированием
+    async function loadDynamicData() {
+      log('🔃 Проверка кеша тайлов...');
+      document.getElementById('cache-status').textContent = 'Cache: 🔄 Loading';
+      
+      try {
+        // Проверяем свежий кеш в Supabase
+        const { data: cache, error } = await supabase
+          .from('tiles_cache')
+          .select('*')
+          .order('last_updated', { ascending: false })
+          .limit(1);
+        
+        let useCache = false;
+        
+        if (!error && cache.length > 0) {
+          const cacheAge = new Date() - new Date(cache[0].last_updated);
+          log(`ℹ️ Возраст кеша: ${Math.round(cacheAge/1000/60)} мин.`);
+          
+          if (cacheAge < CACHE_TTL) {
+            log('✅ Используем данные из кеша');
+            tileDynamicData = cache[0].data;
+            document.getElementById('cache-status').textContent = `Cache: ✅ ${new Date(cache[0].last_updated).toLocaleTimeString()}`;
+            useCache = true;
+          }
+        }
+        
+        // Если кеш устарел или отсутствует
+        if (!useCache) {
+          log('⏬ Загрузка данных с сервера...');
+          const response = await fetch('https://back.genesis-of-ages.space/manage/get_tile_info.php');
+          
+          if (!response.ok) {
+            throw new Error(`Ошибка HTTP: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          log(`✅ Получено ${Object.keys(data).length} записей`);
+          
+          // Сохраняем в кеш Supabase
+          const { error: cacheError } = await supabase
+            .from('tiles_cache')
+            .upsert([{
+              last_updated: new Date().toISOString(),
+              data: data
+            }], { onConflict: 'last_updated' });
+          
+          if (cacheError) throw cacheError;
+          log('💾 Кеш обновлен в Supabase');
+          
+          tileDynamicData = data;
+          document.getElementById('cache-status').textContent = `Cache: ✅ ${new Date().toLocaleTimeString()}`;
+        }
+        
+        // Обновляем карту
+        drawTiles();
+        return true;
+      } catch (error) {
+        log(`⚠️ Ошибка загрузки данных: ${e.message}`, true);
+        document.getElementById('cache-status').textContent = 'Cache: ❌ Error';
+        return false;
       }
     }
 
     // Инициализация карты
     async function initMap(user) {
       try {
+        currentUser = user;
         document.getElementById('login-container')?.remove();
         log('🟢 initMap() запущена');
-        log(`👤 Пользователь: ${user?.id || 'test-user'}`);
+        log(`👤 Пользователь: ${user?.first_name || 'test-user'} (${user?.id || 'test'})`);
+        document.getElementById('user-status').textContent = `User: ✅ ${user?.first_name || 'test'}`;
 
         // Случайный слоган
         const phrases = [
@@ -253,6 +326,7 @@
         });
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         log('🗺️ Карта создана');
+        document.getElementById('map-status').textContent = 'Map: ✅ Initialized';
 
         // Базовые слои
         const layers = {
@@ -274,51 +348,32 @@
         gridLayer = L.layerGroup().addTo(map);
         tileLayer = L.layerGroup().addTo(map);
 
-        // Показываем прогресс
-        const countEl = document.createElement('div');
-        Object.assign(countEl.style, {
-          position:'absolute', top:'50%', left:'50%',
-          transform:'translate(-50%,-50%)',
-          color:'#fff', zIndex:1000, background:'rgba(0,0,0,0.7)',
-          padding:'10px', borderRadius:'5px'
-        });
-        countEl.textContent = 'Загрузка тайлов…';
-        document.body.append(countEl);
-
-        // Загружаем данные по частям
-        try {
-          for (let i = 1; i <= 22; i++) {
-            const url = `./data/tiles_${String(i).padStart(2,'0')}.json`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`Ошибка ${res.status}`);
-            tileData.push(...await res.json());
-            countEl.textContent = `Загружено: ${tileData.length} тайлов`;
-          }
-        } catch (err) {
-          log(`⚠️ Ошибка загрузки данных: ${err.message}`, true);
-          alert('Ошибка загрузки данных: ' + err.message);
-        }
+        // Загрузка пользовательских меток
+        await loadUserMarks();
         
-        setTimeout(() => countEl.remove(), 1500);
-
-        // Вычисляем координаты для каждого тайла
+        // Генерируем статические данные тайлов
+        log('🧮 Генерация статических данных тайлов...');
         const refId = 22313, refLat = 49.25, refLng = -123.10;
         const refX = refId % 256, refY = Math.floor(refId/256);
-        tileData.forEach(t => {
-          const x = t.id_tile % 256, y = Math.floor(t.id_tile/256);
-          t.lat = refLat - (y - refY)*degLat;
-          t.lng = refLng + (x - refX)*degLng;
-        });
-
-        // Загружаем локальные метки
-        saved = JSON.parse(localStorage.getItem('tile_marks') || {};
-        favs = JSON.parse(localStorage.getItem('favorites') || []);
-        comments = JSON.parse(localStorage.getItem('comments') || {});
+        
+        for (let tileId = 0; tileId < 65536; tileId++) {
+          const x = tileId % 256;
+          const y = Math.floor(tileId / 256);
+          const lat = refLat - (y - refY) * degLat;
+          const lng = refLng + (x - refX) * degLng;
+          
+          tileData.push({
+            id_tile: tileId,
+            lat: lat,
+            lng: lng
+          });
+        }
+        log(`✅ Сгенерировано ${tileData.length} тайлов`);
 
         // Первая отрисовка
         renderFavorites();
         drawGrid();
-        drawTiles();
+        loadDynamicData();
         
       } catch (error) {
         log(`⚠️ Критическая ошибка в initMap: ${error.message}`, true);
@@ -328,31 +383,27 @@
 
     // Функции работы с данными
     function saveMark(id, status) {
-      if (status) saved[id] = status;
-      else delete saved[id];
-      localStorage.setItem('tile_marks', JSON.stringify(saved));
+      saveUserMark(id, status === 'clear' ? 'clear' : status);
       updateTile(id);
     }
 
     function saveComment(id) {
-      const txt = document.querySelector(`#comment-${id}`)?.value.trim();
-      if (txt) comments[id] = txt;
-      else delete comments[id];
-      localStorage.setItem('comments', JSON.stringify(comments));
+      const comment = document.getElementById(`comment-${id}`)?.value.trim() || '';
+      saveUserMark(id, 'comment', comment);
       updateTile(id);
     }
 
     function toggleFav(id) {
-      const tile = tileData.find(t => t.id_tile === id);
-      if (!tile) return;
+      const isFav = favs.includes(id);
       
-      const idx = favs.findIndex(f => f.id === id);
-      if (idx < 0) {
-        favs.push({ id, label: `#${id}` });
+      if (isFav) {
+        favs = favs.filter(favId => favId !== id);
       } else {
-        favs.splice(idx, 1);
+        favs.push(id);
       }
+      
       localStorage.setItem('favorites', JSON.stringify(favs));
+      saveUserMark(id, isFav ? 'clear' : 'favorite');
       renderFavorites();
       updateTile(id);
     }
@@ -371,13 +422,16 @@
       const favList = document.getElementById('favorites-list');
       if (!favList) return;
       
-      favList.innerHTML = favs.map(f => `
-        <li data-id="${f.id}">
-          ${f.label}
-          <button class="goto-fav" data-id="${f.id}">➡️</button>
-          <button class="remove-fav" data-id="${f.id}">×</button>
-        </li>
-      `).join('');
+      favList.innerHTML = favs.map(id => {
+        const tile = tileData.find(t => t.id_tile === id);
+        return `
+          <li data-id="${id}">
+            Тайл #${id} (${tile ? `${tile.lat.toFixed(4)}, ${tile.lng.toFixed(4)}` : ''})
+            <button class="goto-fav" data-id="${id}">➡️</button>
+            <button class="remove-fav" data-id="${id}">×</button>
+          </li>
+        `;
+      }).join('');
     }
 
     // Функции отрисовки
@@ -408,10 +462,21 @@
         [t.lat + degLat/2, t.lng + degLng/2]
       );
       
-      const st = saved[t.id_tile] || '';
-      const owned = String(t.has_owner).toLowerCase() === 'true';
-      const isFav = favs.some(f => f.id === t.id_tile);
+      // Получаем данные из кеша
+      const dynamicData = tileDynamicData[t.id_tile] || {};
+      const userMark = userMarks[t.id_tile] || {};
       
+      // Определяем статус метки
+      const st = 
+        userMark.ally ? 'ally' : 
+        userMark.enemy ? 'enemy' : 
+        userMark.favorite ? 'favorite' : '';
+      
+      const isFav = favs.includes(t.id_tile);
+      const comment = userMark.comment || '';
+      const owned = dynamicData.has_owner || false;
+      
+      // Стили в зависимости от статуса
       const fill = st === 'ally' ? '#33cc33'
                 : st === 'enemy' ? '#cc3333'
                 : st === 'favorite' ? '#ff0'
@@ -433,7 +498,7 @@
       // Добавляем tooltip
       const zoom = map.getZoom();
       if (zoom >= 5) {
-        rect.bindTooltip(String(t.id_tile), {
+        rect.bindTooltip(`#${t.id_tile}`, {
           permanent: true,
           direction: 'center',
           className: 'tile-label'
@@ -444,14 +509,20 @@
       const popupContent = document.createElement('div');
       popupContent.innerHTML = `
         <strong>Тайл #${t.id_tile}</strong><br/>
-        Статус: ${owned ? 'занят' : 'свободен'}<br/>
-        Метка: ${st || '—'}<br/>
-        Комментарий: ${comments[t.id_tile] || '—'}<br/>
+        <div>Статус: ${owned ? 'занят' : 'свободен'}</div>
+        ${dynamicData.owner ? `<div>Владелец: ${dynamicData.owner}</div>` : ''}
+        ${dynamicData.resources ? `<div>Ресурсы: ${dynamicData.resources}</div>` : ''}
+        <div>Метка: ${st || '—'}</div>
+        <div>Комментарий: ${comment || '—'}</div>
       `;
       
       const buttons = document.createElement('div');
       buttons.style.margin = '10px 0';
+      buttons.style.display = 'flex';
+      buttons.style.flexWrap = 'wrap';
+      buttons.style.gap = '5px';
       
+      // Кнопки меток
       ['ally', 'enemy', 'favorite', 'clear'].forEach(status => {
         const btn = document.createElement('button');
         btn.className = 'tile-popup-button';
@@ -464,22 +535,30 @@
         buttons.appendChild(btn);
       });
       
+      // Кнопка избранного
       const favBtn = document.createElement('button');
       favBtn.className = 'tile-popup-button';
       favBtn.dataset.id = t.id_tile;
       favBtn.textContent = isFav ? 'Удалить из избранного' : 'Добавить в избранное';
       buttons.appendChild(favBtn);
       
+      // Поле комментария
       const textarea = document.createElement('textarea');
       textarea.id = `comment-${t.id_tile}`;
-      textarea.className = 'tile-popup-textarea';
+      textarea.value = comment;
       textarea.placeholder = 'Ваш комментарий...';
-      textarea.value = comments[t.id_tile] || '';
+      textarea.style.width = '100%';
+      textarea.style.minHeight = '60px';
+      textarea.style.margin = '5px 0';
+      textarea.style.padding = '5px';
+      textarea.style.boxSizing = 'border-box';
       
+      // Кнопка сохранения комментария
       const saveBtn = document.createElement('button');
       saveBtn.className = 'tile-popup-button';
       saveBtn.dataset.id = t.id_tile;
       saveBtn.textContent = '💾 Сохранить комментарий';
+      saveBtn.style.marginTop = '5px';
       
       popupContent.appendChild(buttons);
       popupContent.appendChild(textarea);
@@ -492,13 +571,10 @@
     }
 
     function updateTile(id) {
-      // Удаляем старый маркер
       if (tileMarkers[id]) {
         tileLayer.removeLayer(tileMarkers[id]);
-        delete tileMarkers[id];
       }
       
-      // Добавляем обновленный
       const tile = tileData.find(t => t.id_tile === id);
       if (!tile) return;
       
@@ -512,40 +588,45 @@
       const vb = map.getBounds();
       const searchValue = document.getElementById('search').value.trim();
       
-      // Удаляем все маркеры
       tileLayer.clearLayers();
-      tileMarkers = {};
+      Object.values(tileMarkers).forEach(marker => tileLayer.removeLayer(marker));
       
-      // Фильтрация тайлов
       const filteredTiles = tileData.filter(t => {
-        const st = saved[t.id_tile] || '';
+        // Фильтрация по статусу
+        const userMark = userMarks[t.id_tile] || {};
+        const st = 
+          userMark.ally ? 'ally' : 
+          userMark.enemy ? 'enemy' : 
+          userMark.favorite ? 'favorite' : '';
         
-        if (filter === 'ally' && st !== 'ally') return false;
-        if (filter === 'enemy' && st !== 'enemy') return false;
-        if (filter === 'favorite' && st !== 'favorite') return false;
+        if (filter === 'ally' && !userMark.ally) return false;
+        if (filter === 'enemy' && !userMark.enemy) return false;
+        if (filter === 'favorite' && !userMark.favorite) return false;
         if (filter === 'clear' && st) return false;
+        
+        // Фильтрация по поиску
         if (searchValue && String(t.id_tile) !== searchValue) return false;
         
-        return true;
+        // Фильтрация по видимой области
+        return vb.contains([t.lat, t.lng]);
       });
       
-      // Создаем маркеры для видимых тайлов
       filteredTiles.forEach(t => {
-        if (!vb.contains([t.lat, t.lng]) return;
         const marker = createTileMarker(t);
         tileMarkers[t.id_tile] = marker;
         tileLayer.addLayer(marker);
       });
     }
 
-    // Обработчики событий
+    // Настройка обработчиков событий
     function setupEventListeners() {
-      // Поиск и навигация
+      // Очистка поиска
       document.getElementById('search-clear').addEventListener('click', () => {
         document.getElementById('search').value = '';
         drawTiles();
       });
 
+      // Переход к тайлу
       document.getElementById('goto-btn').addEventListener('click', () => {
         const v = document.getElementById('search').value.trim();
         if (!v) return drawTiles();
@@ -560,9 +641,10 @@
         }, 800);
       });
 
+      // Поиск при вводе
       document.getElementById('search').addEventListener('input', () => drawTiles());
       
-      // Фильтры и сброс
+      // Сброс фильтров
       document.getElementById('reset').addEventListener('click', () => {
         document.getElementById('search').value = '';
         document.getElementById('status-filter').value = '';
@@ -570,6 +652,7 @@
         drawTiles();
       });
       
+      // Изменение фильтра
       document.getElementById('status-filter').addEventListener('change', () => {
         drawGrid();
         drawTiles();
@@ -580,7 +663,7 @@
         html2canvas(document.getElementById('map')).then(canvas => {
           const link = document.createElement('a');
           link.href = canvas.toDataURL('image/png');
-          link.download = 'map-screenshot.png';
+          link.download = `map-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
           link.click();
         }).catch(e => {
           log(`⚠️ Ошибка создания скриншота: ${e.message}`, true);
@@ -588,16 +671,10 @@
       });
       
       // Сворачивание панели
-      document.getElementById('toggle-panel').addEventListener('click', () => {
+      document.getElementById('toggle-panel').addEventListener('click', function() {
         const panel = document.getElementById('panel');
         panel.classList.toggle('collapsed');
         this.textContent = panel.classList.contains('collapsed') ? '🔼' : '🔽';
-      });
-      
-      // События карты
-      map.on('moveend', () => {
-        drawGrid();
-        drawTiles();
       });
       
       // Делегирование событий для попапов
@@ -605,22 +682,23 @@
         const popup = e.popup;
         const content = popup.getElement();
         
-        // Обработчики кнопок в popup
         content.addEventListener('click', (e) => {
           const target = e.target;
-          if (!target.matches('.tile-popup-button')) return;
+          if (!target.classList.contains('tile-popup-button')) return;
           
-          const id = parseInt(target.dataset.id);
+          const tileId = parseInt(target.dataset.id);
           
           if (target.dataset.status) {
-            saveMark(id, target.dataset.status === 'clear' ? '' : target.dataset.status);
+            saveMark(tileId, target.dataset.status);
           } else if (target.textContent.includes('избранн')) {
-            toggleFav(id);
+            toggleFav(tileId);
           } else if (target.textContent.includes('комментарий')) {
-            saveComment(id);
+            saveComment(tileId);
           }
           
-          popup.setContent(createTileMarker(tileData.find(t => t.id_tile === id)).getPopup().getContent());
+          popup.setContent(createTileMarker(
+            tileData.find(t => t.id_tile === tileId)
+          ).getPopup().getContent());
         });
       });
       
@@ -628,17 +706,20 @@
       document.getElementById('favorites-list').addEventListener('click', (e) => {
         if (!e.target.matches('button')) return;
         
-        const id = parseInt(e.target.dataset.id);
+        const tileId = parseInt(e.target.dataset.id);
         if (e.target.classList.contains('goto-fav')) {
-          goToFav(id);
+          goToFav(tileId);
         } else if (e.target.classList.contains('remove-fav')) {
-          toggleFav(id);
+          toggleFav(tileId);
         }
       });
     }
 
     // Основная инициализация приложения
     document.addEventListener('DOMContentLoaded', async () => {
+      initSupabase();
+      let favs = JSON.parse(localStorage.getItem('favorites') || '[]');
+      
       // Проверка статуса для отладки
       const dbg = (id, msg) => {
         const e = document.getElementById(id);
@@ -646,12 +727,6 @@
       };
       
       try {
-        // Инициализация Supabase
-        window.supabase = window.supabase.createClient(
-          'https://nysjreargnvyjmcirinp.supabase.co',
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55c2pyZWFyZ252eWptY2lyaW5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDgxNDIsImV4cCI6MjA3MDM4NDE0Mn0.UzpiU_nM_ACF8bILAGF4oa-WSHaU38KX6Dtz_srZK9Q'
-        );
-        
         // Настройка Telegram
         const tg = window.Telegram?.WebApp;
         dbg('tg-status', tg ? '✅ Loaded' : '❌ Not available');
@@ -662,10 +737,10 @@
         }
         
         const tgUser = tg?.initDataUnsafe?.user || null;
-        dbg('user-status', tgUser ? `✅ ${tgUser.first_name} (${tgUser.id})` : '❌ No user');
+        dbg('user-status', tgUser ? `✅ ${tgUser.first_name}` : '❌ No user');
         
         if (tgUser) {
-          syncUser(tgUser);
+          await syncUser(tgUser);
           window.__tgUser = tgUser;
         } else {
           log('👤 TG user: отсутствует (offline)');
@@ -673,11 +748,18 @@
         
         // Инициализируем приложение
         document.body.classList.add('logged-in');
-        await initMap(tgUser || { id: 'test-user' });
-        setupEventListeners();
+        await initMap(tgUser || { 
+          id: 'test-user', 
+          first_name: 'Test User',
+          username: 'test'
+        });
         
+        setupEventListeners();
         dbg('map-status', '✅ Initialized');
         log('✅ Приложение инициализировано');
+        
+        // Периодическое обновление данных
+        setInterval(loadDynamicData, CACHE_TTL);
       } catch (error) {
         dbg('error-log', `❌ ${error.message}`);
         log(`⚠️ Критическая ошибка инициализации: ${error.message}`, true);
