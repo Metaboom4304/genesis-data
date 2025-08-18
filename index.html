@@ -4,33 +4,294 @@
   <meta charset="UTF-8" />
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   
   <style>
-    /* ... (ваши существующие стили остаются без изменений) ... */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     
-    /* Добавлены новые стили для индикатора загрузки */
+    html, body {
+      height: 100%;
+      background: #000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      color: #fff;
+    }
+    
+    #login-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    #login-container h1 {
+      margin-bottom: 20px;
+      font-size: 2.2rem;
+      color: #4dabf7;
+    }
+    
+    #login-button {
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background: linear-gradient(135deg, #1971c2, #1c7ed6);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(25, 113, 194, 0.4);
+    }
+    
+    #login-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(25, 113, 194, 0.6);
+    }
+    
+    #login-button:active {
+      transform: translateY(1px);
+    }
+    
+    #panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(20, 20, 30, 0.9);
+      color: #fff;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 12px;
+      gap: 15px;
+      z-index: 900;
+      backdrop-filter: blur(5px);
+      border-bottom: 1px solid #2c3e50;
+    }
+    
+    #map-title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #74c0fc;
+      margin-right: 20px;
+    }
+    
+    .search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: rgba(40, 40, 50, 0.8);
+      border-radius: 6px;
+      padding: 5px;
+    }
+    
+    #search {
+      width: 150px;
+      padding: 8px 30px 8px 12px;
+      background: transparent;
+      border: 1px solid #495057;
+      border-radius: 4px;
+      color: #e9ecef;
+      font-size: 1rem;
+    }
+    
+    #search:focus {
+      outline: none;
+      border-color: #4dabf7;
+      box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.3);
+    }
+    
+    #search-clear {
+      position: absolute;
+      right: 10px;
+      cursor: pointer;
+      color: #adb5bd;
+      font-size: 20px;
+      transition: color 0.2s;
+    }
+    
+    #search-clear:hover {
+      color: #ff6b6b;
+    }
+    
+    #goto-btn, #reset, #screenshot-btn {
+      padding: 8px 15px;
+      background: #3b5bdb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+    }
+    
+    #goto-btn:hover, #reset:hover, #screenshot-btn:hover {
+      background: #364fc7;
+    }
+    
+    #status-filter {
+      padding: 8px;
+      background: #343a40;
+      color: #e9ecef;
+      border: 1px solid #495057;
+      border-radius: 4px;
+      min-width: 150px;
+    }
+    
+    #favorites-container {
+      background: rgba(30, 30, 40, 0.8);
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      flex: 1 0 100%;
+    }
+    
+    #favorites-container h4 {
+      margin-bottom: 10px;
+      color: #ffd43b;
+    }
+    
+    #favorites-list {
+      list-style: none;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    #favorites-list li {
+      padding: 8px;
+      background: rgba(50, 50, 60, 0.6);
+      margin-bottom: 6px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    #favorites-list button {
+      padding: 4px 8px;
+      background: #495057;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    
+    #favorites-list button:hover {
+      background: #5c636a;
+    }
+    
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 500;
+    }
+    
+    #toggle-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 910;
+      background: #343a40;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    
+    #layer-select-small {
+      position: absolute;
+      top: 50px;
+      right: 10px;
+      z-index: 910;
+      background: #343a40;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px;
+    }
+    
+    #debug {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 20, 10, 0.85);
+      color: #20c997;
+      font-size: 12px;
+      padding: 12px;
+      z-index: 9999;
+      max-height: 40vh;
+      overflow: auto;
+      font-family: 'Courier New', monospace;
+      border-top: 1px solid #20c997;
+    }
+    
+    .debug-section {
+      margin-bottom: 10px;
+    }
+    
+    #debug-log {
+      max-height: 120px;
+      overflow: auto;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #20c997;
+    }
+    
+    .tile-label {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 3px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 1px 1px black;
+    }
+    
     .loader {
+      display: none;
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 20px;
-      border-radius: 10px;
-      z-index: 10000;
-      text-align: center;
+      z-index: 2000;
     }
     
     .loader-spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #3498db;
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255, 255, 255, 0.3);
+      border-top: 5px solid #4dabf7;
       border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      animation: spin 2s linear infinite;
-      margin: 10px auto;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    
+    .loader-text {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 1.1rem;
     }
     
     @keyframes spin {
@@ -47,13 +308,13 @@
 
   <div id="panel">
     <strong id="map-title">🧭 GENESIS WAR MAP</strong>
-
+    
     <div class="search-wrapper">
       <input type="text" id="search" placeholder="Тайл-ID" />
       <span id="search-clear">×</span>
-      <button id="goto-btn">➡️</button>
+      <button id="goto-btn">➡️ Перейти</button>
     </div>
-
+    
     <label>
       🎯 Метка:
       <select id="status-filter">
@@ -64,257 +325,114 @@
         <option value="clear">⚪️ Без метки</option>
       </select>
     </label>
-
+    
     <button id="reset">♻️ Сбросить</button>
     <button id="screenshot-btn">📸 Снимок</button>
-
+    
     <div id="favorites-container">
-      <h4>Избранное</h4>
+      <h4>⭐ Избранное</h4>
       <ul id="favorites-list"></ul>
     </div>
   </div>
 
   <div id="map"></div>
-
+  
   <button id="toggle-panel">🔽</button>
   <select id="layer-select-small">
     <option value="neutral">N</option>
     <option value="world">W</option>
     <option value="satellite">S</option>
   </select>
+  
+  <div class="loader" id="loader">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">Загрузка данных...</div>
+  </div>
 
-  <!-- Отладочный блок -->
-  <div id="debug" style="
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: #000; color: #0f0;
-      font-size: 12px; padding: 10px;
-      z-index: 9999; max-height: 50vh;
-      overflow: auto; font-family: monospace;
-    ">
-    <div id="tg-status">Telegram WebApp: ⏳</div>
-    <div id="user-status">User: ⏳</div>
-    <div id="map-status">Map: ⏳</div>
-    <div id="cache-status">Cache: ⏳</div>
-    <div id="error-log">Errors: ⏳</div>
-    <div style="margin:10px 0; border-top:1px solid #0f0;"></div>
-    <div id="debug-log" style="max-height:120px; overflow:auto;"></div>
+  <div id="debug">
+    <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
+    <div class="debug-section" id="user-status">Пользователь: ⏳</div>
+    <div class="debug-section" id="map-status">Карта: ⏳</div>
+    <div class="debug-section" id="api-status">API: ⏳</div>
+    <div class="debug-section" id="cache-status">Кеш: ⏳</div>
+    <div class="debug-section" id="error-log">Ошибки: ⏳</div>
+    <div id="debug-log"></div>
   </div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <script>
+    // Конфигурация
+    const API_URL = 'https://your-render-service.onrender.com'; // Замените на ваш URL
+    const degLat = 170/256, degLng = 360/256;
+    const CACHE_TTL = 30 * 60 * 1000; // 30 минут
+    
     // Глобальные переменные
     let map, gridLayer, tileLayer;
-    let tileData = []; // Основные данные тайлов
-    let tileDynamicData = {}; // Динамические данные тайлов (кеш)
-    let userMarks = {}; // Метки пользователя
-    const degLat = 170/256, degLng = 360/256;
-    const tileMarkers = {}; // Кэш маркеров
-    const CACHE_TTL = 30 * 60 * 1000; // 30 минут в миллисекундах
+    let tileData = [];
+    let tileMarkers = {};
     let currentUser = null;
-    let supabase;
-
-    // Лог в debug-окно
-    function log(msg, isError = false) {
-      const el = document.getElementById('debug-log');
-      if (el) {
-        el.innerHTML += `<span class="${isError ? 'error' : ''}">${new Date().toLocaleTimeString()}: ${msg}</span><br>`;
-        el.scrollTop = el.scrollHeight;
-      }
-      if (isError) console.error(msg);
-      else console.log(msg);
-    }
-
-    // Инициализация Supabase
-    function initSupabase() {
-      supabase = window.supabase.createClient(
-        'https://nysjreargnvyjmcirinp.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55c2pyZWFyZ252eWptY2lyaW5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ4MDgxNDIsImV4cCI6MjA3MDM4NDE0Mn0.UZpiU_nM_ACF8bILAGF4oa-WSHaU38KX6Dtz_srZK9Q'
-      );
-      log('✅ Supabase инициализирован');
-    }
-
-    // Синхронизация пользователя
-    async function syncUser(user) {
-      try {
-        const { error } = await supabase
-          .from('users')
-          .upsert([{
-            telegram_id: user.id,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            username: user.username,
-            last_login: new Date().toISOString()
-          }], { onConflict: 'telegram_id' });
-        
-        if (error) throw error;
-        log('💾 Пользователь синхронизирован с Supabase');
-      } catch (e) {
-        log(`⚠️ Ошибка синхронизации пользователя: ${e.message}`, true);
-      }
-    }
-
-    // Загрузка меток пользователя
-    async function loadUserMarks() {
-      if (!currentUser) return;
+    let userMarks = {};
+    let favorites = [];
+    
+    // Элементы UI
+    const loader = document.getElementById('loader');
+    const debugLog = document.getElementById('debug-log');
+    
+    // Логирование в отладочную панель
+    function log(message, isError = false) {
+      const now = new Date();
+      const timestamp = `[${now.toLocaleTimeString()}]`;
+      const logEntry = document.createElement('div');
       
-      try {
-        const { data, error } = await supabase
-          .from('user_marks')
-          .select('tile_id, mark_type, comment')
-          .eq('user_id', currentUser.id);
-        
-        if (error) throw error;
-        
-        // Преобразуем данные в удобный формат
-        userMarks = {};
-        data.forEach(mark => {
-          if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
-          userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
-        });
-        
-        log(`📌 Загружено ${data.length} пользовательских меток`);
-        return true;
-      } catch (e) {
-        log(`⚠️ Ошибка загрузки меток: ${e.message}`, true);
-        return false;
-      }
-    }
-
-    // Сохранение метки пользователя
-    async function saveUserMark(tile_id, mark_type, comment = null) {
-      if (!currentUser) return false;
+      logEntry.textContent = `${timestamp} ${message}`;
+      logEntry.className = isError ? 'error' : '';
       
-      try {
-        // Удаляем предыдущую метку этого типа если есть
-        await supabase
-          .from('user_marks')
-          .delete()
-          .eq('user_id', currentUser.id)
-          .eq('tile_id', tile_id)
-          .eq('mark_type', mark_type);
-        
-        // Если не сброс - сохраняем новую метку
-        if (mark_type !== 'clear') {
-          const { error } = await supabase
-            .from('user_marks')
-            .insert([{
-              user_id: currentUser.id,
-              tile_id: tile_id,
-              mark_type: mark_type,
-              comment: comment,
-              created_at: new Date().toISOString()
-            }]);
-          
-          if (error) throw error;
-        }
-        
-        // Обновляем локальный кеш
-        if (!userMarks[tile_id]) userMarks[tile_id] = {};
-        
-        if (mark_type === 'clear') {
-          delete userMarks[tile_id];
-        } else {
-          userMarks[tile_id][mark_type] = comment || true;
-        }
-        
-        log(`💾 Метка сохранена: ${tile_id} (${mark_type})`);
-        return true;
-      } catch (e) {
-        log(`⚠️ Ошибка сохранения метки: ${e.message}`, true);
-        return false;
-      }
-    }
-
-    // Загрузка динамических данных с кешированием
-    async function loadDynamicData() {
-      log('🔃 Проверка кеша тайлов...');
-      document.getElementById('cache-status').textContent = 'Cache: 🔄 Loading';
+      debugLog.appendChild(logEntry);
+      debugLog.scrollTop = debugLog.scrollHeight;
       
-      try {
-        // Проверяем свежий кеш в Supabase
-        const { data: cache, error } = await supabase
-          .from('tiles_cache')
-          .select('*')
-          .order('last_updated', { ascending: false })
-          .limit(1);
-        
-        let useCache = false;
-        
-        if (!error && cache.length > 0) {
-          const cacheAge = new Date() - new Date(cache[0].last_updated);
-          log(`ℹ️ Возраст кеша: ${Math.round(cacheAge/1000/60)} мин.`);
-          
-          if (cacheAge < CACHE_TTL) {
-            log('✅ Используем данные из кеша');
-            tileDynamicData = cache[0].data;
-            document.getElementById('cache-status').textContent = `Cache: ✅ ${new Date(cache[0].last_updated).toLocaleTimeString()}`;
-            useCache = true;
-          }
-        }
-        
-        // Если кеш устарел или отсутствует
-        if (!useCache) {
-          log('⏬ Загрузка данных с сервера...');
-          const response = await fetch('https://back.genesis-of-ages.space/manage/get_tile_info.php');
-          
-          if (!response.ok) {
-            throw new Error(`Ошибка HTTP: ${response.status}`);
-          }
-          
-          const data = await response.json();
-          log(`✅ Получено ${Object.keys(data).length} записей`);
-          
-          // Сохраняем в кеш Supabase
-          const { error: cacheError } = await supabase
-            .from('tiles_cache')
-            .upsert([{
-              last_updated: new Date().toISOString(),
-              data: data
-            }], { onConflict: 'last_updated' });
-          
-          if (cacheError) throw cacheError;
-          log('💾 Кеш обновлен в Supabase');
-          
-          tileDynamicData = data;
-          document.getElementById('cache-status').textContent = `Cache: ✅ ${new Date().toLocaleTimeString()}`;
-        }
-        
-        // Обновляем карту
-        drawTiles();
-        return true;
-      } catch (error) {
-        log(`⚠️ Ошибка загрузки данных: ${e.message}`, true);
-        document.getElementById('cache-status').textContent = 'Cache: ❌ Error';
-        return false;
+      if (isError) {
+        console.error(message);
+        document.getElementById('error-log').textContent = `Ошибки: 🔴 ${message.substring(0, 50)}...`;
+      } else {
+        console.log(message);
       }
     }
-
+    
+    // Показать/скрыть лоадер
+    function showLoader(visible) {
+      loader.style.display = visible ? 'block' : 'none';
+    }
+    
+    // Проверка Telegram WebApp
+    function initTelegram() {
+      const tg = window.Telegram?.WebApp;
+      
+      if (tg) {
+        tg.ready();
+        log('🤖 Telegram WebApp готов');
+        document.getElementById('tg-status').textContent = 'Telegram WebApp: ✅';
+        
+        return tg.initDataUnsafe?.user || null;
+      }
+      
+      log('Telegram WebApp не обнаружен, работаем в автономном режиме');
+      document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
+      return null;
+    }
+    
     // Инициализация карты
     async function initMap(user) {
       try {
-        currentUser = user;
-        document.getElementById('login-container')?.remove();
-        log('🟢 initMap() запущена');
-        log(`👤 Пользователь: ${user?.first_name || 'test-user'} (${user?.id || 'test'})`);
-        document.getElementById('user-status').textContent = `User: ✅ ${user?.first_name || 'test'}`;
-
-        // Случайный слоган
-        const phrases = [
-          'Каждый ход важен',
-          'Мощь в координатах',
-          'Победа за гранью горизонта',
-          'Твори историю на карте',
-          'География решает судьбу',
-          'Командуй с высоты'
-        ];
-        document.getElementById('map-title').textContent =
-          `🧭 GENESIS WAR MAP — ${phrases[Math.floor(Math.random()*phrases.length)]}`;
-
+        currentUser = user || { id: 'test-user', first_name: 'Тестовый пользователь' };
+        document.getElementById('login-container').style.display = 'none';
+        document.body.classList.add('logged-in');
+        
+        log(`👤 Пользователь: ${currentUser.first_name} (${currentUser.id})`);
+        document.getElementById('user-status').textContent = `Пользователь: ✅ ${currentUser.first_name}`;
+        
         // Создаем карту
         map = L.map('map', {
           center: [49.25, -123.10],
@@ -324,325 +442,357 @@
           attributionControl: false,
           zoomControl: false
         });
+        
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         log('🗺️ Карта создана');
-        document.getElementById('map-status').textContent = 'Map: ✅ Initialized';
-
+        document.getElementById('map-status').textContent = 'Карта: ✅ Инициализирована';
+        
         // Базовые слои
         const layers = {
           neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
           world: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
           satellite: L.tileLayer(
-            'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             { attribution: 'Esri' }
           )
         };
+        
         layers.neutral.addTo(map);
         
-        document.getElementById('layer-select-small').onchange = e => {
+        document.getElementById('layer-select-small').addEventListener('change', e => {
           Object.values(layers).forEach(l => map.removeLayer(l));
           layers[e.target.value].addTo(map);
-        };
-
+        });
+        
         // Группы слоев
         gridLayer = L.layerGroup().addTo(map);
         tileLayer = L.layerGroup().addTo(map);
-
-        // Загрузка пользовательских меток
-        await loadUserMarks();
         
-        // Генерируем статические данные тайлов
-        log('🧮 Генерация статических данных тайлов...');
-        const refId = 22313, refLat = 49.25, refLng = -123.10;
-        const refX = refId % 256, refY = Math.floor(refId/256);
+        // Загрузка данных
+        await loadData();
         
-        for (let tileId = 0; tileId < 65536; tileId++) {
-          const x = tileId % 256;
-          const y = Math.floor(tileId / 256);
-          const lat = refLat - (y - refY) * degLat;
-          const lng = refLng + (x - refX) * degLng;
-          
-          tileData.push({
-            id_tile: tileId,
-            lat: lat,
-            lng: lng
-          });
-        }
-        log(`✅ Сгенерировано ${tileData.length} тайлов`);
-
-        // Первая отрисовка
-        renderFavorites();
-        drawGrid();
-        loadDynamicData();
+        // Инициализация событий
+        initEventListeners();
         
       } catch (error) {
-        log(`⚠️ Критическая ошибка в initMap: ${error.message}`, true);
-        alert('Произошла критическая ошибка при инициализации карты');
+        log(`⚠️ Ошибка инициализации карты: ${error.message}`, true);
+        alert('Критическая ошибка при инициализации карты');
       }
     }
-
-    // Функции работы с данными
-    function saveMark(id, status) {
-      saveUserMark(id, status === 'clear' ? 'clear' : status);
-      updateTile(id);
-    }
-
-    function saveComment(id) {
-      const comment = document.getElementById(`comment-${id}`)?.value.trim() || '';
-      saveUserMark(id, 'comment', comment);
-      updateTile(id);
-    }
-
-    function toggleFav(id) {
-      const isFav = favs.includes(id);
+    
+    // Загрузка данных
+    async function loadData() {
+      showLoader(true);
+      log('🔄 Загрузка данных...');
       
-      if (isFav) {
-        favs = favs.filter(favId => favId !== id);
-      } else {
-        favs.push(id);
-      }
-      
-      localStorage.setItem('favorites', JSON.stringify(favs));
-      saveUserMark(id, isFav ? 'clear' : 'favorite');
-      renderFavorites();
-      updateTile(id);
-    }
-
-    function goToFav(id) {
-      const t = tileData.find(o => o.id_tile === id);
-      if (!t) return;
-      map.flyTo([t.lat, t.lng], 6, { animate: true, duration: 1 });
-      setTimeout(() => {
+      try {
+        // Загрузка пользовательских данных
+        const userResponse = await fetch(`${API_URL}/api/marks/${currentUser.id}`);
+        if (!userResponse.ok) throw new Error('Ошибка загрузки меток');
+        
+        const marks = await userResponse.json();
+        userMarks = {};
+        marks.forEach(mark => {
+          if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
+          userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
+          
+          if (mark.mark_type === 'favorite') {
+            favorites.push(mark.tile_id);
+          }
+        });
+        
+        log(`📌 Загружено ${marks.length} пользовательских меток`);
+        
+        // Загрузка кеша тайлов
+        const cacheResponse = await fetch(`${API_URL}/api/tiles-cache`);
+        if (!cacheResponse.ok) throw new Error('Ошибка загрузки кеша');
+        
+        const cache = await cacheResponse.json();
+        if (cache && cache.data) {
+          const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
+          if (cacheAge < CACHE_TTL) {
+            tileData = Object.values(cache.data);
+            log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
+            document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
+          }
+        }
+        
+        // Если кеш устарел или отсутствует
+        if (!tileData.length) {
+          log('⏬ Загрузка данных с основного сервера...');
+          const tileResponse = await fetch(`${API_URL}/api/proxy/tile-info`);
+          if (!tileResponse.ok) throw new Error('Ошибка загрузки тайлов');
+          
+          const tiles = await tileResponse.json();
+          tileData = Object.values(tiles);
+          
+          // Сохраняем в кеш
+          await fetch(`${API_URL}/api/tiles-cache`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: tiles })
+          });
+          
+          log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
+          document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
+        }
+        
+        // Инициализация координат
+        initTileCoordinates();
+        
+        // Первичная отрисовка
         drawGrid();
         drawTiles();
-      }, 800);
+        renderFavorites();
+        
+        document.getElementById('api-status').textContent = 'API: ✅ Работает';
+        log('✅ Все данные успешно загружены');
+        
+      } catch (error) {
+        log(`⚠️ Ошибка загрузки данных: ${error.message}`, true);
+        document.getElementById('api-status').textContent = 'API: 🔴 Ошибка';
+      } finally {
+        showLoader(false);
+      }
     }
-
-    function renderFavorites() {
-      const favList = document.getElementById('favorites-list');
-      if (!favList) return;
-      
-      favList.innerHTML = favs.map(id => {
-        const tile = tileData.find(t => t.id_tile === id);
-        return `
-          <li data-id="${id}">
-            Тайл #${id} (${tile ? `${tile.lat.toFixed(4)}, ${tile.lng.toFixed(4)}` : ''})
-            <button class="goto-fav" data-id="${id}">➡️</button>
-            <button class="remove-fav" data-id="${id}">×</button>
-          </li>
-        `;
-      }).join('');
-    }
-
-    // Функции отрисовки
-    function drawGrid() {
-      gridLayer.clearLayers();
-      const vb = map.getBounds();
+    
+    // Инициализация координат тайлов
+    function initTileCoordinates() {
+      const refId = 22313, refLat = 49.25, refLng = -123.10;
+      const refX = refId % 256, refY = Math.floor(refId/256);
       
       tileData.forEach(t => {
-        if (!vb.contains([t.lat, t.lng])) return;
+        const x = t.id_tile % 256, y = Math.floor(t.id_tile/256);
+        t.lat = refLat - (y - refY) * degLat;
+        t.lng = refLng + (x - refX) * degLng;
+      });
+    }
+    
+    // Отрисовка сетки
+    function drawGrid() {
+      gridLayer.clearLayers();
+      const bounds = map.getBounds();
+      
+      tileData.forEach(t => {
+        if (!bounds.contains([t.lat, t.lng])) return;
         
-        const b = L.latLngBounds(
+        const tileBounds = L.latLngBounds(
           [t.lat - degLat/2, t.lng - degLng/2],
           [t.lat + degLat/2, t.lng + degLng/2]
         );
         
-        L.rectangle(b, {
+        L.rectangle(tileBounds, {
           stroke: true,
           weight: 0.6,
-          color: '#666',
+          color: '#555',
           fill: false
         }).addTo(gridLayer);
       });
     }
-
-    function createTileMarker(t) {
-      const b = L.latLngBounds(
+    
+    // Отрисовка тайлов
+    function drawTiles() {
+      tileLayer.clearLayers();
+      Object.values(tileMarkers).forEach(marker => tileLayer.removeLayer(marker));
+      tileMarkers = {};
+      
+      const filter = document.getElementById('status-filter').value;
+      const searchValue = document.getElementById('search').value.trim();
+      const bounds = map.getBounds();
+      
+      tileData.forEach(t => {
+        // Фильтрация
+        const tileMarks = userMarks[t.id_tile] || {};
+        const status = 
+          tileMarks.ally ? 'ally' :
+          tileMarks.enemy ? 'enemy' :
+          tileMarks.favorite ? 'favorite' : '';
+        
+        if (filter === 'ally' && !tileMarks.ally) return;
+        if (filter === 'enemy' && !tileMarks.enemy) return;
+        if (filter === 'favorite' && !tileMarks.favorite) return;
+        if (filter === 'clear' && status) return;
+        if (searchValue && String(t.id_tile) !== searchValue) return;
+        if (!bounds.contains([t.lat, t.lng])) return;
+        
+        // Создание маркера
+        tileMarkers[t.id_tile] = createTileMarker(t, tileMarks);
+        tileLayer.addLayer(tileMarkers[t.id_tile]);
+      });
+    }
+    
+    // Создание маркера для тайла
+    function createTileMarker(t, marks) {
+      const tileBounds = L.latLngBounds(
         [t.lat - degLat/2, t.lng - degLng/2],
         [t.lat + degLat/2, t.lng + degLng/2]
       );
       
-      // Получаем данные из кеша
-      const dynamicData = tileDynamicData[t.id_tile] || {};
-      const userMark = userMarks[t.id_tile] || {};
+      const status = 
+        marks.ally ? 'ally' :
+        marks.enemy ? 'enemy' :
+        marks.favorite ? 'favorite' : '';
       
-      // Определяем статус метки
-      const st = 
-        userMark.ally ? 'ally' : 
-        userMark.enemy ? 'enemy' : 
-        userMark.favorite ? 'favorite' : '';
+      const isFav = favorites.includes(t.id_tile);
+      const comment = marks.comment || '';
+      const owned = t.has_owner === 'true';
       
-      const isFav = favs.includes(t.id_tile);
-      const comment = userMark.comment || '';
-      const owned = dynamicData.has_owner || false;
+      // Стилизация
+      const fill = status === 'ally' ? '#40c057' :
+                  status === 'enemy' ? '#fa5252' :
+                  status === 'favorite' ? '#fab005' :
+                  owned ? '#4dabf7' : '#495057';
+                  
+      const stroke = status === 'ally' ? '#2f9e44' :
+                    status === 'enemy' ? '#e03131' :
+                    status === 'favorite' ? '#f59f00' : '#343a40';
       
-      // Стили в зависимости от статуса
-      const fill = st === 'ally' ? '#33cc33'
-                : st === 'enemy' ? '#cc3333'
-                : st === 'favorite' ? '#ff0'
-                : owned ? '#3366ff' : '#444';
-                
-      const stroke = st === 'ally' ? '#00ff00'
-                  : st === 'enemy' ? '#ff0000'
-                  : st === 'favorite' ? '#ff0' : '#000';
-
-      const rect = L.rectangle(b, {
+      const rect = L.rectangle(tileBounds, {
         stroke: true,
-        weight: 1.2,
+        weight: 1.5,
         color: stroke,
-        dashArray: st ? '4' : null,
+        dashArray: status ? '5' : null,
         fillColor: fill,
         fillOpacity: 0.4
       });
-
-      // Добавляем tooltip
-      const zoom = map.getZoom();
-      if (zoom >= 5) {
+      
+      // Добавление подписи
+      if (map.getZoom() >= 5) {
         rect.bindTooltip(`#${t.id_tile}`, {
           permanent: true,
           direction: 'center',
           className: 'tile-label'
         });
       }
-
-      // Создаем popup
-      const popupContent = document.createElement('div');
-      popupContent.innerHTML = `
-        <strong>Тайл #${t.id_tile}</strong><br/>
-        <div>Статус: ${owned ? 'занят' : 'свободен'}</div>
-        ${dynamicData.owner ? `<div>Владелец: ${dynamicData.owner}</div>` : ''}
-        ${dynamicData.resources ? `<div>Ресурсы: ${dynamicData.resources}</div>` : ''}
-        <div>Метка: ${st || '—'}</div>
-        <div>Комментарий: ${comment || '—'}</div>
+      
+      // Всплывающее окно
+      const popupContent = `
+        <div style="min-width: 250px">
+          <h3 style="margin-bottom: 12px; color: #4dabf7;">Тайл #${t.id_tile}</h3>
+          <p><strong>Статус:</strong> ${owned ? 'Занят' : 'Свободен'}</p>
+          <p><strong>Метка:</strong> ${status || '—'}</p>
+          <p><strong>Комментарий:</strong> ${comment || '—'}</p>
+          
+          <div style="margin: 15px 0; display: flex; gap: 5px; flex-wrap: wrap;">
+            <button class="mark-btn" data-id="${t.id_tile}" data-type="ally">🟩 Союзник</button>
+            <button class="mark-btn" data-id="${t.id_tile}" data-type="enemy">🟥 Враг</button>
+            <button class="mark-btn" data-id="${t.id_tile}" data-type="favorite">⭐ Избранное</button>
+            <button class="mark-btn" data-id="${t.id_tile}" data-type="clear">⚪ Сброс</button>
+          </div>
+          
+          <textarea id="comment-${t.id_tile}" placeholder="Ваш комментарий..." 
+            style="width: 100%; min-height: 80px; padding: 8px; margin-bottom: 10px;">${comment}</textarea>
+          
+          <button class="save-comment" data-id="${t.id_tile}">💾 Сохранить комментарий</button>
+        </div>
       `;
       
-      const buttons = document.createElement('div');
-      buttons.style.margin = '10px 0';
-      buttons.style.display = 'flex';
-      buttons.style.flexWrap = 'wrap';
-      buttons.style.gap = '5px';
-      
-      // Кнопки меток
-      ['ally', 'enemy', 'favorite', 'clear'].forEach(status => {
-        const btn = document.createElement('button');
-        btn.className = 'tile-popup-button';
-        btn.dataset.status = status;
-        btn.dataset.id = t.id_tile;
-        btn.textContent = 
-          status === 'ally' ? '🟩 Союзник' :
-          status === 'enemy' ? '🟥 Враг' :
-          status === 'favorite' ? '⭐️ Избранное' : '⚪️ Сброс';
-        buttons.appendChild(btn);
-      });
-      
-      // Кнопка избранного
-      const favBtn = document.createElement('button');
-      favBtn.className = 'tile-popup-button';
-      favBtn.dataset.id = t.id_tile;
-      favBtn.textContent = isFav ? 'Удалить из избранного' : 'Добавить в избранное';
-      buttons.appendChild(favBtn);
-      
-      // Поле комментария
-      const textarea = document.createElement('textarea');
-      textarea.id = `comment-${t.id_tile}`;
-      textarea.value = comment;
-      textarea.placeholder = 'Ваш комментарий...';
-      textarea.style.width = '100%';
-      textarea.style.minHeight = '60px';
-      textarea.style.margin = '5px 0';
-      textarea.style.padding = '5px';
-      textarea.style.boxSizing = 'border-box';
-      
-      // Кнопка сохранения комментария
-      const saveBtn = document.createElement('button');
-      saveBtn.className = 'tile-popup-button';
-      saveBtn.dataset.id = t.id_tile;
-      saveBtn.textContent = '💾 Сохранить комментарий';
-      saveBtn.style.marginTop = '5px';
-      
-      popupContent.appendChild(buttons);
-      popupContent.appendChild(textarea);
-      popupContent.appendChild(saveBtn);
-      
       rect.bindPopup(popupContent);
-      rect.on('click', () => rect.openPopup());
-      
       return rect;
     }
-
+    
+    // Отрисовка избранного
+    function renderFavorites() {
+      const favList = document.getElementById('favorites-list');
+      if (!favList) return;
+      
+      favList.innerHTML = favorites.map(id => {
+        const tile = tileData.find(t => t.id_tile === id);
+        return `
+          <li data-id="${id}">
+            Тайл #${id}
+            <div>
+              <button class="goto-fav" data-id="${id}">➡️</button>
+              <button class="remove-fav" data-id="${id}">✕</button>
+            </div>
+          </li>
+        `;
+      }).join('');
+    }
+    
+    // Сохранение метки
+    async function saveMark(tileId, markType, comment = null) {
+      try {
+        const response = await fetch(`${API_URL}/api/marks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            tile_id: tileId,
+            mark_type: markType,
+            comment: comment
+          })
+        });
+        
+        if (!response.ok) throw new Error('Ошибка сохранения');
+        
+        const result = await response.json();
+        log(`💾 Метка сохранена: ${tileId} (${markType})`);
+        
+        // Обновление локального состояния
+        if (!userMarks[tileId]) userMarks[tileId] = {};
+        
+        if (markType === 'clear') {
+          delete userMarks[tileId];
+          favorites = favorites.filter(favId => favId !== tileId);
+        } else {
+          userMarks[tileId][markType] = comment || true;
+          if (markType === 'favorite' && !favorites.includes(tileId)) {
+            favorites.push(tileId);
+          }
+        }
+        
+        // Обновление UI
+        updateTile(tileId);
+        renderFavorites();
+        
+        return result;
+      } catch (error) {
+        log(`⚠️ Ошибка сохранения метки: ${error.message}`, true);
+      }
+    }
+    
+    // Обновление тайла
     function updateTile(id) {
       if (tileMarkers[id]) {
         tileLayer.removeLayer(tileMarkers[id]);
+        const tile = tileData.find(t => t.id_tile === id);
+        if (tile) {
+          tileMarkers[id] = createTileMarker(tile, userMarks[id] || {});
+          tileLayer.addLayer(tileMarkers[id]);
+        }
       }
-      
-      const tile = tileData.find(t => t.id_tile === id);
-      if (!tile) return;
-      
-      const marker = createTileMarker(tile);
-      tileMarkers[id] = marker;
-      tileLayer.addLayer(marker);
     }
-
-    function drawTiles() {
-      const filter = document.getElementById('status-filter').value;
-      const vb = map.getBounds();
-      const searchValue = document.getElementById('search').value.trim();
-      
-      tileLayer.clearLayers();
-      Object.values(tileMarkers).forEach(marker => tileLayer.removeLayer(marker));
-      
-      const filteredTiles = tileData.filter(t => {
-        // Фильтрация по статусу
-        const userMark = userMarks[t.id_tile] || {};
-        const st = 
-          userMark.ally ? 'ally' : 
-          userMark.enemy ? 'enemy' : 
-          userMark.favorite ? 'favorite' : '';
-        
-        if (filter === 'ally' && !userMark.ally) return false;
-        if (filter === 'enemy' && !userMark.enemy) return false;
-        if (filter === 'favorite' && !userMark.favorite) return false;
-        if (filter === 'clear' && st) return false;
-        
-        // Фильтрация по поиску
-        if (searchValue && String(t.id_tile) !== searchValue) return false;
-        
-        // Фильтрация по видимой области
-        return vb.contains([t.lat, t.lng]);
-      });
-      
-      filteredTiles.forEach(t => {
-        const marker = createTileMarker(t);
-        tileMarkers[t.id_tile] = marker;
-        tileLayer.addLayer(marker);
-      });
-    }
-
-    // Настройка обработчиков событий
-    function setupEventListeners() {
+    
+    // Инициализация обработчиков событий
+    function initEventListeners() {
       // Очистка поиска
       document.getElementById('search-clear').addEventListener('click', () => {
         document.getElementById('search').value = '';
         drawTiles();
       });
-
+      
       // Переход к тайлу
       document.getElementById('goto-btn').addEventListener('click', () => {
-        const v = document.getElementById('search').value.trim();
-        if (!v) return drawTiles();
+        const tileId = document.getElementById('search').value.trim();
+        if (!tileId) return;
         
-        const t = tileData.find(o => +o.id_tile === +v);
-        if (!t) return;
+        const tile = tileData.find(t => t.id_tile == tileId);
+        if (!tile) {
+          log(`Тайл #${tileId} не найден`, true);
+          return;
+        }
         
-        map.flyTo([t.lat, t.lng], 6, { animate: true, duration: 1 });
-        setTimeout(() => {
-          drawGrid();
-          drawTiles();
-        }, 800);
+        map.flyTo([tile.lat, tile.lng], 7, {
+          animate: true,
+          duration: 1
+        });
       });
-
+      
       // Поиск при вводе
-      document.getElementById('search').addEventListener('input', () => drawTiles());
+      document.getElementById('search').addEventListener('input', () => {
+        drawTiles();
+      });
       
       // Сброс фильтров
       document.getElementById('reset').addEventListener('click', () => {
@@ -663,10 +813,8 @@
         html2canvas(document.getElementById('map')).then(canvas => {
           const link = document.createElement('a');
           link.href = canvas.toDataURL('image/png');
-          link.download = `map-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+          link.download = `map-${new Date().toISOString().slice(0, 19)}.png`;
           link.click();
-        }).catch(e => {
-          log(`⚠️ Ошибка создания скриншота: ${e.message}`, true);
         });
       });
       
@@ -680,92 +828,70 @@
       // Делегирование событий для попапов
       map.on('popupopen', (e) => {
         const popup = e.popup;
-        const content = popup.getElement();
-        
-        content.addEventListener('click', (e) => {
-          const target = e.target;
-          if (!target.classList.contains('tile-popup-button')) return;
-          
-          const tileId = parseInt(target.dataset.id);
-          
-          if (target.dataset.status) {
-            saveMark(tileId, target.dataset.status);
-          } else if (target.textContent.includes('избранн')) {
-            toggleFav(tileId);
-          } else if (target.textContent.includes('комментарий')) {
-            saveComment(tileId);
+        popup.getElement().addEventListener('click', (event) => {
+          if (event.target.classList.contains('mark-btn')) {
+            const tileId = parseInt(event.target.dataset.id);
+            const markType = event.target.dataset.type;
+            saveMark(tileId, markType);
           }
           
-          popup.setContent(createTileMarker(
-            tileData.find(t => t.id_tile === tileId)
-          ).getPopup().getContent());
+          if (event.target.classList.contains('save-comment')) {
+            const tileId = parseInt(event.target.dataset.id);
+            const comment = document.getElementById(`comment-${tileId}`).value;
+            saveMark(tileId, 'comment', comment);
+          }
         });
       });
       
       // Делегирование событий для избранного
-      document.getElementById('favorites-list').addEventListener('click', (e) => {
-        if (!e.target.matches('button')) return;
+      document.getElementById('favorites-list').addEventListener('click', (event) => {
+        if (!event.target.classList.contains('goto-fav') && 
+            !event.target.classList.contains('remove-fav')) return;
+            
+        const tileId = parseInt(event.target.dataset.id);
         
-        const tileId = parseInt(e.target.dataset.id);
-        if (e.target.classList.contains('goto-fav')) {
-          goToFav(tileId);
-        } else if (e.target.classList.contains('remove-fav')) {
-          toggleFav(tileId);
+        if (event.target.classList.contains('goto-fav')) {
+          const tile = tileData.find(t => t.id_tile === tileId);
+          if (tile) {
+            map.flyTo([tile.lat, tile.lng], 7, { animate: true, duration: 1 });
+          }
+        } else if (event.target.classList.contains('remove-fav')) {
+          saveMark(tileId, 'clear');
         }
       });
+      
+      // Обновление при перемещении карты
+      map.on('moveend', () => {
+        drawGrid();
+        drawTiles();
+      });
+      
+      // Обновление при изменении зума
+      map.on('zoomend', () => {
+        drawTiles();
+      });
     }
-
-    // Основная инициализация приложения
-    document.addEventListener('DOMContentLoaded', async () => {
-      initSupabase();
-      let favs = JSON.parse(localStorage.getItem('favorites') || '[]');
-      
-      // Проверка статуса для отладки
-      const dbg = (id, msg) => {
-        const e = document.getElementById(id);
-        if (e) e.textContent = `${e.textContent.split(':')[0]}: ${msg}`;
-      };
-      
+    
+    // Инициализация приложения
+    async function initApp() {
       try {
-        // Настройка Telegram
-        const tg = window.Telegram?.WebApp;
-        dbg('tg-status', tg ? '✅ Loaded' : '❌ Not available');
+        // Инициализация Telegram
+        const user = initTelegram();
         
-        if (tg) {
-          tg.ready();
-          log('🤖 Telegram WebApp ready');
-        }
+        // Инициализация карты
+        await initMap(user);
         
-        const tgUser = tg?.initDataUnsafe?.user || null;
-        dbg('user-status', tgUser ? `✅ ${tgUser.first_name}` : '❌ No user');
+        // Логирование успешного запуска
+        log('✅ Приложение успешно запущено');
         
-        if (tgUser) {
-          await syncUser(tgUser);
-          window.__tgUser = tgUser;
-        } else {
-          log('👤 TG user: отсутствует (offline)');
-        }
-        
-        // Инициализируем приложение
-        document.body.classList.add('logged-in');
-        await initMap(tgUser || { 
-          id: 'test-user', 
-          first_name: 'Test User',
-          username: 'test'
-        });
-        
-        setupEventListeners();
-        dbg('map-status', '✅ Initialized');
-        log('✅ Приложение инициализировано');
-        
-        // Периодическое обновление данных
-        setInterval(loadDynamicData, CACHE_TTL);
       } catch (error) {
-        dbg('error-log', `❌ ${error.message}`);
         log(`⚠️ Критическая ошибка инициализации: ${error.message}`, true);
         alert('Произошла критическая ошибка при запуске приложения');
       }
-    });
+    }
+    
+    // Запуск приложения
+    document.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
 </html>
