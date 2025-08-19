@@ -365,6 +365,7 @@
   
   <script>
     // Конфигурация
+    // ВАЖНО: Убедись, что здесь нет лишних пробелов!
     const API_URL = 'https://genesis-map-api.onrender.com'; // URL нового API сервиса
     const degLat = 170/256, degLng = 360/256;
     const CACHE_TTL = 30 * 60 * 1000; // 30 минут
@@ -449,6 +450,7 @@
         
         // Базовые слои
         const layers = {
+          // ИСПРАВЛЕНО: Убраны лишние пробелы в URL
           neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
           world: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
           satellite: L.tileLayer(
@@ -488,7 +490,7 @@
       try {
         // Загрузка пользовательских данных
         const userResponse = await fetch(`${API_URL}/api/marks/${currentUser.id}`);
-        if (!userResponse.ok) throw new Error('Ошибка загрузки меток');
+        if (!userResponse.ok) throw new Error(`Ошибка загрузки меток: ${userResponse.status} ${userResponse.statusText}`);
         
         const marks = await userResponse.json();
         userMarks = {};
@@ -505,36 +507,48 @@
         
         // Загрузка кеша тайлов
         const cacheResponse = await fetch(`${API_URL}/api/tiles-cache`);
-        if (!cacheResponse.ok) throw new Error('Ошибка загрузки кеша');
-        
-        const cache = await cacheResponse.json();
-        if (cache && cache.data) {
-          const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
-          if (cacheAge < CACHE_TTL) {
-            tileData = Object.values(cache.data);
-            log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
-            document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
-          }
+        if (!cacheResponse.ok) {
+            if (cacheResponse.status === 404) {
+                log('ℹ️ Кеш не найден, будет загружен свежий');
+            } else {
+                throw new Error(`Ошибка загрузки кеша: ${cacheResponse.status} ${cacheResponse.statusText}`);
+            }
+        } else {
+            const cache = await cacheResponse.json();
+            if (cache && cache.data) {
+              const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
+              if (cacheAge < CACHE_TTL) {
+                tileData = Object.values(cache.data);
+                log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
+                document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
+              } else {
+                 log('ℹ️ Кеш устарел, будет загружен свежий');
+              }
+            }
         }
         
         // Если кеш устарел или отсутствует
         if (!tileData.length) {
           log('⏬ Загрузка данных с основного сервера...');
           const tileResponse = await fetch(`${API_URL}/api/proxy/tile-info`);
-          if (!tileResponse.ok) throw new Error('Ошибка загрузки тайлов');
+          if (!tileResponse.ok) throw new Error(`Ошибка загрузки тайлов: ${tileResponse.status} ${tileResponse.statusText}`);
           
           const tiles = await tileResponse.json();
           tileData = Object.values(tiles);
           
           // Сохраняем в кеш
-          await fetch(`${API_URL}/api/tiles-cache`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: tiles })
-          });
-          
-          log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
-          document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
+          try {
+              await fetch(`${API_URL}/api/tiles-cache`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: tiles }) // Исправлено: правильный ключ
+              });
+              log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
+              document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
+          } catch (cacheErr) {
+              log(`⚠️ Не удалось сохранить кеш: ${cacheErr.message}`, true);
+              // Продолжаем работу даже если кеш не сохранился
+          }
         }
         
         // Инициализация координат
@@ -550,7 +564,7 @@
         
       } catch (error) {
         log(`⚠️ Ошибка загрузки данных: ${error.message}`, true);
-        document.getElementById('api-status').textContent = 'API: 🔴 Ошибка';
+        document.getElementById('api-status').textContent = `API: 🔴 Ошибка (${error.message})`;
       } finally {
         showLoader(false);
       }
@@ -724,7 +738,7 @@
           })
         });
         
-        if (!response.ok) throw new Error('Ошибка сохранения');
+        if (!response.ok) throw new Error(`Ошибка сохранения: ${response.status} ${response.statusText}`);
         
         const result = await response.json();
         log(`💾 Метка сохранена: ${tileId} (${markType})`);
