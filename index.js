@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,30 +15,56 @@ const pool = new Pool({
   }
 });
 
+// Более строгие настройки CORS
+const allowedOrigins = [
+  'https://genesis-data.onrender.com',
+  'https://web.telegram.org',
+  'http://localhost:3000'
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked for origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+// Middleware
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Предварительные запросы
+app.use(express.json({ limit: '10mb' }));
+
+// Логирование всех запросов
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  next();
+});
+
 // Проверка соединения с БД
 pool.query('SELECT NOW()')
   .then(() => console.log('✅ Подключение к базе данных успешно'))
   .catch(err => console.error('❌ Ошибка подключения к базе:', err));
 
-// Middleware
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL, 
-    process.env.TELEGRAM_URL
-  ],
-  methods: ['GET', 'POST']
-}));
-app.use(express.json());
-
 // Эндпоинты
 app.get('/health', (req, res) => {
-  res.status(200).send('OK');
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    database: 'connected'
+  });
 });
 
 app.post('/api/users', async (req, res) => {
-  const { telegram_id, first_name, last_name, username } = req.body;
-  
   try {
+    const { telegram_id, first_name, last_name, username } = req.body;
+    
     const result = await pool.query(
       `INSERT INTO users (telegram_id, first_name, last_name, username)
        VALUES ($1, $2, $3, $4)
@@ -52,14 +79,14 @@ app.post('/api/users', async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Ошибка регистрации пользователя:', error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error', details: error.message });
   }
 });
 
 app.post('/api/marks', async (req, res) => {
-  const { user_id, tile_id, mark_type, comment } = req.body;
-  
   try {
+    const { user_id, tile_id, mark_type, comment } = req.body;
+    
     // Удаление предыдущей метки
     await pool.query(
       `DELETE FROM user_marks 
@@ -82,14 +109,14 @@ app.post('/api/marks', async (req, res) => {
     res.json({ message: 'Mark cleared' });
   } catch (error) {
     console.error('Ошибка сохранения метки:', error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error', details: error.message });
   }
 });
 
 app.get('/api/marks/:user_id', async (req, res) => {
-  const userId = req.params.user_id;
-  
   try {
+    const userId = req.params.user_id;
+    
     const result = await pool.query(
       `SELECT * FROM user_marks WHERE user_id = $1`,
       [userId]
@@ -98,7 +125,7 @@ app.get('/api/marks/:user_id', async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Ошибка загрузки меток:', error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error', details: error.message });
   }
 });
 
@@ -113,14 +140,14 @@ app.get('/api/tiles-cache', async (req, res) => {
     res.json(result.rows[0] || null);
   } catch (error) {
     console.error('Ошибка загрузки кеша:', error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error', details: error.message });
   }
 });
 
 app.post('/api/tiles-cache', async (req, res) => {
-  const { data } = req.body;
-  
   try {
+    const { data } = req.body;
+    
     const result = await pool.query(
       `INSERT INTO tiles_cache (data) 
        VALUES ($1) 
@@ -131,39 +158,52 @@ app.post('/api/tiles-cache', async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Ошибка сохранения кеша:', error);
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: 'Database error', details: error.message });
   }
 });
 
 app.get('/api/proxy/tile-info', async (req, res) => {
   try {
-    const response = await fetch('https://back.genesis-of-ages.space/manage/get_tile_info.php');
+    console.log('Запрос данных с основного сервера...');
+    const response = await fetch('https://back.genesis-of-ages.space/manage/get_tile_info.php', {
+      timeout: 10000 // 10 секунд таймаут
+    });
     
     if (!response.ok) {
-      throw new Error(`Remote server error: ${response.status}`);
+      throw new Error(`Remote server error: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
+    console.log('Получено данных:', Object.keys(data).length);
     res.json(data);
   } catch (error) {
     console.error('Proxy error:', error);
-    res.status(500).json({ error: 'Proxy error' });
+    res.status(500).json({ 
+      error: 'Proxy error', 
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
 // Обработка 404
 app.use((req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
+  res.status(404).json({ error: 'Endpoint not found', path: req.path });
 });
 
 // Обработка ошибок
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({ 
+    error: 'Internal server error', 
+    details: error.message,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Запуск сервера
 app.listen(PORT, () => {
   console.log(`🚀 Сервер запущен на порту ${PORT}`);
-  console.log(`🌐 CORS разрешен для: ${process.env.FRONTEND_URL}, ${process.env.TELEGRAM_URL}`);
+  console.log(`🌐 CORS разрешен для: ${allowedOrigins.join(', ')}`);
+  console.log(`📊 База данных: ${process.env.DATABASE_URL ? 'Настроена' : 'Не настроена'}`);
 });
