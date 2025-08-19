@@ -15,30 +15,31 @@ const pool = new Pool({
   }
 });
 
-// Более строгие настройки CORS
-const allowedOrigins = [
-  'https://genesis-data.onrender.com',
-  'https://web.telegram.org',
-  'http://localhost:3000'
-];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log('CORS blocked for origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
+// Улучшенные настройки CORS
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    'https://genesis-data.onrender.com',
+    'https://web.telegram.org',
+    'http://localhost:3000'
+  ];
+  
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
 // Middleware
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Предварительные запросы
 app.use(express.json({ limit: '10mb' }));
 
 // Логирование всех запросов
@@ -204,6 +205,5 @@ app.use((error, req, res, next) => {
 // Запуск сервера
 app.listen(PORT, () => {
   console.log(`🚀 Сервер запущен на порту ${PORT}`);
-  console.log(`🌐 CORS разрешен для: ${allowedOrigins.join(', ')}`);
   console.log(`📊 База данных: ${process.env.DATABASE_URL ? 'Настроена' : 'Не настроена'}`);
 });
