@@ -23,51 +23,32 @@
       color: #fff;
     }
     
-    #login-container {
-      position: absolute;
+    /* Загрузочный экран */
+    .loader-screen {
+      position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
       display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.9);
+      align-items: center;
+      background: url('https://i.imgur.com/2v5JqkL.png') center/contain no-repeat;
+      background-color: rgba(0, 0, 0, 0.8);
       z-index: 1000;
-      text-align: center;
-      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 1;
+      transition: opacity 0.5s ease;
     }
     
-    #login-container h1 {
-      margin-bottom: 20px;
-      font-size: 2.2rem;
-      color: #4dabf7;
+    .loader-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
     }
     
-    #login-button {
-      margin-top: 30px;
-      padding: 15px 30px;
-      font-size: 1.2rem;
-      background: linear-gradient(135deg, #1971c2, #1c7ed6);
-      border: none;
-      border-radius: 8px;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(25, 113, 194, 0.4);
-    }
-    
-    #login-button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(25, 113, 194, 0.6);
-    }
-    
-    #login-button:active {
-      transform: translateY(1px);
-    }
-    
+    /* Панель управления */
     #panel {
       position: absolute;
       top: 0;
@@ -79,19 +60,21 @@
       flex-wrap: wrap;
       align-items: center;
       padding: 12px;
-      gap: 15px;
+      gap: 10px;
       z-index: 900;
       backdrop-filter: blur(5px);
       border-bottom: 1px solid #2c3e50;
+      transition: all 0.3s ease;
     }
     
     #map-title {
       font-size: 1.4rem;
       font-weight: bold;
       color: #74c0fc;
-      margin-right: 20px;
+      margin-right: 10px;
     }
     
+    /* Поиск тайла */
     .search-wrapper {
       position: relative;
       display: flex;
@@ -99,10 +82,12 @@
       background: rgba(40, 40, 50, 0.8);
       border-radius: 6px;
       padding: 5px;
+      flex: 1;
+      min-width: 200px;
     }
     
     #search {
-      width: 150px;
+      width: 100%;
       padding: 8px 30px 8px 12px;
       background: transparent;
       border: 1px solid #495057;
@@ -130,19 +115,36 @@
       color: #ff6b6b;
     }
     
-    #goto-btn, #reset, #screenshot-btn {
-      padding: 8px 15px;
-      background: #3b5bdb;
-      color: white;
-      border: none;
-      border-radius: 4px;
+    #goto-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 30px;
+      background: rgba(77, 171, 247, 0.2);
+      border: 1px solid #4dabf7;
+      border-radius: 50%;
+      color: #4dabf7;
+      font-size: 1.2rem;
       cursor: pointer;
-      font-size: 0.95rem;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
-    #goto-btn:hover, #reset:hover, #screenshot-btn:hover {
-      background: #364fc7;
+    #goto-btn:hover {
+      background: rgba(77, 171, 247, 0.3);
+      transform: translateY(-2px);
+    }
+    
+    /* Фильтр меток */
+    .filter-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 10px;
     }
     
     #status-filter {
@@ -151,9 +153,48 @@
       color: #e9ecef;
       border: 1px solid #495057;
       border-radius: 4px;
-      min-width: 150px;
+      font-size: 0.9rem;
+      min-width: 120px;
     }
     
+    #clear-filter {
+      width: 30px;
+      height: 30px;
+      background: rgba(77, 171, 247, 0.2);
+      border: 1px solid #4dabf7;
+      border-radius: 50%;
+      color: #4dabf7;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #clear-filter:hover {
+      background: rgba(77, 171, 247, 0.3);
+      transform: translateY(-2px);
+    }
+    
+    /* Кнопки управления */
+    #reset, #screenshot-btn {
+      padding: 8px 15px;
+      background: #3b5bdb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+      margin-left: 10px;
+    }
+    
+    #reset:hover, #screenshot-btn:hover {
+      background: #364fc7;
+    }
+    
+    /* Избранное */
     #favorites-container {
       background: rgba(30, 30, 40, 0.8);
       padding: 12px;
@@ -165,11 +206,12 @@
     #favorites-container h4 {
       margin-bottom: 10px;
       color: #ffd43b;
+      font-size: 1rem;
     }
     
     #favorites-list {
       list-style: none;
-      max-height: 200px;
+      max-height: 150px;
       overflow-y: auto;
     }
     
@@ -197,15 +239,44 @@
       background: #5c636a;
     }
     
-    #map {
+    /* Слои карты */
+    #layer-select {
       position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 500;
+      bottom: 10px;
+      right: 10px;
+      z-index: 910;
+      background: rgba(30, 30, 40, 0.8);
+      border: 1px solid #495057;
+      border-radius: 6px;
+      padding: 5px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      transition: all 0.3s ease;
     }
     
+    .layer-btn {
+      width: 40px;
+      height: 40px;
+      background: rgba(50, 50, 60, 0.8);
+      border: 1px solid #495057;
+      border-radius: 50%;
+      color: #e9ecef;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    
+    .layer-btn.active {
+      background: #4dabf7;
+      color: white;
+      border-color: #4dabf7;
+    }
+    
+    /* Кнопка сворачивания панели */
     #toggle-panel {
       position: absolute;
       top: 10px;
@@ -217,20 +288,70 @@
       border-radius: 4px;
       padding: 8px 12px;
       cursor: pointer;
+      font-size: 1.1rem;
     }
     
-    #layer-select-small {
+    /* Кнопка снимка */
+    #screenshot-btn {
       position: absolute;
-      top: 50px;
+      bottom: 10px;
       right: 10px;
       z-index: 910;
-      background: #343a40;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 6px;
+      background: rgba(77, 171, 247, 0.2);
+      border: 1px solid #4dabf7;
+      border-radius: 6px;
+      padding: 8px 15px;
+      color: #4dabf7;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
     
+    #screenshot-btn:hover {
+      background: rgba(77, 171, 247, 0.3);
+      opacity: 1;
+      transform: translateY(-2px);
+    }
+    
+    /* Логи */
+    #logs-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 910;
+      background: rgba(77, 171, 247, 0.2);
+      border: 1px solid #4dabf7;
+      border-radius: 6px;
+      padding: 8px 15px;
+      color: #4dabf7;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    #logs-btn:hover {
+      background: rgba(77, 171, 247, 0.3);
+      transform: translateY(-2px);
+    }
+    
+    /* Карта */
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 500;
+    }
+    
+    /* Отладочная панель */
     #debug {
       position: fixed;
       bottom: 0;
@@ -245,6 +366,7 @@
       overflow: auto;
       font-family: 'Courier New', monospace;
       border-top: 1px solid #20c997;
+      display: none;
     }
     
     .debug-section {
@@ -269,6 +391,7 @@
       text-shadow: 0 1px 1px black;
     }
     
+    /* Лоадер */
     .loader {
       display: none;
       position: fixed;
@@ -301,9 +424,12 @@
   </style>
 </head>
 <body>
-  <div id="login-container">
-    <h1>Добро пожаловать в GENESIS WAR MAP</h1>
-    <button id="login-button">🔐 Войти через Telegram</button>
+  <!-- Загрузочный экран -->
+  <div class="loader-screen" id="loader-screen">
+    <div style="text-align: center; color: white; font-size: 1.2rem; margin-top: 20px;">
+      <div>Загрузка данных...</div>
+      <div style="margin-top: 10px;">Пожалуйста, подождите</div>
+    </div>
   </div>
 
   <div id="panel">
@@ -312,19 +438,19 @@
     <div class="search-wrapper">
       <input type="text" id="search" placeholder="Тайл-ID" />
       <span id="search-clear">×</span>
-      <button id="goto-btn">➡️ Перейти</button>
+      <button id="goto-btn">➡️</button>
     </div>
     
-    <label>
-      🎯 Метка:
+    <div class="filter-wrapper">
       <select id="status-filter">
         <option value="">— Все —</option>
         <option value="ally">🟩 Союзник</option>
         <option value="enemy">🟥 Враг</option>
-        <option value="favorite">⭐️ Избранное</option>
-        <option value="clear">⚪️ Без метки</option>
+        <option value="favorite">⭐ Избранное</option>
+        <option value="clear">⚪ Без метки</option>
       </select>
-    </label>
+      <button id="clear-filter">×</button>
+    </div>
     
     <button id="reset">♻️ Сбросить</button>
     <button id="screenshot-btn">📸 Снимок</button>
@@ -338,17 +464,14 @@
   <div id="map"></div>
   
   <button id="toggle-panel">🔽</button>
-  <select id="layer-select-small">
-    <option value="neutral">N</option>
-    <option value="world">W</option>
-    <option value="satellite">S</option>
-  </select>
-  
-  <div class="loader" id="loader">
-    <div class="loader-spinner"></div>
-    <div class="loader-text">Загрузка данных...</div>
+  <div id="layer-select">
+    <button class="layer-btn" data-layer="neutral">N</button>
+    <button class="layer-btn" data-layer="world">W</button>
+    <button class="layer-btn" data-layer="satellite">S</button>
   </div>
-
+  
+  <button id="logs-btn">📝 Логи</button>
+  
   <div id="debug">
     <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
     <div class="debug-section" id="user-status">Пользователь: ⏳</div>
@@ -378,7 +501,7 @@
     let favorites = [];
     
     // Элементы UI
-    const loader = document.getElementById('loader');
+    const loaderScreen = document.getElementById('loader-screen');
     const debugLog = document.getElementById('debug-log');
     
     // Логирование в отладочную панель
@@ -403,6 +526,7 @@
     
     // Показать/скрыть лоадер
     function showLoader(visible) {
+      const loader = document.getElementById('loader');
       loader.style.display = visible ? 'block' : 'none';
     }
     
@@ -459,9 +583,16 @@
         
         layers.neutral.addTo(map);
         
-        document.getElementById('layer-select-small').addEventListener('change', e => {
-          Object.values(layers).forEach(l => map.removeLayer(l));
-          layers[e.target.value].addTo(map);
+        // Установка активного слоя по умолчанию
+        document.querySelectorAll('.layer-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const layerName = btn.dataset.layer;
+            Object.values(layers).forEach(l => map.removeLayer(l));
+            layers[layerName].addTo(map);
+          });
         });
         
         // Группы слоев
@@ -513,7 +644,6 @@
             }
         } else {
             const cache = await cacheResponse.json();
-            console.log('Данные кеша из API:', cache);
             if (cache && cache.data) {
               const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
               if (cacheAge < CACHE_TTL) {
@@ -542,7 +672,7 @@
               await fetch(`${API_URL}/api/tiles-cache`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: tilesResponse }) // Сохраняем весь объект
+                body: JSON.stringify({  tilesResponse }) // Сохраняем весь объект
               });
               log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
               document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
@@ -551,8 +681,6 @@
               // Продолжаем работу даже если кеш не сохранился
           }
         }
-        
-        console.log('tileData перед initTileCoordinates:', tileData);
         
         // Инициализация координат
         initTileCoordinates();
@@ -570,6 +698,10 @@
         document.getElementById('api-status').textContent = `API: 🔴 Ошибка (${error.message})`;
       } finally {
         showLoader(false);
+        // Скрываем загрузочный экран
+        setTimeout(() => {
+          loaderScreen.classList.add('fade-out');
+        }, 500);
       }
     }
     
@@ -855,6 +987,13 @@
         drawTiles();
       });
       
+      // Сброс фильтра меток
+      document.getElementById('clear-filter').addEventListener('click', () => {
+        document.getElementById('status-filter').value = '';
+        drawGrid();
+        drawTiles();
+      });
+      
       // Снимок экрана
       document.getElementById('screenshot-btn').addEventListener('click', () => {
         html2canvas(document.getElementById('map')).then(canvas => {
@@ -916,6 +1055,12 @@
       // Обновление при изменении зума
       map.on('zoomend', () => {
         drawTiles();
+      });
+      
+      // Кнопка "Логи"
+      document.getElementById('logs-btn').addEventListener('click', () => {
+        const debug = document.getElementById('debug');
+        debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
       });
     }
     
