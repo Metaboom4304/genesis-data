@@ -40,7 +40,7 @@ app.use((req, res, next) => {
 });
 
 // Middleware
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '40mb' }));
 
 // Логирование всех запросов
 app.use((req, res, next) => {
