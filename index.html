@@ -35,7 +35,7 @@
       justify-content: center;
       align-items: center;
       background: url('./1755546482.png') center/cover no-repeat;
-      background-color: rgba(0, 0, 0, 0.8);
+      background-color: rgba(0, 0, 0, 0.9);
       z-index: 1000;
       transition: opacity 0.5s ease;
     }
@@ -50,18 +50,27 @@
       margin-bottom: 20px;
       text-align: center;
       color: white;
-      background: rgba(0, 0, 0, 0.5);
-      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px 25px;
       border-radius: 10px;
+      backdrop-filter: blur(5px);
+    }
+    
+    .progress-container {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px;
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
     }
     
     .progress-bar {
       width: 300px;
-      height: 10px;
+      height: 15px;
       background: rgba(255, 255, 255, 0.1);
-      border-radius: 5px;
+      border-radius: 8px;
       overflow: hidden;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
     }
     
     .progress-fill {
@@ -72,8 +81,9 @@
     }
     
     .progress-text {
-      font-size: 0.9rem;
+      font-size: 1rem;
       color: #aaa;
+      text-align: center;
     }
     
     /* Панель управления */
@@ -237,6 +247,9 @@
       margin-bottom: 10px;
       color: #ffd43b;
       font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     
     #marked-tiles-list {
@@ -396,47 +409,18 @@
       color: white;
       text-shadow: 0 1px 1px black;
     }
-    
-    /* Лоадер */
-    .loader {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 2000;
-    }
-    
-    .loader-spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid rgba(255, 255, 255, 0.3);
-      border-top: 5px solid #4dabf7;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-    }
-    
-    .loader-text {
-      margin-top: 15px;
-      text-align: center;
-      font-size: 1.1rem;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body>
   <!-- Загрузочный экран -->
   <div class="loader-screen" id="loader-screen">
     <div class="loader-text" id="loader-text">Загрузка данных...</div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="progress-fill"></div>
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-text" id="progress-text">0%</div>
     </div>
-    <div class="progress-text" id="progress-text">0%</div>
   </div>
 
   <div id="panel">
@@ -462,7 +446,9 @@
     <button id="screenshot-btn">📸 Снимок</button>
     
     <div id="marked-tiles-container">
-      <h4>📍 Отмеченные тайлы</h4>
+      <h4>
+        <span>📍 Отмеченные тайлы</span>
+      </h4>
       <ul id="marked-tiles-list"></ul>
     </div>
   </div>
@@ -688,7 +674,7 @@
               await fetch(`${API_URL}/api/tiles-cache`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({  tilesResponse }) // Сохраняем весь объект
+                body: JSON.stringify({ tilesResponse }) // Сохраняем весь объект
               });
               log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
               document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
