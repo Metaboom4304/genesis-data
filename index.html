@@ -365,10 +365,9 @@
   
   <script>
     // Конфигурация
-    // ВАЖНО: Убедись, что здесь нет лишних пробелов!
     const API_URL = 'https://genesis-map-api.onrender.com'; // URL нового API сервиса
     const degLat = 170/256, degLng = 360/256;
-    const CACHE_TTL = 30 * 60 * 1000; // 30 минут
+    const CACHE_TTL = 15 * 60 * 1000; // 15 минут
     
     // Глобальные переменные
     let map, gridLayer, tileLayer;
@@ -450,7 +449,6 @@
         
         // Базовые слои
         const layers = {
-          // ИСПРАВЛЕНО: Убраны лишние пробелы в URL
           neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
           world: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
           satellite: L.tileLayer(
@@ -515,10 +513,12 @@
             }
         } else {
             const cache = await cacheResponse.json();
+            console.log('Данные кеша из API:', cache);
             if (cache && cache.data) {
               const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
               if (cacheAge < CACHE_TTL) {
-                tileData = Object.values(cache.data);
+                // Исправлено: данные приходят в формате { tiles: [...] }
+                tileData = Array.isArray(cache.data.tiles) ? cache.data.tiles : Object.values(cache.data.tiles || {});
                 log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
                 document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
               } else {
@@ -533,15 +533,16 @@
           const tileResponse = await fetch(`${API_URL}/api/proxy/tile-info`);
           if (!tileResponse.ok) throw new Error(`Ошибка загрузки тайлов: ${tileResponse.status} ${tileResponse.statusText}`);
           
-          const tiles = await tileResponse.json();
-          tileData = Object.values(tiles);
+          const tilesResponse = await tileResponse.json();
+          // Исправлено: данные приходят в формате { tiles: [...] }
+          tileData = Array.isArray(tilesResponse.tiles) ? tilesResponse.tiles : Object.values(tilesResponse.tiles || {});
           
           // Сохраняем в кеш
           try {
               await fetch(`${API_URL}/api/tiles-cache`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: tiles }) // Исправлено: правильный ключ
+                body: JSON.stringify({ data: tilesResponse }) // Сохраняем весь объект
               });
               log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
               document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
@@ -550,6 +551,8 @@
               // Продолжаем работу даже если кеш не сохранился
           }
         }
+        
+        console.log('tileData перед initTileCoordinates:', tileData);
         
         // Инициализация координат
         initTileCoordinates();
@@ -572,13 +575,27 @@
     
     // Инициализация координат тайлов
     function initTileCoordinates() {
+      console.log('initTileCoordinates вызвана, tileData:', tileData);
+      
+      // Проверка, что tileData - массив
+      if (!Array.isArray(tileData) || tileData.length === 0) {
+        console.warn('initTileCoordinates: tileData пуст или не является массивом', tileData);
+        return;
+      }
+
       const refId = 22313, refLat = 49.25, refLng = -123.10;
       const refX = refId % 256, refY = Math.floor(refId/256);
       
-      tileData.forEach(t => {
-        const x = t.id_tile % 256, y = Math.floor(t.id_tile/256);
+      tileData.forEach((t, index) => {
+        // Проверка, что t - объект и имеет id_tile
+        if (!t || typeof t !== 'object' || t.id_tile == null) {
+            console.warn(`initTileCoordinates: Некорректный объект тайла на позиции ${index}`, t);
+            return; // Пропускаем этот тайл
+        }
+        const x = parseInt(t.id_tile) % 256, y = Math.floor(parseInt(t.id_tile)/256);
         t.lat = refLat - (y - refY) * degLat;
         t.lng = refLng + (x - refX) * degLng;
+        console.log(`Тайл ${t.id_tile}: lat=${t.lat}, lng=${t.lng}`);
       });
     }
     
@@ -588,6 +605,11 @@
       const bounds = map.getBounds();
       
       tileData.forEach(t => {
+        // Проверка на существование lat/lng
+        if (!t || t.lat === undefined || t.lng === undefined) {
+          return;
+        }
+        
         if (!bounds.contains([t.lat, t.lng])) return;
         
         const tileBounds = L.latLngBounds(
@@ -615,6 +637,11 @@
       const bounds = map.getBounds();
       
       tileData.forEach(t => {
+        // Проверка на существование lat/lng
+        if (!t || t.lat === undefined || t.lng === undefined) {
+          return;
+        }
+        
         // Фильтрация
         const tileMarks = userMarks[t.id_tile] || {};
         const status = 
@@ -637,6 +664,12 @@
     
     // Создание маркера для тайла
     function createTileMarker(t, marks) {
+      // Проверка на существование lat/lng
+      if (!t || t.lat === undefined || t.lng === undefined) {
+        console.warn('createTileMarker: Некорректные координаты тайла', t);
+        return;
+      }
+      
       const tileBounds = L.latLngBounds(
         [t.lat - degLat/2, t.lng - degLng/2],
         [t.lat + degLat/2, t.lng + degLng/2]
@@ -649,7 +682,7 @@
       
       const isFav = favorites.includes(t.id_tile);
       const comment = marks.comment || '';
-      const owned = t.has_owner === 'true';
+      const owned = t.has_owner === 'true' || t.has_owner === true;
       
       // Стилизация
       const fill = status === 'ally' ? '#40c057' :
