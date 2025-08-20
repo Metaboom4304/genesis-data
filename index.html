@@ -34,7 +34,8 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: rgba(0, 0, 0, 0.9);
+      background: url('./1755546482.png') center/cover no-repeat;
+      background-color: rgba(0, 0, 0, 0.8);
       z-index: 1000;
       transition: opacity 0.5s ease;
     }
@@ -44,24 +45,14 @@
       pointer-events: none;
     }
     
-    .loader-image {
-      width: 200px;
-      height: 200px;
-      background: url('./1755546482.png') center/contain no-repeat;
-      margin-bottom: 30px;
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-    
     .loader-text {
       font-size: 1.2rem;
       margin-bottom: 20px;
       text-align: center;
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 10px 20px;
+      border-radius: 10px;
     }
     
     .progress-bar {
@@ -217,7 +208,7 @@
     }
     
     /* Кнопки управления */
-    #reset, #screenshot-btn {
+    #screenshot-btn {
       padding: 8px 15px;
       background: #3b5bdb;
       color: white;
@@ -229,12 +220,12 @@
       margin-left: 10px;
     }
     
-    #reset:hover, #screenshot-btn:hover {
+    #screenshot-btn:hover {
       background: #364fc7;
     }
     
-    /* Избранное */
-    #favorites-container {
+    /* Список отмеченных тайлов */
+    #marked-tiles-container {
       background: rgba(30, 30, 40, 0.8);
       padding: 12px;
       border-radius: 8px;
@@ -242,19 +233,19 @@
       flex: 1 0 100%;
     }
     
-    #favorites-container h4 {
+    #marked-tiles-container h4 {
       margin-bottom: 10px;
       color: #ffd43b;
       font-size: 1rem;
     }
     
-    #favorites-list {
+    #marked-tiles-list {
       list-style: none;
       max-height: 150px;
       overflow-y: auto;
     }
     
-    #favorites-list li {
+    #marked-tiles-list li {
       padding: 8px;
       background: rgba(50, 50, 60, 0.6);
       margin-bottom: 6px;
@@ -264,7 +255,7 @@
       align-items: center;
     }
     
-    #favorites-list button {
+    #marked-tiles-list button {
       padding: 4px 8px;
       background: #495057;
       color: white;
@@ -274,7 +265,7 @@
       margin-left: 5px;
     }
     
-    #favorites-list button:hover {
+    #marked-tiles-list button:hover {
       background: #5c636a;
     }
     
@@ -353,30 +344,6 @@
     #screenshot-btn:hover {
       background: rgba(77, 171, 247, 0.3);
       opacity: 1;
-      transform: translateY(-2px);
-    }
-    
-    /* Логи */
-    #logs-btn {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 910;
-      background: rgba(77, 171, 247, 0.2);
-      border: 1px solid #4dabf7;
-      border-radius: 6px;
-      padding: 8px 15px;
-      color: #4dabf7;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    
-    #logs-btn:hover {
-      background: rgba(77, 171, 247, 0.3);
       transform: translateY(-2px);
     }
     
@@ -465,7 +432,6 @@
 <body>
   <!-- Загрузочный экран -->
   <div class="loader-screen" id="loader-screen">
-    <div class="loader-image"></div>
     <div class="loader-text" id="loader-text">Загрузка данных...</div>
     <div class="progress-bar">
       <div class="progress-fill" id="progress-fill"></div>
@@ -493,12 +459,11 @@
       <button id="clear-filter">×</button>
     </div>
     
-    <button id="reset">♻️ Сбросить</button>
     <button id="screenshot-btn">📸 Снимок</button>
     
-    <div id="favorites-container">
-      <h4>⭐ Избранное</h4>
-      <ul id="favorites-list"></ul>
+    <div id="marked-tiles-container">
+      <h4>📍 Отмеченные тайлы</h4>
+      <ul id="marked-tiles-list"></ul>
     </div>
   </div>
 
@@ -510,8 +475,6 @@
     <button class="layer-btn" data-layer="world" title="Мир">W</button>
     <button class="layer-btn" data-layer="satellite" title="Спутник">S</button>
   </div>
-  
-  <button id="logs-btn">📝 Логи</button>
   
   <div id="debug">
     <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
@@ -745,7 +708,7 @@
         // Первичная отрисовка
         drawGrid();
         drawTiles();
-        renderFavorites();
+        renderMarkedTiles();
         
         document.getElementById('api-status').textContent = 'API: ✅ Работает';
         log('✅ Все данные успешно загружены');
@@ -928,23 +891,64 @@
         </div>
       `;
       
-      rect.bindPopup(popupContent);
+      rect.bindPopup(popupContent, { autoClose: false, closeOnClick: false });
       return rect;
     }
     
-    // Отрисовка избранного
-    function renderFavorites() {
-      const favList = document.getElementById('favorites-list');
-      if (!favList) return;
+    // Отрисовка списка отмеченных тайлов
+    function renderMarkedTiles() {
+      const markedTilesList = document.getElementById('marked-tiles-list');
+      if (!markedTilesList) return;
       
-      favList.innerHTML = favorites.map(id => {
-        const tile = tileData.find(t => t.id_tile === id);
+      // Получаем текущий фильтр
+      const filter = document.getElementById('status-filter').value;
+      
+      // Фильтруем тайлы по выбранной метке
+      let filteredTiles = [];
+      if (filter) {
+        tileData.forEach(t => {
+          const tileMarks = userMarks[t.id_tile] || {};
+          const status = 
+            tileMarks.ally ? 'ally' :
+            tileMarks.enemy ? 'enemy' :
+            tileMarks.favorite ? 'favorite' : '';
+          
+          if (filter === 'ally' && tileMarks.ally) {
+            filteredTiles.push({ id: t.id_tile, status: 'ally' });
+          } else if (filter === 'enemy' && tileMarks.enemy) {
+            filteredTiles.push({ id: t.id_tile, status: 'enemy' });
+          } else if (filter === 'favorite' && tileMarks.favorite) {
+            filteredTiles.push({ id: t.id_tile, status: 'favorite' });
+          } else if (filter === 'clear' && !status) {
+            filteredTiles.push({ id: t.id_tile, status: 'clear' });
+          }
+        });
+      } else {
+        // Если фильтр не выбран, показываем все отмеченные тайлы
+        Object.keys(userMarks).forEach(tileId => {
+          const tileMarks = userMarks[tileId];
+          const status = 
+            tileMarks.ally ? 'ally' :
+            tileMarks.enemy ? 'enemy' :
+            tileMarks.favorite ? 'favorite' : '';
+          
+          if (status) {
+            filteredTiles.push({ id: tileId, status: status });
+          }
+        });
+      }
+      
+      markedTilesList.innerHTML = filteredTiles.map(tile => {
+        let statusIcon = '';
+        if (tile.status === 'ally') statusIcon = '🟩';
+        else if (tile.status === 'enemy') statusIcon = '🟥';
+        else if (tile.status === 'favorite') statusIcon = '⭐';
+        
         return `
-          <li data-id="${id}">
-            Тайл #${id}
+          <li data-id="${tile.id}">
+            Тайл #${tile.id} ${statusIcon}
             <div>
-              <button class="goto-fav" data-id="${id}">➡️</button>
-              <button class="remove-fav" data-id="${id}">✕</button>
+              <button class="goto-marked" data-id="${tile.id}">➡️</button>
             </div>
           </li>
         `;
@@ -985,7 +989,7 @@
         
         // Обновление UI
         updateTile(tileId);
-        renderFavorites();
+        renderMarkedTiles();
         
         return result;
       } catch (error) {
@@ -1035,18 +1039,11 @@
         drawTiles();
       });
       
-      // Сброс фильтров
-      document.getElementById('reset').addEventListener('click', () => {
-        document.getElementById('search').value = '';
-        document.getElementById('status-filter').value = '';
-        drawGrid();
-        drawTiles();
-      });
-      
       // Изменение фильтра
       document.getElementById('status-filter').addEventListener('change', () => {
         drawGrid();
         drawTiles();
+        renderMarkedTiles();
       });
       
       // Сброс фильтра меток
@@ -1054,6 +1051,7 @@
         document.getElementById('status-filter').value = '';
         drawGrid();
         drawTiles();
+        renderMarkedTiles();
       });
       
       // Снимок экрана
@@ -1095,20 +1093,14 @@
         });
       }
       
-      // Делегирование событий для избранного
-      document.getElementById('favorites-list').addEventListener('click', (event) => {
-        if (!event.target.classList.contains('goto-fav') && 
-            !event.target.classList.contains('remove-fav')) return;
-            
-        const tileId = parseInt(event.target.dataset.id);
+      // Делегирование событий для списка отмеченных тайлов
+      document.getElementById('marked-tiles-list').addEventListener('click', (event) => {
+        if (!event.target.classList.contains('goto-marked')) return;
         
-        if (event.target.classList.contains('goto-fav')) {
-          const tile = tileData.find(t => t.id_tile === tileId);
-          if (tile) {
-            map.flyTo([tile.lat, tile.lng], 7, { animate: true, duration: 1 });
-          }
-        } else if (event.target.classList.contains('remove-fav')) {
-          saveMark(tileId, 'clear');
+        const tileId = parseInt(event.target.dataset.id);
+        const tile = tileData.find(t => t.id_tile === tileId);
+        if (tile) {
+          map.flyTo([tile.lat, tile.lng], 7, { animate: true, duration: 1 });
         }
       });
       
@@ -1124,12 +1116,6 @@
           drawTiles();
         });
       }
-      
-      // Кнопка "Логи"
-      document.getElementById('logs-btn').addEventListener('click', () => {
-        const debug = document.getElementById('debug');
-        debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
-      });
     }
     
     // Инициализация приложения
