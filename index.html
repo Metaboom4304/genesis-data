@@ -216,7 +216,7 @@
       font-size: 0.85rem;
       min-width: 100px;
       appearance: none;
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e9ecef' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-image: url("image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e9ecef' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
       background-repeat: no-repeat;
       background-position: right 8px center;
       background-size: 12px;
@@ -260,104 +260,6 @@
     
     .control-btn:hover {
       background: rgba(59, 91, 219, 0.3);
-      transform: translateY(-1px);
-    }
-    
-    /* Избранное */
-    #favorites-panel {
-      position: absolute;
-      top: 50px;
-      right: 10px;
-      width: 250px;
-      background: rgba(30, 30, 40, 0.95);
-      backdrop-filter: blur(10px);
-      border: 1px solid #2c3e50;
-      border-radius: 8px;
-      z-index: 850;
-      display: none;
-      max-height: 70vh;
-      overflow: hidden;
-      flex-direction: column;
-    }
-    
-    #favorites-panel.expanded {
-      display: flex;
-    }
-    
-    #favorites-header {
-      padding: 10px;
-      background: rgba(40, 40, 50, 0.8);
-      border-bottom: 1px solid #2c3e50;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-    }
-    
-    #favorites-header h4 {
-      margin: 0;
-      color: #ffd43b;
-      font-size: 0.9rem;
-    }
-    
-    #favorites-toggle {
-      background: none;
-      border: none;
-      color: #868e96;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: transform 0.3s ease;
-    }
-    
-    #favorites-toggle.rotated {
-      transform: rotate(180deg);
-    }
-    
-    #favorites-content {
-      flex: 1;
-      overflow-y: auto;
-      max-height: calc(70vh - 40px);
-    }
-    
-    #favorites-list {
-      list-style: none;
-      padding: 8px;
-    }
-    
-    #favorites-list li {
-      padding: 8px;
-      background: rgba(50, 50, 60, 0.6);
-      margin-bottom: 6px;
-      border-radius: 4px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.85rem;
-    }
-    
-    .favorite-actions {
-      display: flex;
-      gap: 4px;
-    }
-    
-    .favorite-btn {
-      width: 24px;
-      height: 24px;
-      background: rgba(52, 58, 64, 0.8);
-      border: 1px solid #495057;
-      border-radius: 4px;
-      color: #868e96;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
-      transition: all 0.2s;
-    }
-    
-    .favorite-btn:hover {
-      background: rgba(52, 58, 64, 1);
-      color: #fff;
       transform: translateY(-1px);
     }
     
@@ -476,37 +378,81 @@
       z-index: 500;
     }
     
-    /* Попап тайла */
-    .tile-popup {
-      min-width: 280px;
+    /* Боковая панель (информация о тайле) */
+    #tile-info-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 350px;
+      background: rgba(20, 20, 30, 0.95);
+      backdrop-filter: blur(10px);
+      border-left: 1px solid #2c3e50;
+      z-index: 900;
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+      height: 100%;
+      display: none;
+    }
+    
+    #tile-info-panel.expanded {
+      transform: translateX(0);
+    }
+    
+    #tile-info-panel.collapsed {
+      transform: translateX(100%);
+    }
+    
+    .panel-header {
       padding: 12px;
+      border-bottom: 1px solid #2c3e50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     
-    .tile-popup h3 {
-      margin-bottom: 10px;
-      color: #74c0fc;
+    .panel-header h3 {
+      margin: 0;
+      color: #ffd43b;
+      font-size: 1.1rem;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      color: #868e96;
+      cursor: pointer;
       font-size: 1.2rem;
+      transition: transform 0.2s;
     }
     
-    .tile-info-grid {
+    .close-btn:hover {
+      transform: rotate(90deg);
+    }
+    
+    .info-content {
+      padding: 15px;
+      flex: 1;
+    }
+    
+    .info-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 12px;
+      margin-bottom: 15px;
     }
     
-    .tile-info-item {
+    .info-item {
       display: flex;
       flex-direction: column;
       gap: 3px;
     }
     
-    .tile-info-label {
+    .info-label {
       font-size: 0.75rem;
       color: #868e96;
     }
     
-    .tile-info-value {
+    .info-value {
       font-weight: bold;
       color: #e9ecef;
       font-size: 0.9rem;
@@ -515,7 +461,7 @@
     .mark-buttons {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
+      gap: 8px;
       margin: 12px 0;
     }
     
@@ -598,6 +544,39 @@
     .save-comment-btn:hover {
       background: rgba(59, 91, 219, 0.3);
       transform: translateY(-1px);
+    }
+    
+    .resources-section {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #495057;
+    }
+    
+    .resources-section h4 {
+      color: #ffd43b;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+    
+    .resources-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .resource-item {
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .resource-name {
+      color: #868e96;
+    }
+    
+    .resource-value {
+      font-weight: bold;
+      color: #e9ecef;
     }
     
     /* Отладочная панель */
@@ -720,9 +699,8 @@
         font-size: 0.75rem;
       }
       
-      #favorites-panel {
-        width: 200px;
-        right: 5px;
+      #tile-info-panel {
+        width: 300px;
       }
       
       .bottom-btn {
@@ -769,21 +747,8 @@
     <button class="control-btn" id="reset-btn">
       ♻️ Сброс
     </button>
-    <button class="control-btn" id="favorites-btn">
-      ⭐ Избранное
-    </button>
     
     <button id="toggle-panel">🔽</button>
-  </div>
-
-  <div id="favorites-panel">
-    <div id="favorites-header">
-      <h4>⭐ Избранные тайлы</h4>
-      <button id="favorites-toggle">▼</button>
-    </div>
-    <div id="favorites-content">
-      <ul id="favorites-list"></ul>
-    </div>
   </div>
 
   <div id="map"></div>
@@ -798,6 +763,90 @@
     <button class="bottom-btn" id="layers-btn" title="Слои">🗺️</button>
     <button class="bottom-btn" id="screenshot-btn" title="Снимок">📸</button>
     <button class="bottom-btn" id="logs-btn" title="Логи">📝</button>
+  </div>
+
+  <!-- Боковая панель с информацией о тайле -->
+  <div id="tile-info-panel">
+    <div class="panel-header">
+      <h3>Информация о тайле</h3>
+      <button class="close-btn" id="close-info-panel">✕</button>
+    </div>
+    <div class="info-content">
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">ID Тайла</span>
+          <span class="info-value" id="tile-id">—</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Статус</span>
+          <span class="info-value" id="tile-status">—</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Метка</span>
+          <span class="info-value" id="tile-mark">—</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Комментарий</span>
+          <span class="info-value" id="tile-comment">—</span>
+        </div>
+      </div>
+      
+      <div class="mark-buttons">
+        <button class="mark-btn ally" data-id="" data-type="ally">🟩 Союзник</button>
+        <button class="mark-btn enemy" data-id="" data-type="enemy">🟥 Враг</button>
+        <button class="mark-btn favorite" data-id="" data-type="favorite">⭐ Избранное</button>
+        <button class="mark-btn clear" data-id="" data-type="clear">⚪ Сброс</button>
+      </div>
+      
+      <div class="comment-section">
+        <textarea id="comment-input" placeholder="Ваш комментарий..."></textarea>
+        <button class="save-comment-btn" id="save-comment-btn">💾 Сохранить комментарий</button>
+      </div>
+      
+      <div class="resources-section">
+        <h4>Ресурсы:</h4>
+        <div class="resources-list">
+          <div class="resource-item">
+            <span class="resource-name">Камень</span>
+            <span class="resource-value" id="stone-pct">—</span>
+          </div>
+          <div class="resource-item">
+            <span class="resource-name">Водоросли</span>
+            <span class="resource-value" id="seaweed-pct">—</span>
+          </div>
+          <div class="resource-item">
+            <span class="resource-name">Рыба</span>
+            <span class="resource-value" id="fish-pct">—</span>
+          </div>
+          <div class="resource-item">
+            <span class="resource-name">Кварц</span>
+            <span class="resource-value" id="quartz-pct">—</span>
+          </div>
+          <div class="resource-item">
+            <span class="resource-name">Глина</span>
+            <span class="resource-value" id="clay-pct">—</span>
+          </div>
+          <div class="resource-item">
+            <span class="resource-name">Дерево</span>
+            <span class="resource-value" id="wood-pct">—</span>
+          </div>
+          <div class="resource-item">
+            <span class="resource-name">Животные</span>
+            <span class="resource-value" id="animals-pct">—</span>
+          </div>
+          <div class="resource-item">
+            <span class="resource-name">Травы</span>
+            <span class="resource-value" id="herbs-pct">—</span>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 15px;">
+        <a href="#" target="_blank" style="color: #4dabf7; text-decoration: none; font-size: 0.85rem;">
+          🌍 Подробнее на genesis-of-ages.site
+        </a>
+      </div>
+    </div>
   </div>
 
   <div id="debug-panel">
@@ -827,7 +876,7 @@
     let currentUser = null;
     let userMarks = {};
     let favorites = [];
-    let currentPopup = null;
+    let currentTileId = null;
     
     // Элементы UI
     const loaderScreen = document.getElementById('loader-screen');
@@ -835,6 +884,8 @@
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
     const debugLog = document.getElementById('debug-log');
+    const tileInfoPanel = document.getElementById('tile-info-panel');
+    const closeInfoPanel = document.getElementById('close-info-panel');
     
     // Обновление прогресса загрузки
     function updateProgress(percent, message = '') {
@@ -1089,7 +1140,6 @@
         // Первичная отрисовка
         drawGrid();
         drawTiles();
-        renderFavorites();
         
         const apiStatusElement = document.getElementById('api-status');
         if (apiStatusElement) {
@@ -1257,136 +1307,50 @@
         });
       }
       
-      // Всплывающее окно
-      const popupContent = `
-        <div class="tile-popup">
-          <h3>Тайл #${t.id_tile}</h3>
-          
-          <div class="tile-info-grid">
-            <div class="tile-info-item">
-              <span class="tile-info-label">Статус</span>
-              <span class="tile-info-value">${owned ? 'Занят' : 'Свободен'}</span>
-            </div>
-            <div class="tile-info-item">
-              <span class="tile-info-label">Метка</span>
-              <span class="tile-info-value">${status || '—'}</span>
-            </div>
-            <div class="tile-info-item">
-              <span class="tile-info-label">Комментарий</span>
-              <span class="tile-info-value">${comment || '—'}</span>
-            </div>
-          </div>
-          
-          <div class="mark-buttons">
-            <button class="mark-btn ally" data-id="${t.id_tile}" data-type="ally">🟩 Союзник</button>
-            <button class="mark-btn enemy" data-id="${t.id_tile}" data-type="enemy">🟥 Враг</button>
-            <button class="mark-btn favorite" data-id="${t.id_tile}" data-type="favorite">⭐ Избранное</button>
-            <button class="mark-btn clear" data-id="${t.id_tile}" data-type="clear">⚪ Сброс</button>
-          </div>
-          
-          <div class="comment-section">
-            <textarea id="comment-${t.id_tile}" placeholder="Ваш комментарий...">${comment}</textarea>
-            <button class="save-comment-btn" data-id="${t.id_tile}">💾 Сохранить комментарий</button>
-          </div>
-          
-          <!-- Информация о ресурсах тайла -->
-          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #495057;">
-            <h4 style="color: #ffd43b; margin-bottom: 6px; font-size: 0.9rem;">Ресурсы:</h4>
-            ${
-              t.stone_pct ? `<p style="font-size: 0.8rem;"><strong>Камень:</strong> ${t.stone_pct}%</p>` : ''
-            }
-            ${
-              t.seaweed_pct ? `<p style="font-size: 0.8rem;"><strong>Водоросли:</strong> ${t.seaweed_pct}%</p>` : ''
-            }
-            ${
-              t.fish_pct ? `<p style="font-size: 0.8rem;"><strong>Рыба:</strong> ${t.fish_pct}%</p>` : ''
-            }
-            ${
-              t.quartz_pct ? `<p style="font-size: 0.8rem;"><strong>Кварц:</strong> ${t.quartz_pct}%</p>` : ''
-            }
-            ${
-              t.clay_pct ? `<p style="font-size: 0.8rem;"><strong>Глина:</strong> ${t.clay_pct}%</p>` : ''
-            }
-            ${
-              t.wood_pct ? `<p style="font-size: 0.8rem;"><strong>Дерево:</strong> ${t.wood_pct}%</p>` : ''
-            }
-            ${
-              t.animals_pct ? `<p style="font-size: 0.8rem;"><strong>Животные:</strong> ${t.animals_pct}%</p>` : ''
-            }
-            ${
-              t.herbs_pct ? `<p style="font-size: 0.8rem;"><strong>Травы:</strong> ${t.herbs_pct}%</p>` : ''
-            }
-          </div>
-          
-          <div style="margin-top: 10px;">
-            <a href="https://genesis-of-ages.site/ru/%d0%b3%d0%b5%d0%be-%d1%8d%d0%ba%d1%81%d0%bf%d0%bb%d0%be%d1%80%d0%b5%d1%80/?tile=${t.id_tile}" target="_blank" style="color: #4dabf7; text-decoration: none; font-size: 0.85rem;">
-              🌍 Подробнее на genesis-of-ages.site
-            </a>
-          </div>
-        </div>
-      `;
-      
-      rect.bindPopup(popupContent, {
-        autoClose: false,
-        closeOnClick: false,
-        closeButton: true
-      });
-      
-      // Обработчик открытия попапа
-      rect.on('popupopen', function(e) {
-        const popup = e.popup;
-        if (popup && popup.getElement()) {
-          // Добавляем обработчики событий для кнопок в попапе
-          popup.getElement().addEventListener('click', function(event) {
-            if (event.target.classList.contains('mark-btn')) {
-              const tileId = parseInt(event.target.dataset.id);
-              const markType = event.target.dataset.type;
-              saveMark(tileId, markType);
-              // Закрываем попап после сохранения
-              if (map && tileMarkers[tileId]) {
-                map.closePopup();
-              }
-            }
-            
-            if (event.target.classList.contains('save-comment-btn')) {
-              const tileId = parseInt(event.target.dataset.id);
-              const commentTextarea = document.getElementById(`comment-${tileId}`);
-              const comment = commentTextarea ? commentTextarea.value : '';
-              saveMark(tileId, 'comment', comment);
-              // Закрываем попап после сохранения
-              if (map && tileMarkers[tileId]) {
-                map.closePopup();
-              }
-            }
-          });
-        }
+      // Обработчик клика на тайл
+      rect.on('click', () => {
+        showTileInfo(t.id_tile);
       });
       
       return rect;
     }
     
-    // Отрисовка избранного
-    function renderFavorites() {
-      const favList = document.getElementById('favorites-list');
-      if (!favList) return;
+    // Показать информацию о тайле
+    function showTileInfo(tileId) {
+      const tile = tileData.find(t => t.id_tile === tileId);
+      if (!tile) return;
       
-      // Сортируем избранные тайлы по ID
-      favorites.sort((a, b) => parseInt(a) - parseInt(b));
+      // Обновляем информацию в панели
+      document.getElementById('tile-id').textContent = `#${tileId}`;
+      document.getElementById('tile-status').textContent = tile.has_owner === 'true' ? 'Занят' : 'Свободен';
       
-      favList.innerHTML = favorites.map(id => {
-        const tile = tileData.find(t => t.id_tile === id);
-        if (!tile) return ''; // Пропускаем, если тайл не найден
-        
-        return `
-          <li data-id="${id}">
-            Тайл #${id}
-            <div class="favorite-actions">
-              <button class="favorite-btn goto-fav" data-id="${id}" title="Перейти">➡️</button>
-              <button class="favorite-btn remove-fav" data-id="${id}" title="Удалить">✕</button>
-            </div>
-          </li>
-        `;
-      }).join('');
+      const tileMarks = userMarks[tileId] || {};
+      const status = 
+        tileMarks.ally ? 'ally' :
+        tileMarks.enemy ? 'enemy' :
+        tileMarks.favorite ? 'favorite' : '';
+      
+      document.getElementById('tile-mark').textContent = status || '—';
+      document.getElementById('tile-comment').textContent = tileMarks.comment || '—';
+      
+      // Обновляем ресурсы
+      document.getElementById('stone-pct').textContent = tile.stone_pct || '—';
+      document.getElementById('seaweed-pct').textContent = tile.seaweed_pct || '—';
+      document.getElementById('fish-pct').textContent = tile.fish_pct || '—';
+      document.getElementById('quartz-pct').textContent = tile.quartz_pct || '—';
+      document.getElementById('clay-pct').textContent = tile.clay_pct || '—';
+      document.getElementById('wood-pct').textContent = tile.wood_pct || '—';
+      document.getElementById('animals-pct').textContent = tile.animals_pct || '—';
+      document.getElementById('herbs-pct').textContent = tile.herbs_pct || '—';
+      
+      // Обновляем кнопки
+      document.querySelectorAll('.mark-btn').forEach(btn => {
+        btn.setAttribute('data-id', tileId);
+      });
+      
+      // Показываем панель
+      tileInfoPanel.classList.add('expanded');
+      currentTileId = tileId;
     }
     
     // Сохранение метки
@@ -1449,11 +1413,8 @@
       const searchClear = document.getElementById('search-clear');
       if (searchClear) {
         searchClear.addEventListener('click', () => {
-          const search = document.getElementById('search');
-          if (search) {
-            search.value = '';
-            drawTiles();
-          }
+          document.getElementById('search').value = '';
+          drawTiles();
         });
       }
       
@@ -1461,8 +1422,7 @@
       const gotoBtn = document.getElementById('goto-btn');
       if (gotoBtn) {
         gotoBtn.addEventListener('click', () => {
-          const search = document.getElementById('search');
-          const tileId = search ? search.value.trim() : '';
+          const tileId = document.getElementById('search').value.trim();
           if (!tileId) return;
           
           const tile = tileData.find(t => t.id_tile == tileId);
@@ -1490,17 +1450,10 @@
       const resetBtn = document.getElementById('reset-btn');
       if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-          const search = document.getElementById('search');
-          const statusFilter = document.getElementById('status-filter');
-          if (search) {
-            search.value = '';
-          }
-          if (statusFilter) {
-            statusFilter.value = '';
-          }
+          document.getElementById('search').value = '';
+          document.getElementById('status-filter').value = '';
           drawGrid();
           drawTiles();
-          renderFavorites();
         });
       }
       
@@ -1510,7 +1463,6 @@
         statusFilter.addEventListener('change', () => {
           drawGrid();
           drawTiles();
-          renderFavorites();
         });
       }
       
@@ -1518,13 +1470,9 @@
       const clearFilter = document.getElementById('clear-filter');
       if (clearFilter) {
         clearFilter.addEventListener('click', () => {
-          const statusFilter = document.getElementById('status-filter');
-          if (statusFilter) {
-            statusFilter.value = '';
-            drawGrid();
-            drawTiles();
-            renderFavorites();
-          }
+          document.getElementById('status-filter').value = '';
+          drawGrid();
+          drawTiles();
         });
       }
       
@@ -1546,10 +1494,8 @@
       if (togglePanel) {
         togglePanel.addEventListener('click', function() {
           const panel = document.getElementById('panel');
-          if (panel) {
-            panel.classList.toggle('collapsed');
-            this.textContent = panel.classList.contains('collapsed') ? '🔼' : '🔽';
-          }
+          panel.classList.toggle('collapsed');
+          this.textContent = panel.classList.contains('collapsed') ? '🔼' : '🔽';
         });
       }
       
@@ -1562,42 +1508,38 @@
         });
       }
       
-      // Сворачивание/разворачивание избранного
-      const favoritesBtn = document.getElementById('favorites-btn');
-      const favoritesPanel = document.getElementById('favorites-panel');
-      const favoritesToggle = document.getElementById('favorites-toggle');
-      const favoritesHeader = document.getElementById('favorites-header');
-      
-      if (favoritesBtn && favoritesPanel) {
-        favoritesBtn.addEventListener('click', () => {
-          favoritesPanel.classList.toggle('expanded');
+      // Закрытие панели информации о тайле
+      if (closeInfoPanel) {
+        closeInfoPanel.addEventListener('click', () => {
+          tileInfoPanel.classList.remove('expanded');
+          currentTileId = null;
         });
       }
       
-      if (favoritesToggle && favoritesHeader) {
-        favoritesHeader.addEventListener('click', () => {
-          const content = document.getElementById('favorites-content');
-          if (content) {
-            content.style.display = content.style.display === 'none' ? 'block' : 'none';
-            favoritesToggle.classList.toggle('rotated');
-          }
+      // Обработка нажатия на кнопки в панели
+      document.querySelectorAll('.mark-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tileId = btn.dataset.id;
+          const markType = btn.dataset.type;
+          saveMark(tileId, markType);
+          // После сохранения закрываем панель
+          tileInfoPanel.classList.remove('expanded');
+          currentTileId = null;
         });
-      }
+      });
       
-      // Делегирование событий для избранного
-      const favoritesList = document.getElementById('favorites-list');
-      if (favoritesList) {
-        favoritesList.addEventListener('click', (event) => {
-          if (event.target.classList.contains('goto-fav')) {
-            const tileId = parseInt(event.target.dataset.id);
-            const tile = tileData.find(t => t.id_tile === tileId);
-            if (tile) {
-              map.flyTo([tile.lat, tile.lng], 7, { animate: true, duration: 1 });
-            }
-          } else if (event.target.classList.contains('remove-fav')) {
-            const tileId = parseInt(event.target.dataset.id);
-            saveMark(tileId, 'clear');
-          }
+      // Сохранение комментария
+      const saveCommentBtn = document.getElementById('save-comment-btn');
+      if (saveCommentBtn) {
+        saveCommentBtn.addEventListener('click', () => {
+          const tileId = currentTileId;
+          if (!tileId) return;
+          
+          const comment = document.getElementById('comment-input').value;
+          saveMark(tileId, 'comment', comment);
+          // После сохранения закрываем панель
+          tileInfoPanel.classList.remove('expanded');
+          currentTileId = null;
         });
       }
       
@@ -1611,15 +1553,6 @@
         // Обновление при изменении зума
         map.on('zoomend', () => {
           drawTiles();
-        });
-      }
-      
-      // Кнопка логов
-      const logsBtn = document.getElementById('logs-btn');
-      const debugPanel = document.getElementById('debug-panel');
-      if (logsBtn && debugPanel) {
-        logsBtn.addEventListener('click', () => {
-          debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
         });
       }
     }
