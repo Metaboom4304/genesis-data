@@ -34,7 +34,8 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: linear-gradient(135deg, #0c0c14, #1a1a2e);
+      background: url('https://i.imgur.com/2v5JqkL.png') center/cover no-repeat;
+      background-color: rgba(0, 0, 0, 0.9);
       z-index: 1000;
       transition: opacity 0.5s ease;
     }
@@ -59,25 +60,36 @@
     }
     
     .loader-text {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       margin-bottom: 20px;
       text-align: center;
-      color: #74c0fc;
-      font-weight: bold;
+      color: white;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px 25px;
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
     }
     
     .progress-container {
-      width: 300px;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px;
       border-radius: 10px;
-      padding: 3px;
-      margin-bottom: 20px;
+      backdrop-filter: blur(5px);
     }
     
     .progress-bar {
-      height: 8px;
+      width: 300px;
+      height: 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .progress-fill {
+      height: 100%;
       background: linear-gradient(90deg, #4dabf7, #3bc9db);
-      border-radius: 5px;
       width: 0%;
       transition: width 0.3s ease;
     }
@@ -88,367 +100,295 @@
       text-align: center;
     }
     
-    .status-messages {
-      max-height: 120px;
-      overflow-y: auto;
-      font-size: 0.8rem;
-      color: #868e96;
-      text-align: center;
-      margin-top: 15px;
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 5px;
-    }
-    
-    /* Основной интерфейс */
-    #app {
+    /* Панель управления */
+    #panel {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      bottom: 0;
-    }
-    
-    /* Верхняя панель */
-    #top-panel {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
       background: rgba(20, 20, 30, 0.95);
+      color: #fff;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 8px;
+      z-index: 900;
       backdrop-filter: blur(10px);
       border-bottom: 1px solid #2c3e50;
-      display: flex;
-      align-items: center;
-      padding: 0 15px;
-      z-index: 1000;
       transition: transform 0.3s ease;
     }
     
-    #top-panel.collapsed {
+    #panel.collapsed {
       transform: translateY(-100%);
     }
     
-    .panel-section {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-right: 15px;
-    }
-    
-    .panel-title {
+    #map-title {
       font-size: 1.2rem;
       font-weight: bold;
       color: #74c0fc;
-      margin-right: 15px;
+      margin-right: 10px;
+      white-space: nowrap;
     }
     
-    /* Поиск */
-    .search-container {
+    /* Поиск тайла */
+    .search-wrapper {
       position: relative;
       display: flex;
       align-items: center;
+      background: rgba(40, 40, 50, 0.8);
+      border-radius: 6px;
+      padding: 4px;
+      flex: 1;
+      min-width: 150px;
+      max-width: 250px;
     }
     
-    #search-input {
-      padding: 8px 35px 8px 12px;
-      background: rgba(40, 40, 50, 0.8);
+    #search {
+      width: 100%;
+      padding: 6px 35px 6px 10px;
+      background: transparent;
       border: 1px solid #495057;
-      border-radius: 20px;
+      border-radius: 4px;
       color: #e9ecef;
       font-size: 0.9rem;
-      width: 150px;
-      transition: width 0.3s ease;
     }
     
-    #search-input:focus {
+    #search:focus {
       outline: none;
       border-color: #4dabf7;
-      box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.3);
-      width: 200px;
+      box-shadow: 0 0 0 2px rgba(77, 171, 247, 0.3);
     }
     
     #search-clear {
       position: absolute;
-      right: 35px;
+      right: 30px;
       cursor: pointer;
       color: #adb5bd;
-      font-size: 16px;
+      font-size: 18px;
       transition: color 0.2s;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     #search-clear:hover {
       color: #ff6b6b;
     }
     
-    #search-go {
+    #goto-btn {
       position: absolute;
-      right: 10px;
-      background: none;
-      border: none;
-      color: #4dabf7;
-      cursor: pointer;
-      font-size: 1.1rem;
-      transition: transform 0.2s;
-    }
-    
-    #search-go:hover {
-      transform: translateX(2px);
-    }
-    
-    /* Фильтры */
-    .filter-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    #status-filter {
-      padding: 6px 12px;
-      background: rgba(40, 40, 50, 0.8);
-      border: 1px solid #495057;
-      border-radius: 20px;
-      color: #e9ecef;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-    
-    #status-filter:focus {
-      outline: none;
-      border-color: #4dabf7;
-      box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.3);
-    }
-    
-    #filter-clear {
-      width: 28px;
-      height: 28px;
+      right: 5px;
+      width: 24px;
+      height: 24px;
       background: rgba(77, 171, 247, 0.2);
       border: 1px solid #4dabf7;
       border-radius: 50%;
       color: #4dabf7;
+      font-size: 0.9rem;
       cursor: pointer;
+      transition: all 0.2s;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1rem;
-      transition: all 0.2s;
     }
     
-    #filter-clear:hover {
+    #goto-btn:hover {
       background: rgba(77, 171, 247, 0.3);
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
     
-    /* Кнопки управления */
-    .control-buttons {
+    /* Фильтр меток */
+    .filter-wrapper {
       display: flex;
-      gap: 8px;
+      align-items: center;
+      gap: 6px;
     }
     
-    .control-btn {
-      padding: 8px 15px;
-      background: rgba(59, 91, 219, 0.2);
-      border: 1px solid #3b5bdb;
-      border-radius: 20px;
-      color: #a5d8ff;
+    #status-filter {
+      padding: 6px 25px 6px 8px;
+      background: #343a40;
+      color: #e9ecef;
+      border: 1px solid #495057;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      min-width: 100px;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e9ecef' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 12px;
+    }
+    
+    #clear-filter {
+      width: 26px;
+      height: 26px;
+      background: rgba(77, 171, 247, 0.2);
+      border: 1px solid #4dabf7;
+      border-radius: 50%;
+      color: #4dabf7;
+      font-size: 1rem;
       cursor: pointer;
-      font-size: 0.9rem;
       transition: all 0.2s;
       display: flex;
       align-items: center;
-      gap: 5px;
+      justify-content: center;
+    }
+    
+    #clear-filter:hover {
+      background: rgba(77, 171, 247, 0.3);
+      transform: translateY(-1px);
+    }
+    
+    /* Кнопки управления */
+    .control-btn {
+      padding: 6px 12px;
+      background: rgba(59, 91, 219, 0.2);
+      border: 1px solid #3b5bdb;
+      border-radius: 4px;
+      color: #a5d8ff;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
     }
     
     .control-btn:hover {
       background: rgba(59, 91, 219, 0.3);
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
     
-    /* Кнопка сворачивания панели */
-    #toggle-panel {
+    /* Избранное */
+    #favorites-panel {
       position: absolute;
-      top: 15px;
-      right: 15px;
-      background: rgba(52, 58, 64, 0.8);
-      border: none;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      color: #fff;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    #toggle-panel:hover {
-      background: rgba(52, 58, 64, 1);
-      transform: translateY(-2px);
-    }
-    
-    /* Боковая панель */
-    #side-panel {
-      position: absolute;
-      top: 60px;
-      right: 0;
-      bottom: 60px;
-      width: 300px;
-      background: rgba(20, 20, 30, 0.95);
+      top: 50px;
+      right: 10px;
+      width: 250px;
+      background: rgba(30, 30, 40, 0.95);
       backdrop-filter: blur(10px);
-      border-left: 1px solid #2c3e50;
-      z-index: 900;
-      transition: transform 0.3s ease;
+      border: 1px solid #2c3e50;
+      border-radius: 8px;
+      z-index: 850;
+      display: none;
+      max-height: 70vh;
       overflow: hidden;
+      flex-direction: column;
     }
     
-    #side-panel.collapsed {
-      transform: translateX(100%);
+    #favorites-panel.expanded {
+      display: flex;
     }
     
-    .panel-header {
-      padding: 15px;
+    #favorites-header {
+      padding: 10px;
+      background: rgba(40, 40, 50, 0.8);
       border-bottom: 1px solid #2c3e50;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      cursor: pointer;
     }
     
-    .panel-header h3 {
+    #favorites-header h4 {
+      margin: 0;
       color: #ffd43b;
-      font-size: 1.1rem;
+      font-size: 0.9rem;
     }
     
-    #toggle-side-panel {
+    #favorites-toggle {
       background: none;
       border: none;
       color: #868e96;
       cursor: pointer;
-      font-size: 1.2rem;
-      transition: transform 0.2s;
+      font-size: 1rem;
+      transition: transform 0.3s ease;
     }
     
-    #toggle-side-panel:hover {
-      transform: translateX(-3px);
+    #favorites-toggle.rotated {
+      transform: rotate(180deg);
     }
     
-    .panel-content {
-      padding: 15px;
-      height: calc(100% - 50px);
+    #favorites-content {
+      flex: 1;
       overflow-y: auto;
+      max-height: calc(70vh - 40px);
     }
     
-    /* Список избранных тайлов */
     #favorites-list {
       list-style: none;
+      padding: 8px;
     }
     
     #favorites-list li {
-      padding: 12px;
-      background: rgba(40, 40, 50, 0.6);
-      margin-bottom: 8px;
-      border-radius: 8px;
+      padding: 8px;
+      background: rgba(50, 50, 60, 0.6);
+      margin-bottom: 6px;
+      border-radius: 4px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      transition: all 0.2s;
-    }
-    
-    #favorites-list li:hover {
-      background: rgba(50, 50, 60, 0.8);
-      transform: translateX(-3px);
-    }
-    
-    .tile-info {
-      display: flex;
       align-items: center;
-      gap: 10px;
+      font-size: 0.85rem;
     }
     
-    .tile-icon {
-      width: 30px;
-      height: 30px;
-      background: rgba(77, 171, 247, 0.2);
-      border-radius: 50%;
+    .favorite-actions {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
+      gap: 4px;
     }
     
-    .tile-details {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .tile-id {
-      font-weight: bold;
-      color: #74c0fc;
-    }
-    
-    .tile-status {
-      font-size: 0.8rem;
-      color: #868e96;
-    }
-    
-    .tile-actions {
-      display: flex;
-      gap: 5px;
-    }
-    
-    .action-btn {
-      width: 28px;
-      height: 28px;
+    .favorite-btn {
+      width: 24px;
+      height: 24px;
       background: rgba(52, 58, 64, 0.8);
-      border: none;
-      border-radius: 50%;
+      border: 1px solid #495057;
+      border-radius: 4px;
       color: #868e96;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 0.8rem;
       transition: all 0.2s;
     }
     
-    .action-btn:hover {
+    .favorite-btn:hover {
       background: rgba(52, 58, 64, 1);
       color: #fff;
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
     
-    /* Нижняя панель */
-    #bottom-panel {
+    /* Слои карты */
+    #layer-control {
       position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
-      background: rgba(20, 20, 30, 0.95);
+      bottom: 60px;
+      right: 10px;
+      z-index: 910;
+      background: rgba(30, 30, 40, 0.95);
       backdrop-filter: blur(10px);
-      border-top: 1px solid #2c3e50;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 15px;
-      z-index: 900;
+      border: 1px solid #2c3e50;
+      border-radius: 8px;
+      padding: 8px;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
     }
     
-    /* Кнопки слоев */
-    .layers-container {
+    #layer-control.expanded {
       display: flex;
-      gap: 10px;
     }
     
     .layer-btn {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       background: rgba(50, 50, 60, 0.8);
       border: 1px solid #495057;
-      border-radius: 50%;
+      border-radius: 6px;
       color: #e9ecef;
-      font-size: 1rem;
+      font-size: 0.9rem;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -463,37 +403,74 @@
     }
     
     .layer-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 15px rgba(77, 171, 247, 0.4);
+      background: rgba(50, 50, 60, 1);
+      transform: translateY(-1px);
     }
     
-    /* Кнопка снимка */
-    #screenshot-btn {
+    /* Кнопки нижней панели */
+    #bottom-controls {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      z-index: 910;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .bottom-btn {
       width: 40px;
       height: 40px;
-      background: rgba(77, 171, 247, 0.2);
-      border: 1px solid #4dabf7;
+      background: rgba(30, 30, 40, 0.9);
+      backdrop-filter: blur(5px);
+      border: 1px solid #2c3e50;
       border-radius: 50%;
-      color: #4dabf7;
+      color: #a5d8ff;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       transition: all 0.2s;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     }
     
-    #screenshot-btn:hover {
-      background: rgba(77, 171, 247, 0.3);
-      transform: translateY(-3px);
-      box-shadow: 0 4px 15px rgba(77, 171, 247, 0.4);
+    .bottom-btn:hover {
+      background: rgba(59, 91, 219, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    }
+    
+    /* Кнопка сворачивания панели */
+    #toggle-panel {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 920;
+      background: rgba(52, 58, 64, 0.9);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    #toggle-panel:hover {
+      background: rgba(52, 58, 64, 1);
+      transform: translateY(-1px);
     }
     
     /* Карта */
     #map {
       position: absolute;
-      top: 60px;
-      bottom: 60px;
+      top: 0;
+      bottom: 0;
       left: 0;
       right: 0;
       z-index: 500;
@@ -502,20 +479,20 @@
     /* Попап тайла */
     .tile-popup {
       min-width: 280px;
-      padding: 15px;
+      padding: 12px;
     }
     
     .tile-popup h3 {
+      margin-bottom: 10px;
       color: #74c0fc;
-      margin-bottom: 15px;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
     }
     
     .tile-info-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 15px;
+      gap: 8px;
+      margin-bottom: 12px;
     }
     
     .tile-info-item {
@@ -525,40 +502,41 @@
     }
     
     .tile-info-label {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: #868e96;
     }
     
     .tile-info-value {
       font-weight: bold;
       color: #e9ecef;
+      font-size: 0.9rem;
     }
     
     .mark-buttons {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      margin: 15px 0;
+      gap: 6px;
+      margin: 12px 0;
     }
     
     .mark-btn {
-      padding: 8px;
+      padding: 6px;
       background: rgba(40, 40, 50, 0.8);
       border: 1px solid #495057;
-      border-radius: 6px;
+      border-radius: 4px;
       color: #e9ecef;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       transition: all 0.2s;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
     }
     
     .mark-btn:hover {
       background: rgba(50, 50, 60, 1);
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
     
     .mark-btn.ally {
@@ -582,44 +560,44 @@
     }
     
     .comment-section {
-      margin: 15px 0;
+      margin: 12px 0;
     }
     
     .comment-section textarea {
       width: 100%;
-      min-height: 80px;
-      padding: 10px;
+      min-height: 60px;
+      padding: 8px;
       background: rgba(40, 40, 50, 0.8);
       border: 1px solid #495057;
-      border-radius: 6px;
+      border-radius: 4px;
       color: #e9ecef;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       resize: vertical;
     }
     
     .comment-section textarea:focus {
       outline: none;
       border-color: #4dabf7;
-      box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.3);
+      box-shadow: 0 0 0 2px rgba(77, 171, 247, 0.3);
     }
     
     .save-comment-btn {
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       background: rgba(59, 91, 219, 0.2);
       border: 1px solid #3b5bdb;
-      border-radius: 6px;
+      border-radius: 4px;
       color: #a5d8ff;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: bold;
       transition: all 0.2s;
-      margin-top: 10px;
+      margin-top: 8px;
     }
     
     .save-comment-btn:hover {
       background: rgba(59, 91, 219, 0.3);
-      transform: translateY(-2px);
+      transform: translateY(-1px);
     }
     
     /* Отладочная панель */
@@ -630,10 +608,10 @@
       right: 0;
       background: rgba(0, 20, 10, 0.95);
       color: #20c997;
-      font-size: 12px;
-      padding: 15px;
-      z-index: 2000;
-      max-height: 40vh;
+      font-size: 11px;
+      padding: 10px;
+      z-index: 9999;
+      max-height: 30vh;
       overflow: auto;
       font-family: 'Courier New', monospace;
       border-top: 1px solid #20c997;
@@ -641,43 +619,116 @@
     }
     
     .debug-section {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     
     #debug-log {
-      max-height: 120px;
+      max-height: 80px;
       overflow: auto;
-      margin-top: 10px;
-      padding-top: 10px;
+      margin-top: 8px;
+      padding-top: 8px;
       border-top: 1px dashed #20c997;
     }
     
-    /* Адаптивность для мобильных устройств */
+    .tile-label {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 2px 5px;
+      border-radius: 2px;
+      font-size: 9px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 1px 1px black;
+    }
+    
+    /* Лоадер */
+    .loader {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2000;
+    }
+    
+    .loader-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #4dabf7;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    
+    .loader-text {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Адаптивность */
     @media (max-width: 768px) {
-      #side-panel {
-        width: 100%;
-        top: 60px;
-        bottom: 60px;
+      #panel {
+        padding: 6px 8px;
+        gap: 6px;
       }
       
-      .panel-title {
+      #map-title {
         font-size: 1rem;
       }
       
-      #search-input {
-        width: 120px;
+      .search-wrapper {
+        min-width: 120px;
+        max-width: 180px;
       }
       
-      #search-input:focus {
-        width: 150px;
+      #search {
+        padding: 5px 30px 5px 8px;
+        font-size: 0.8rem;
       }
       
-      .control-btn span {
-        display: none;
+      #search-clear {
+        right: 25px;
+        font-size: 16px;
+      }
+      
+      #goto-btn {
+        width: 22px;
+        height: 22px;
+        font-size: 0.8rem;
+      }
+      
+      #status-filter {
+        padding: 5px 20px 5px 6px;
+        font-size: 0.75rem;
+        min-width: 80px;
+      }
+      
+      #clear-filter {
+        width: 24px;
+        height: 24px;
+        font-size: 0.9rem;
       }
       
       .control-btn {
-        padding: 8px 12px;
+        padding: 5px 10px;
+        font-size: 0.75rem;
+      }
+      
+      #favorites-panel {
+        width: 200px;
+        right: 5px;
+      }
+      
+      .bottom-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
       }
     }
   </style>
@@ -688,75 +739,67 @@
     <div class="loader-logo"></div>
     <div class="loader-text" id="loader-text">Подготовка к возрождению цивилизации...</div>
     <div class="progress-container">
-      <div class="progress-bar" id="progress-bar"></div>
-    </div>
-    <div class="progress-text" id="progress-text">0%</div>
-    <div class="status-messages" id="status-messages"></div>
-  </div>
-
-  <div id="app">
-    <!-- Верхняя панель -->
-    <div id="top-panel">
-      <div class="panel-section">
-        <div class="panel-title">🧭 GENESIS WAR MAP</div>
-        
-        <div class="search-container">
-          <input type="text" id="search-input" placeholder="Тайл-ID" />
-          <span id="search-clear">×</span>
-          <button id="search-go">➡️</button>
-        </div>
-        
-        <div class="filter-container">
-          <select id="status-filter">
-            <option value="">— Все —</option>
-            <option value="ally">🟩 Союзник</option>
-            <option value="enemy">🟥 Враг</option>
-            <option value="favorite">⭐ Избранное</option>
-            <option value="clear">⚪ Без метки</option>
-          </select>
-          <button id="filter-clear">×</button>
-        </div>
-        
-        <div class="control-buttons">
-          <button class="control-btn" id="reset-btn">
-            ♻️ <span>Сбросить</span>
-          </button>
-          <button class="control-btn" id="logs-btn">
-            📝 <span>Логи</span>
-          </button>
-        </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
       </div>
-      
-      <button id="toggle-panel">🔽</button>
-    </div>
-
-    <!-- Боковая панель -->
-    <div id="side-panel">
-      <div class="panel-header">
-        <h3>⭐ Избранные тайлы</h3>
-        <button id="toggle-side-panel">◀️</button>
-      </div>
-      <div class="panel-content">
-        <ul id="favorites-list"></ul>
-      </div>
-    </div>
-
-    <!-- Карта -->
-    <div id="map"></div>
-
-    <!-- Нижняя панель -->
-    <div id="bottom-panel">
-      <div class="layers-container">
-        <button class="layer-btn active" data-layer="neutral" title="Нейтральный">N</button>
-        <button class="layer-btn" data-layer="world" title="Мир">W</button>
-        <button class="layer-btn" data-layer="satellite" title="Спутник">S</button>
-      </div>
-      
-      <button id="screenshot-btn">📸</button>
+      <div class="progress-text" id="progress-text">0%</div>
     </div>
   </div>
 
-  <!-- Отладочная панель -->
+  <div id="panel">
+    <strong id="map-title">🧭 GENESIS WAR MAP</strong>
+    
+    <div class="search-wrapper">
+      <input type="text" id="search" placeholder="Тайл-ID" />
+      <span id="search-clear">×</span>
+      <button id="goto-btn">➡️</button>
+    </div>
+    
+    <div class="filter-wrapper">
+      <select id="status-filter">
+        <option value="">— Все —</option>
+        <option value="ally">🟩 Союзник</option>
+        <option value="enemy">🟥 Враг</option>
+        <option value="favorite">⭐ Избранное</option>
+        <option value="clear">⚪ Без метки</option>
+      </select>
+      <button id="clear-filter">×</button>
+    </div>
+    
+    <button class="control-btn" id="reset-btn">
+      ♻️ Сброс
+    </button>
+    <button class="control-btn" id="favorites-btn">
+      ⭐ Избранное
+    </button>
+    
+    <button id="toggle-panel">🔽</button>
+  </div>
+
+  <div id="favorites-panel">
+    <div id="favorites-header">
+      <h4>⭐ Избранные тайлы</h4>
+      <button id="favorites-toggle">▼</button>
+    </div>
+    <div id="favorites-content">
+      <ul id="favorites-list"></ul>
+    </div>
+  </div>
+
+  <div id="map"></div>
+  
+  <div id="layer-control">
+    <button class="layer-btn active" data-layer="neutral" title="Нейтральный">N</button>
+    <button class="layer-btn" data-layer="world" title="Мир">W</button>
+    <button class="layer-btn" data-layer="satellite" title="Спутник">S</button>
+  </div>
+  
+  <div id="bottom-controls">
+    <button class="bottom-btn" id="layers-btn" title="Слои">🗺️</button>
+    <button class="bottom-btn" id="screenshot-btn" title="Снимок">📸</button>
+    <button class="bottom-btn" id="logs-btn" title="Логи">📝</button>
+  </div>
+
   <div id="debug-panel">
     <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
     <div class="debug-section" id="user-status">Пользователь: ⏳</div>
@@ -773,7 +816,7 @@
   
   <script>
     // Конфигурация
-    const API_URL = 'https://genesis-map-api.onrender.com';
+    const API_URL = 'https://genesis-map-api.onrender.com'; // URL нового API сервиса
     const degLat = 170/256, degLng = 360/256;
     const CACHE_TTL = 15 * 60 * 1000; // 15 минут
     
@@ -784,38 +827,19 @@
     let currentUser = null;
     let userMarks = {};
     let favorites = [];
+    let currentPopup = null;
     
     // Элементы UI
     const loaderScreen = document.getElementById('loader-screen');
     const loaderText = document.getElementById('loader-text');
-    const progressBar = document.getElementById('progress-bar');
+    const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
-    const statusMessages = document.getElementById('status-messages');
     const debugLog = document.getElementById('debug-log');
-    
-    // Прикольные фразы загрузки
-    const loadingPhrases = [
-      "Подготовка к возрождению цивилизации...",
-      "Анализ геологических данных...",
-      "Сканирование биомов...",
-      "Поиск артефактов...",
-      "Расчет стратегических позиций...",
-      "Синхронизация с орбитальным спутником...",
-      "Дешифровка древних карт...",
-      "Подключение к блокчейн-сети...",
-      "Оптимизация маршрутов добычи...",
-      "Калибровка сенсоров...",
-      "Загрузка данных о ресурсах...",
-      "Проверка наличия воды...",
-      "Анализ плотности населения...",
-      "Подготовка интерфейса карты...",
-      "Инициализация системы навигации..."
-    ];
     
     // Обновление прогресса загрузки
     function updateProgress(percent, message = '') {
-      if (progressBar) {
-        progressBar.style.width = `${percent}%`;
+      if (progressFill) {
+        progressFill.style.width = `${percent}%`;
       }
       if (progressText) {
         progressText.textContent = `${Math.round(percent)}%`;
@@ -825,19 +849,10 @@
       }
     }
     
-    // Добавление сообщения статуса
-    function addStatusMessage(message) {
-      if (statusMessages) {
-        const msgElement = document.createElement('div');
-        msgElement.textContent = message;
-        msgElement.style.marginBottom = '5px';
-        statusMessages.appendChild(msgElement);
-        statusMessages.scrollTop = statusMessages.scrollHeight;
-      }
-    }
-    
     // Логирование в отладочную панель
     function log(message, isError = false) {
+      if (!debugLog) return;
+      
       const now = new Date();
       const timestamp = `[${now.toLocaleTimeString()}]`;
       const logEntry = document.createElement('div');
@@ -845,18 +860,25 @@
       logEntry.textContent = `${timestamp} ${message}`;
       logEntry.className = isError ? 'error' : '';
       
-      if (debugLog) {
-        debugLog.appendChild(logEntry);
-        debugLog.scrollTop = debugLog.scrollHeight;
-      }
+      debugLog.appendChild(logEntry);
+      debugLog.scrollTop = debugLog.scrollHeight;
       
       if (isError) {
         console.error(message);
-        if (document.getElementById('error-log')) {
-          document.getElementById('error-log').textContent = `Ошибки: 🔴 ${message.substring(0, 50)}...`;
+        const errorLogElement = document.getElementById('error-log');
+        if (errorLogElement) {
+          errorLogElement.textContent = `Ошибки: 🔴 ${message.substring(0, 50)}...`;
         }
       } else {
         console.log(message);
+      }
+    }
+    
+    // Показать/скрыть лоадер
+    function showLoader(visible) {
+      const loader = document.getElementById('loader');
+      if (loader) {
+        loader.style.display = visible ? 'block' : 'none';
       }
     }
     
@@ -867,16 +889,18 @@
       if (tg) {
         tg.ready();
         log('🤖 Telegram WebApp готов');
-        if (document.getElementById('tg-status')) {
-          document.getElementById('tg-status').textContent = 'Telegram WebApp: ✅';
+        const tgStatusElement = document.getElementById('tg-status');
+        if (tgStatusElement) {
+          tgStatusElement.textContent = 'Telegram WebApp: ✅';
         }
         
         return tg.initDataUnsafe?.user || null;
       }
       
       log('Telegram WebApp не обнаружен, работаем в автономном режиме');
-      if (document.getElementById('tg-status')) {
-        document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
+      const tgStatusElement = document.getElementById('tg-status');
+      if (tgStatusElement) {
+        tgStatusElement.textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
       }
       return null;
     }
@@ -885,14 +909,16 @@
     async function initMap(user) {
       try {
         currentUser = user || { id: 'test-user', first_name: 'Тестовый пользователь' };
-        if (document.getElementById('login-container')) {
-          document.getElementById('login-container').style.display = 'none';
+        const loginContainer = document.getElementById('login-container');
+        if (loginContainer) {
+          loginContainer.style.display = 'none';
         }
         document.body.classList.add('logged-in');
         
         log(`👤 Пользователь: ${currentUser.first_name} (${currentUser.id})`);
-        if (document.getElementById('user-status')) {
-          document.getElementById('user-status').textContent = `Пользователь: ✅ ${currentUser.first_name}`;
+        const userStatusElement = document.getElementById('user-status');
+        if (userStatusElement) {
+          userStatusElement.textContent = `Пользователь: ✅ ${currentUser.first_name}`;
         }
         
         // Регистрация пользователя в API
@@ -935,8 +961,9 @@
         
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         log('🗺️ Карта создана');
-        if (document.getElementById('map-status')) {
-          document.getElementById('map-status').textContent = 'Карта: ✅ Инициализирована';
+        const mapStatusElement = document.getElementById('map-status');
+        if (mapStatusElement) {
+          mapStatusElement.textContent = 'Карта: ✅ Инициализирована';
         }
         
         // Базовые слои
@@ -981,8 +1008,7 @@
     
     // Загрузка данных
     async function loadData() {
-      updateProgress(10, 'Загрузка пользовательских данных...');
-      addStatusMessage('🔄 Загрузка пользовательских данных...');
+      showLoader(true);
       log('🔄 Загрузка данных...');
       
       try {
@@ -1002,15 +1028,12 @@
         });
         
         log(`📌 Загружено ${marks.length} пользовательских меток`);
-        addStatusMessage(`✅ Загружено ${marks.length} пользовательских меток`);
-        updateProgress(30, 'Загрузка кеша тайлов...');
         
         // Загрузка кеша тайлов
         const cacheResponse = await fetch(`${API_URL}/api/tiles-cache`);
         if (!cacheResponse.ok) {
             if (cacheResponse.status === 404) {
                 log('ℹ️ Кеш не найден, будет загружен свежий');
-                addStatusMessage('ℹ️ Кеш не найден, будет загружен свежий');
             } else {
                 throw new Error(`Ошибка загрузки кеша: ${cacheResponse.status} ${cacheResponse.statusText}`);
             }
@@ -1022,23 +1045,19 @@
                 // Исправлено: данные приходят в формате { tiles: [...] }
                 tileData = Array.isArray(cache.data.tiles) ? Object.values(cache.data.tiles) : Object.values(cache.data.tiles || {});
                 log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
-                addStatusMessage(`✅ Использован кеш тайлов (${tileData.length} записей)`);
-                if (document.getElementById('cache-status')) {
-                  document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
+                const cacheStatusElement = document.getElementById('cache-status');
+                if (cacheStatusElement) {
+                  cacheStatusElement.textContent = 'Кеш: ✅ Актуальный';
                 }
               } else {
                  log('ℹ️ Кеш устарел, будет загружен свежий');
-                 addStatusMessage('ℹ️ Кеш устарел, будет загружен свежий');
               }
             }
         }
         
-        updateProgress(50, 'Загрузка данных с основного сервера...');
-        
         // Если кеш устарел или отсутствует
         if (!tileData.length) {
           log('⏬ Загрузка данных с основного сервера...');
-          addStatusMessage('⏬ Загрузка данных с основного сервера...');
           const tileResponse = await fetch(`${API_URL}/api/proxy/tile-info`);
           if (!tileResponse.ok) throw new Error(`Ошибка загрузки тайлов: ${tileResponse.status} ${tileResponse.statusText}`);
           
@@ -1054,50 +1073,44 @@
                 body: JSON.stringify({ tilesResponse }) // Сохраняем весь объект
               });
               log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
-              addStatusMessage(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
-              if (document.getElementById('cache-status')) {
-                document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
+              const cacheStatusElement = document.getElementById('cache-status');
+              if (cacheStatusElement) {
+                cacheStatusElement.textContent = 'Кеш: ✅ Обновлен';
               }
           } catch (cacheErr) {
               log(`⚠️ Не удалось сохранить кеш: ${cacheErr.message}`, true);
-              addStatusMessage(`⚠️ Не удалось сохранить кеш: ${cacheErr.message}`);
               // Продолжаем работу даже если кеш не сохранился
           }
         }
         
-        updateProgress(70, 'Инициализация координат...');
-        
         // Инициализация координат
         initTileCoordinates();
-        
-        updateProgress(80, 'Отрисовка карты...');
         
         // Первичная отрисовка
         drawGrid();
         drawTiles();
         renderFavorites();
         
-        if (document.getElementById('api-status')) {
-          document.getElementById('api-status').textContent = 'API: ✅ Работает';
+        const apiStatusElement = document.getElementById('api-status');
+        if (apiStatusElement) {
+          apiStatusElement.textContent = 'API: ✅ Работает';
         }
         log('✅ Все данные успешно загружены');
-        addStatusMessage('✅ Все данные успешно загружены');
-        
-        updateProgress(100, 'Готово!');
         
       } catch (error) {
         log(`⚠️ Ошибка загрузки данных: ${error.message}`, true);
-        addStatusMessage(`⚠️ Ошибка загрузки данных: ${error.message}`);
-        if (document.getElementById('api-status')) {
-          document.getElementById('api-status').textContent = `API: 🔴 Ошибка (${error.message})`;
+        const apiStatusElement = document.getElementById('api-status');
+        if (apiStatusElement) {
+          apiStatusElement.textContent = `API: 🔴 Ошибка (${error.message})`;
         }
       } finally {
+        showLoader(false);
         // Скрываем загрузочный экран
         setTimeout(() => {
           if (loaderScreen) {
             loaderScreen.classList.add('fade-out');
           }
-        }, 1000);
+        }, 500);
       }
     }
     
@@ -1165,7 +1178,7 @@
       tileMarkers = {};
       
       const filter = document.getElementById('status-filter')?.value || '';
-      const searchValue = document.getElementById('search-input')?.value.trim() || '';
+      const searchValue = document.getElementById('search')?.value.trim() || '';
       const bounds = map.getBounds();
       
       tileData.forEach(t => {
@@ -1277,36 +1290,36 @@
           </div>
           
           <!-- Информация о ресурсах тайла -->
-          <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #495057;">
-            <h4 style="color: #ffd43b; margin-bottom: 8px;">Ресурсы:</h4>
+          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #495057;">
+            <h4 style="color: #ffd43b; margin-bottom: 6px; font-size: 0.9rem;">Ресурсы:</h4>
             ${
-              t.stone_pct ? `<p><strong>Камень:</strong> ${t.stone_pct}%</p>` : ''
+              t.stone_pct ? `<p style="font-size: 0.8rem;"><strong>Камень:</strong> ${t.stone_pct}%</p>` : ''
             }
             ${
-              t.seaweed_pct ? `<p><strong>Водоросли:</strong> ${t.seaweed_pct}%</p>` : ''
+              t.seaweed_pct ? `<p style="font-size: 0.8rem;"><strong>Водоросли:</strong> ${t.seaweed_pct}%</p>` : ''
             }
             ${
-              t.fish_pct ? `<p><strong>Рыба:</strong> ${t.fish_pct}%</p>` : ''
+              t.fish_pct ? `<p style="font-size: 0.8rem;"><strong>Рыба:</strong> ${t.fish_pct}%</p>` : ''
             }
             ${
-              t.quartz_pct ? `<p><strong>Кварц:</strong> ${t.quartz_pct}%</p>` : ''
+              t.quartz_pct ? `<p style="font-size: 0.8rem;"><strong>Кварц:</strong> ${t.quartz_pct}%</p>` : ''
             }
             ${
-              t.clay_pct ? `<p><strong>Глина:</strong> ${t.clay_pct}%</p>` : ''
+              t.clay_pct ? `<p style="font-size: 0.8rem;"><strong>Глина:</strong> ${t.clay_pct}%</p>` : ''
             }
             ${
-              t.wood_pct ? `<p><strong>Дерево:</strong> ${t.wood_pct}%</p>` : ''
+              t.wood_pct ? `<p style="font-size: 0.8rem;"><strong>Дерево:</strong> ${t.wood_pct}%</p>` : ''
             }
             ${
-              t.animals_pct ? `<p><strong>Животные:</strong> ${t.animals_pct}%</p>` : ''
+              t.animals_pct ? `<p style="font-size: 0.8rem;"><strong>Животные:</strong> ${t.animals_pct}%</p>` : ''
             }
             ${
-              t.herbs_pct ? `<p><strong>Травы:</strong> ${t.herbs_pct}%</p>` : ''
+              t.herbs_pct ? `<p style="font-size: 0.8rem;"><strong>Травы:</strong> ${t.herbs_pct}%</p>` : ''
             }
           </div>
           
           <div style="margin-top: 10px;">
-            <a href="https://genesis-of-ages.site/ru/%d0%b3%d0%b5%d0%be-%d1%8d%d0%ba%d1%81%d0%bf%d0%bb%d0%be%d1%80%d0%b5%d1%80/?tile=${t.id_tile}" target="_blank" style="color: #4dabf7; text-decoration: none;">
+            <a href="https://genesis-of-ages.site/ru/%d0%b3%d0%b5%d0%be-%d1%8d%d0%ba%d1%81%d0%bf%d0%bb%d0%be%d1%80%d0%b5%d1%80/?tile=${t.id_tile}" target="_blank" style="color: #4dabf7; text-decoration: none; font-size: 0.85rem;">
               🌍 Подробнее на genesis-of-ages.site
             </a>
           </div>
@@ -1318,6 +1331,37 @@
         closeOnClick: false,
         closeButton: true
       });
+      
+      // Обработчик открытия попапа
+      rect.on('popupopen', function(e) {
+        const popup = e.popup;
+        if (popup && popup.getElement()) {
+          // Добавляем обработчики событий для кнопок в попапе
+          popup.getElement().addEventListener('click', function(event) {
+            if (event.target.classList.contains('mark-btn')) {
+              const tileId = parseInt(event.target.dataset.id);
+              const markType = event.target.dataset.type;
+              saveMark(tileId, markType);
+              // Закрываем попап после сохранения
+              if (map && tileMarkers[tileId]) {
+                map.closePopup();
+              }
+            }
+            
+            if (event.target.classList.contains('save-comment-btn')) {
+              const tileId = parseInt(event.target.dataset.id);
+              const commentTextarea = document.getElementById(`comment-${tileId}`);
+              const comment = commentTextarea ? commentTextarea.value : '';
+              saveMark(tileId, 'comment', comment);
+              // Закрываем попап после сохранения
+              if (map && tileMarkers[tileId]) {
+                map.closePopup();
+              }
+            }
+          });
+        }
+      });
+      
       return rect;
     }
     
@@ -1326,41 +1370,19 @@
       const favList = document.getElementById('favorites-list');
       if (!favList) return;
       
+      // Сортируем избранные тайлы по ID
+      favorites.sort((a, b) => parseInt(a) - parseInt(b));
+      
       favList.innerHTML = favorites.map(id => {
         const tile = tileData.find(t => t.id_tile === id);
-        const tileMarks = userMarks[id] || {};
-        const status = 
-          tileMarks.ally ? 'ally' :
-          tileMarks.enemy ? 'enemy' :
-          tileMarks.favorite ? 'favorite' : '';
-          
-        let statusIcon = '';
-        let statusColor = '';
-        if (status === 'ally') {
-          statusIcon = '🟩';
-          statusColor = '#40c057';
-        } else if (status === 'enemy') {
-          statusIcon = '🟥';
-          statusColor = '#fa5252';
-        } else if (status === 'favorite') {
-          statusIcon = '⭐';
-          statusColor = '#fab005';
-        }
+        if (!tile) return ''; // Пропускаем, если тайл не найден
         
         return `
           <li data-id="${id}">
-            <div class="tile-info">
-              <div class="tile-icon" style="background: ${statusColor}20; color: ${statusColor};">
-                ${statusIcon || '🗺'}
-              </div>
-              <div class="tile-details">
-                <div class="tile-id">#${id}</div>
-                <div class="tile-status">${status || 'Без метки'}</div>
-              </div>
-            </div>
-            <div class="tile-actions">
-              <button class="action-btn goto-fav" data-id="${id}" title="Перейти">➡️</button>
-              <button class="action-btn remove-fav" data-id="${id}" title="Удалить">✕</button>
+            Тайл #${id}
+            <div class="favorite-actions">
+              <button class="favorite-btn goto-fav" data-id="${id}" title="Перейти">➡️</button>
+              <button class="favorite-btn remove-fav" data-id="${id}" title="Удалить">✕</button>
             </div>
           </li>
         `;
@@ -1427,20 +1449,20 @@
       const searchClear = document.getElementById('search-clear');
       if (searchClear) {
         searchClear.addEventListener('click', () => {
-          const searchInput = document.getElementById('search-input');
-          if (searchInput) {
-            searchInput.value = '';
+          const search = document.getElementById('search');
+          if (search) {
+            search.value = '';
             drawTiles();
           }
         });
       }
       
       // Переход к тайлу
-      const searchGo = document.getElementById('search-go');
-      if (searchGo) {
-        searchGo.addEventListener('click', () => {
-          const searchInput = document.getElementById('search-input');
-          const tileId = searchInput ? searchInput.value.trim() : '';
+      const gotoBtn = document.getElementById('goto-btn');
+      if (gotoBtn) {
+        gotoBtn.addEventListener('click', () => {
+          const search = document.getElementById('search');
+          const tileId = search ? search.value.trim() : '';
           if (!tileId) return;
           
           const tile = tileData.find(t => t.id_tile == tileId);
@@ -1457,9 +1479,9 @@
       }
       
       // Поиск при вводе
-      const searchInput = document.getElementById('search-input');
-      if (searchInput) {
-        searchInput.addEventListener('input', () => {
+      const search = document.getElementById('search');
+      if (search) {
+        search.addEventListener('input', () => {
           drawTiles();
         });
       }
@@ -1468,10 +1490,10 @@
       const resetBtn = document.getElementById('reset-btn');
       if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-          const searchInput = document.getElementById('search-input');
+          const search = document.getElementById('search');
           const statusFilter = document.getElementById('status-filter');
-          if (searchInput) {
-            searchInput.value = '';
+          if (search) {
+            search.value = '';
           }
           if (statusFilter) {
             statusFilter.value = '';
@@ -1493,9 +1515,9 @@
       }
       
       // Сброс фильтра меток
-      const filterClear = document.getElementById('filter-clear');
-      if (filterClear) {
-        filterClear.addEventListener('click', () => {
+      const clearFilter = document.getElementById('clear-filter');
+      if (clearFilter) {
+        clearFilter.addEventListener('click', () => {
           const statusFilter = document.getElementById('status-filter');
           if (statusFilter) {
             statusFilter.value = '';
@@ -1531,44 +1553,41 @@
         });
       }
       
-      // Сворачивание боковой панели
-      const toggleSidePanel = document.getElementById('toggle-side-panel');
-      if (toggleSidePanel) {
-        toggleSidePanel.addEventListener('click', function() {
-          const sidePanel = document.getElementById('side-panel');
-          if (sidePanel) {
-            sidePanel.classList.toggle('collapsed');
-          }
+      // Переключение слоев
+      const layersBtn = document.getElementById('layers-btn');
+      const layerControl = document.getElementById('layer-control');
+      if (layersBtn && layerControl) {
+        layersBtn.addEventListener('click', () => {
+          layerControl.classList.toggle('expanded');
         });
       }
       
-      // Делегирование событий для попапов
-      if (map) {
-        map.on('popupopen', (e) => {
-          const popup = e.popup;
-          if (popup && popup.getElement()) {
-            popup.getElement().addEventListener('click', (event) => {
-              if (event.target.classList.contains('mark-btn')) {
-                const tileId = parseInt(event.target.dataset.id);
-                const markType = event.target.dataset.type;
-                saveMark(tileId, markType);
-              }
-              
-              if (event.target.classList.contains('save-comment-btn')) {
-                const tileId = parseInt(event.target.dataset.id);
-                const commentTextarea = document.getElementById(`comment-${tileId}`);
-                const comment = commentTextarea ? commentTextarea.value : '';
-                saveMark(tileId, 'comment', comment);
-              }
-            });
+      // Сворачивание/разворачивание избранного
+      const favoritesBtn = document.getElementById('favorites-btn');
+      const favoritesPanel = document.getElementById('favorites-panel');
+      const favoritesToggle = document.getElementById('favorites-toggle');
+      const favoritesHeader = document.getElementById('favorites-header');
+      
+      if (favoritesBtn && favoritesPanel) {
+        favoritesBtn.addEventListener('click', () => {
+          favoritesPanel.classList.toggle('expanded');
+        });
+      }
+      
+      if (favoritesToggle && favoritesHeader) {
+        favoritesHeader.addEventListener('click', () => {
+          const content = document.getElementById('favorites-content');
+          if (content) {
+            content.style.display = content.style.display === 'none' ? 'block' : 'none';
+            favoritesToggle.classList.toggle('rotated');
           }
         });
       }
       
       // Делегирование событий для избранного
-      const favList = document.getElementById('favorites-list');
-      if (favList) {
-        favList.addEventListener('click', (event) => {
+      const favoritesList = document.getElementById('favorites-list');
+      if (favoritesList) {
+        favoritesList.addEventListener('click', (event) => {
           if (event.target.classList.contains('goto-fav')) {
             const tileId = parseInt(event.target.dataset.id);
             const tile = tileData.find(t => t.id_tile === tileId);
@@ -1597,12 +1616,10 @@
       
       // Кнопка логов
       const logsBtn = document.getElementById('logs-btn');
-      if (logsBtn) {
+      const debugPanel = document.getElementById('debug-panel');
+      if (logsBtn && debugPanel) {
         logsBtn.addEventListener('click', () => {
-          const debugPanel = document.getElementById('debug-panel');
-          if (debugPanel) {
-            debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
-          }
+          debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
         });
       }
     }
@@ -1618,15 +1635,6 @@
         
         // Логирование успешного запуска
         log('✅ Приложение успешно запущено');
-        
-        // Смена фраз загрузки
-        let phraseIndex = 0;
-        setInterval(() => {
-          if (loaderText && !loaderScreen.classList.contains('fade-out')) {
-            loaderText.textContent = loadingPhrases[phraseIndex];
-            phraseIndex = (phraseIndex + 1) % loadingPhrases.length;
-          }
-        }, 3000);
         
       } catch (error) {
         log(`⚠️ Критическая ошибка инициализации: ${error.message}`, true);
