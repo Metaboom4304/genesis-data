@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <!-- Leaflet CSS -->
-  <!-- ИСПРАВЛЕНО: Убраны лишние пробелы из URL -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   
   <style>
@@ -218,86 +217,6 @@
       transform: translateY(-2px);
     }
     
-    /* Кнопки управления */
-    #reset, #screenshot-btn {
-      padding: 8px 15px;
-      background: #3b5bdb;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.95rem;
-      transition: background 0.2s;
-      margin-left: 10px;
-    }
-    
-    #reset:hover, #screenshot-btn:hover {
-      background: #364fc7;
-    }
-    
-    /* Избранное */
-    #favorites-container {
-      background: rgba(30, 30, 40, 0.8);
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 10px;
-      flex: 1 0 100%;
-    }
-    
-    #favorites-container h4 {
-      margin-bottom: 10px;
-      color: #ffd43b;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-    }
-    
-    #favorites-container h4 .toggle-arrow {
-      transition: transform 0.3s ease;
-    }
-    
-    #favorites-container h4.collapsed .toggle-arrow {
-      transform: rotate(180deg);
-    }
-    
-    #favorites-list {
-      list-style: none;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-    }
-    
-    #favorites-list.expanded {
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    
-    #favorites-list li {
-      padding: 8px;
-      background: rgba(50, 50, 60, 0.6);
-      margin-bottom: 6px;
-      border-radius: 4px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    #favorites-list button {
-      padding: 4px 8px;
-      background: #495057;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      margin-left: 5px;
-    }
-    
-    #favorites-list button:hover {
-      background: #5c636a;
-    }
-    
     /* Слои карты */
     #layer-select {
       position: absolute;
@@ -342,7 +261,6 @@
       border-color: #4dabf7;
     }
     
-    /* Кнопки управления картой */
     #layers-toggle {
       position: absolute;
       bottom: 10px;
@@ -369,6 +287,22 @@
       transform: translateY(-2px);
     }
     
+    /* Кнопка сворачивания панели */
+    #toggle-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 910;
+      background: #343a40;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    
+    /* Кнопка снимка */
     #screenshot-btn-map {
       position: absolute;
       bottom: 10px;
@@ -393,21 +327,6 @@
       background: rgba(77, 171, 247, 0.3);
       opacity: 1;
       transform: translateY(-2px);
-    }
-    
-    /* Кнопка сворачивания панели */
-    #toggle-panel {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 910;
-      background: #343a40;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 1.1rem;
     }
     
     /* Карта */
@@ -524,10 +443,6 @@
       <button id="clear-filter">×</button>
     </div>
     
-    <button id="reset">♻️ Сбросить</button>
-    <!-- ИСПРАВЛЕНО: Убрана дублирующаяся кнопка снимка -->
-    <button id="screenshot-btn">📸 Снимок</button>
-    
     <div id="favorites-container">
       <h4 id="favorites-header">
         <span>⭐ Избранное</span>
@@ -546,7 +461,6 @@
     <button class="layer-btn" data-layer="world" title="Мир">W</button>
     <button class="layer-btn" data-layer="satellite" title="Спутник">S</button>
   </div>
-  <!-- ИСПРАВЛЕНО: Переименована кнопка снимка, чтобы избежать дублирования id -->
   <button id="screenshot-btn-map">📸</button>
   
   <div id="debug">
@@ -559,14 +473,12 @@
     <div id="debug-log"></div>
   </div>
 
-  <!-- ИСПРАВЛЕНО: Убраны лишние пробелы из URL скриптов -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <script>
     // Конфигурация
-    // ИСПРАВЛЕНО: Убраны лишние пробелы из URL API
     const API_URL = 'https://genesis-map-api.onrender.com';
     const degLat = 170/256, degLng = 360/256;
     const CACHE_TTL = 15 * 60 * 1000; // 15 минут
@@ -588,15 +500,12 @@
     
     // Обновление прогресса загрузки
     function updateProgress(percent, message = '') {
-      // Добавлена проверка на существование элемента
       if (progressFill) {
         progressFill.style.width = `${percent}%`;
       }
-      // Добавлена проверка на существование элемента
       if (progressText) {
         progressText.textContent = `${Math.round(percent)}%`;
       }
-      // Добавлена проверка на существование элемента
       if (message && loaderText) {
         loaderText.textContent = message;
       }
@@ -604,7 +513,6 @@
     
     // Логирование в отладочную панель
     function log(message, isError = false) {
-      // Добавлена проверка на существование элемента
       if (!debugLog) {
         console.log('Debug log element not found');
         return;
@@ -622,7 +530,6 @@
       
       if (isError) {
         console.error(message);
-        // Добавлена проверка на существование элемента
         const errorLogElement = document.getElementById('error-log');
         if (errorLogElement) {
           errorLogElement.textContent = `Ошибки: 🔴 ${message.substring(0, 50)}...`;
@@ -635,7 +542,6 @@
     // Показать/скрыть лоадер
     function showLoader(visible) {
       const loader = document.getElementById('loader');
-      // Добавлена проверка на существование элемента
       if (loader) {
         loader.style.display = visible ? 'block' : 'none';
       }
@@ -648,7 +554,6 @@
       if (tg) {
         tg.ready();
         log('🤖 Telegram WebApp готов');
-        // Добавлена проверка на существование элемента
         const tgStatusElement = document.getElementById('tg-status');
         if (tgStatusElement) {
           tgStatusElement.textContent = 'Telegram WebApp: ✅';
@@ -658,7 +563,6 @@
       }
       
       log('Telegram WebApp не обнаружен, работаем в автономном режиме');
-      // Добавлена проверка на существование элемента
       const tgStatusElement = document.getElementById('tg-status');
       if (tgStatusElement) {
         tgStatusElement.textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
@@ -670,7 +574,6 @@
     async function initMap(user) {
       try {
         currentUser = user || { id: 'test-user', first_name: 'Тестовый пользователь' };
-        // Добавлена проверка на существование элемента
         const loginContainer = document.getElementById('login-container');
         if (loginContainer) {
           loginContainer.style.display = 'none';
@@ -678,7 +581,6 @@
         document.body.classList.add('logged-in');
         
         log(`👤 Пользователь: ${currentUser.first_name} (${currentUser.id})`);
-        // Добавлена проверка на существование элемента
         const userStatusElement = document.getElementById('user-status');
         if (userStatusElement) {
           userStatusElement.textContent = `Пользователь: ✅ ${currentUser.first_name}`;
@@ -710,7 +612,6 @@
         
         // Создаем карту
         const mapElement = document.getElementById('map');
-        // Добавлена проверка на существование элемента
         if (!mapElement) {
           throw new Error('Элемент карты (#map) не найден!');
         }
@@ -726,7 +627,6 @@
         
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         log('🗺️ Карта создана');
-        // Добавлена проверка на существование элемента
         const mapStatusElement = document.getElementById('map-status');
         if (mapStatusElement) {
           mapStatusElement.textContent = 'Карта: ✅ Инициализирована';
@@ -808,10 +708,8 @@
             if (cache && cache.data) {
               const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
               if (cacheAge < CACHE_TTL) {
-                // Исправлено: данные приходят в формате { tiles: [...] }
                 tileData = Array.isArray(cache.data.tiles) ? Object.values(cache.data.tiles) : Object.values(cache.data.tiles || {});
                 log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
-                // Добавлена проверка на существование элемента
                 const cacheStatusElement = document.getElementById('cache-status');
                 if (cacheStatusElement) {
                   cacheStatusElement.textContent = 'Кеш: ✅ Актуальный';
@@ -829,7 +727,6 @@
           if (!tileResponse.ok) throw new Error(`Ошибка загрузки тайлов: ${tileResponse.status} ${tileResponse.statusText}`);
           
           const tilesResponse = await tileResponse.json();
-          // Исправлено: данные приходят в формате { tiles: [...] }
           tileData = Array.isArray(tilesResponse.tiles) ? Object.values(tilesResponse.tiles) : Object.values(tilesResponse.tiles || {});
           
           // Сохраняем в кеш
@@ -840,7 +737,6 @@
                 body: JSON.stringify({ tilesResponse }) // Сохраняем весь объект
               });
               log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
-              // Добавлена проверка на существование элемента
               const cacheStatusElement = document.getElementById('cache-status');
               if (cacheStatusElement) {
                 cacheStatusElement.textContent = 'Кеш: ✅ Обновлен';
@@ -859,7 +755,6 @@
         drawTiles();
         renderFavorites();
         
-        // Добавлена проверка на существование элемента
         const apiStatusElement = document.getElementById('api-status');
         if (apiStatusElement) {
           apiStatusElement.textContent = 'API: ✅ Работает';
@@ -868,16 +763,13 @@
         
       } catch (error) {
         log(`⚠️ Ошибка загрузки данных: ${error.message}`, true);
-        // Добавлена проверка на существование элемента
         const apiStatusElement = document.getElementById('api-status');
         if (apiStatusElement) {
           apiStatusElement.textContent = `API: 🔴 Ошибка (${error.message})`;
         }
       } finally {
         showLoader(false);
-        // Скрываем загрузочный экран
         setTimeout(() => {
-          // Добавлена проверка на существование элемента
           if (loaderScreen) {
             loaderScreen.classList.add('fade-out');
           }
@@ -889,7 +781,6 @@
     function initTileCoordinates() {
       console.log('tileData перед initTileCoordinates:', tileData);
       
-      // Проверка, что tileData - массив
       if (!Array.isArray(tileData) || tileData.length === 0) {
         console.warn('initTileCoordinates: tileData пуст или не является массивом', tileData);
         return;
@@ -899,10 +790,9 @@
       const refX = refId % 256, refY = Math.floor(refId/256);
       
       tileData.forEach((t, index) => {
-        // Проверка, что t - объект и имеет id_tile
         if (!t || typeof t !== 'object' || t.id_tile == null) {
             console.warn(`initTileCoordinates: Некорректный объект тайла на позиции ${index}`, t);
-            return; // Пропускаем этот тайл
+            return;
         }
         const x = parseInt(t.id_tile) % 256, y = Math.floor(parseInt(t.id_tile)/256);
         t.lat = refLat - (y - refY) * degLat;
@@ -913,7 +803,6 @@
     
     // Отрисовка сетки
     function drawGrid() {
-      // Добавлена проверка на существование элемента
       if (!gridLayer) {
         console.warn('gridLayer не найден');
         return;
@@ -923,7 +812,6 @@
       const bounds = map.getBounds();
       
       tileData.forEach(t => {
-        // Проверка на существование lat/lng
         if (!t || t.lat === undefined || t.lng === undefined) {
           console.warn('drawGrid: Пропущен тайл без координат', t);
           return;
@@ -947,7 +835,6 @@
     
     // Отрисовка тайлов
     function drawTiles() {
-      // Добавлена проверка на существование элемента
       if (!tileLayer) {
         console.warn('tileLayer не найден');
         return;
@@ -962,13 +849,11 @@
       const bounds = map.getBounds();
       
       tileData.forEach(t => {
-        // Проверка на существование lat/lng
         if (!t || t.lat === undefined || t.lng === undefined) {
           console.warn('drawTiles: Пропущен тайл без координат', t);
           return;
         }
         
-        // Фильтрация
         const tileMarks = userMarks[t.id_tile] || {};
         const status = 
           tileMarks.ally ? 'ally' :
@@ -982,7 +867,6 @@
         if (searchValue && String(t.id_tile) !== searchValue) return;
         if (!bounds.contains([t.lat, t.lng])) return;
         
-        // Создание маркера
         tileMarkers[t.id_tile] = createTileMarker(t, tileMarks);
         tileLayer.addLayer(tileMarkers[t.id_tile]);
       });
@@ -990,7 +874,6 @@
     
     // Создание маркера для тайла
     function createTileMarker(t, marks) {
-      // Проверка на существование lat/lng
       if (!t || t.lat === undefined || t.lng === undefined) {
         console.warn('createTileMarker: Некорректные координаты тайла', t);
         return;
@@ -1010,7 +893,6 @@
       const comment = marks.comment || '';
       const owned = t.has_owner === 'true' || t.has_owner === true;
       
-      // Стилизация
       const fill = status === 'ally' ? '#40c057' :
                   status === 'enemy' ? '#fa5252' :
                   status === 'favorite' ? '#fab005' :
@@ -1029,7 +911,6 @@
         fillOpacity: 0.4
       });
       
-      // Добавление подписи
       if (map.getZoom() >= 5) {
         rect.bindTooltip(`#${t.id_tile}`, {
           permanent: true,
@@ -1102,7 +983,6 @@
     // Отрисовка избранного
     function renderFavorites() {
       const favList = document.getElementById('favorites-list');
-      // Добавлена проверка на существование элемента
       if (!favList) {
         console.warn('favorites-list element not found');
         return;
@@ -1141,7 +1021,6 @@
         const result = await response.json();
         log(`💾 Метка сохранена: ${tileId} (${markType})`);
         
-        // Обновление локального состояния
         if (!userMarks[tileId]) userMarks[tileId] = {};
         
         if (markType === 'clear') {
@@ -1154,7 +1033,6 @@
           }
         }
         
-        // Обновление UI
         updateTile(tileId);
         renderFavorites();
         
@@ -1180,7 +1058,6 @@
     function initEventListeners() {
       // Очистка поиска
       const searchClear = document.getElementById('search-clear');
-      // Добавлена проверка на существование элемента
       if (searchClear) {
         searchClear.addEventListener('click', () => {
           const search = document.getElementById('search');
@@ -1193,7 +1070,6 @@
       
       // Переход к тайлу
       const gotoBtn = document.getElementById('goto-btn');
-      // Добавлена проверка на существование элемента
       if (gotoBtn) {
         gotoBtn.addEventListener('click', () => {
           const search = document.getElementById('search');
@@ -1215,7 +1091,6 @@
       
       // Поиск при вводе
       const search = document.getElementById('search');
-      // Добавлена проверка на существование элемента
       if (search) {
         search.addEventListener('input', () => {
           drawTiles();
@@ -1224,7 +1099,6 @@
       
       // Сброс фильтров
       const reset = document.getElementById('reset');
-      // Добавлена проверка на существование элемента
       if (reset) {
         reset.addEventListener('click', () => {
           const search = document.getElementById('search');
@@ -1242,7 +1116,6 @@
       
       // Изменение фильтра
       const statusFilter = document.getElementById('status-filter');
-      // Добавлена проверка на существование элемента
       if (statusFilter) {
         statusFilter.addEventListener('change', () => {
           drawGrid();
@@ -1253,7 +1126,6 @@
       
       // Сброс фильтра меток
       const clearFilter = document.getElementById('clear-filter');
-      // Добавлена проверка на существование элемента
       if (clearFilter) {
         clearFilter.addEventListener('click', () => {
           const statusFilter = document.getElementById('status-filter');
@@ -1267,8 +1139,7 @@
       }
       
       // Снимок экрана
-      const screenshotBtn = document.getElementById('screenshot-btn');
-      // Добавлена проверка на существование элемента
+      const screenshotBtn = document.getElementById('screenshot-btn-map');
       if (screenshotBtn) {
         screenshotBtn.addEventListener('click', () => {
           html2canvas(document.getElementById('map')).then(canvas => {
@@ -1282,7 +1153,6 @@
       
       // Сворачивание панели
       const togglePanel = document.getElementById('toggle-panel');
-      // Добавлена проверка на существование элемента
       if (togglePanel) {
         togglePanel.addEventListener('click', function() {
           const panel = document.getElementById('panel');
@@ -1295,7 +1165,6 @@
       
       // Переключение слоев
       const layersToggle = document.getElementById('layers-toggle');
-      // Добавлена проверка на существование элемента
       if (layersToggle) {
         layersToggle.addEventListener('click', function() {
           const layerSelect = document.getElementById('layer-select');
@@ -1307,7 +1176,6 @@
       
       // Сворачивание/разворачивание избранного
       const favoritesHeader = document.getElementById('favorites-header');
-      // Добавлена проверка на существование элемента
       if (favoritesHeader) {
         favoritesHeader.addEventListener('click', function() {
           const list = document.getElementById('favorites-list');
@@ -1342,7 +1210,6 @@
       
       // Делегирование событий для избранного
       const favoritesList = document.getElementById('favorites-list');
-      // Добавлена проверка на существование элемента
       if (favoritesList) {
         favoritesList.addEventListener('click', (event) => {
           if (!event.target.classList.contains('goto-fav') && 
@@ -1368,7 +1235,6 @@
           drawTiles();
         });
         
-        // Обновление при изменении зума
         map.on('zoomend', () => {
           drawTiles();
         });
