@@ -34,7 +34,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: url('https://i.imgur.com/2v5JqkL.png') center/cover no-repeat;
+      background: url('./1755546482.png') center/cover no-repeat;
       background-color: rgba(0, 0, 0, 0.9);
       z-index: 1000;
       transition: opacity 0.5s ease;
@@ -48,7 +48,7 @@
     .loader-logo {
       width: 120px;
       height: 120px;
-      background: url('https://i.imgur.com/2v5JqkL.png') center/contain no-repeat;
+      background: url('./1755546482.png') center/contain no-repeat;
       margin-bottom: 30px;
       animation: pulse 2s infinite;
     }
@@ -95,7 +95,7 @@
     }
     
     .progress-text {
-      font-size: 0.9rem;
+      font-size: 1rem;
       color: #aaa;
       text-align: center;
     }
@@ -106,17 +106,17 @@
       top: 0;
       left: 0;
       right: 0;
-      background: rgba(20, 20, 30, 0.95);
+      background: rgba(20, 20, 30, 0.9);
       color: #fff;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      padding: 8px 12px;
-      gap: 8px;
+      padding: 12px;
+      gap: 10px;
       z-index: 900;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(5px);
       border-bottom: 1px solid #2c3e50;
-      transition: transform 0.3s ease;
+      transition: all 0.3s ease;
     }
     
     #panel.collapsed {
@@ -124,11 +124,10 @@
     }
     
     #map-title {
-      font-size: 1.2rem;
+      font-size: 1.4rem;
       font-weight: bold;
       color: #74c0fc;
       margin-right: 10px;
-      white-space: nowrap;
     }
     
     /* Поиск тайла */
@@ -138,40 +137,34 @@
       align-items: center;
       background: rgba(40, 40, 50, 0.8);
       border-radius: 6px;
-      padding: 4px;
+      padding: 5px;
       flex: 1;
-      min-width: 150px;
-      max-width: 250px;
+      min-width: 200px;
     }
     
     #search {
       width: 100%;
-      padding: 6px 35px 6px 10px;
+      padding: 8px 40px 8px 12px;
       background: transparent;
       border: 1px solid #495057;
       border-radius: 4px;
       color: #e9ecef;
-      font-size: 0.9rem;
+      font-size: 1rem;
     }
     
     #search:focus {
       outline: none;
       border-color: #4dabf7;
-      box-shadow: 0 0 0 2px rgba(77, 171, 247, 0.3);
+      box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.3);
     }
     
     #search-clear {
       position: absolute;
-      right: 30px;
+      right: 35px;
       cursor: pointer;
       color: #adb5bd;
-      font-size: 18px;
+      font-size: 20px;
       transition: color 0.2s;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
     
     #search-clear:hover {
@@ -181,13 +174,13 @@
     #goto-btn {
       position: absolute;
       right: 5px;
-      width: 24px;
-      height: 24px;
+      width: 30px;
+      height: 30px;
       background: rgba(77, 171, 247, 0.2);
       border: 1px solid #4dabf7;
       border-radius: 50%;
       color: #4dabf7;
-      font-size: 0.9rem;
+      font-size: 1.2rem;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
@@ -197,39 +190,35 @@
     
     #goto-btn:hover {
       background: rgba(77, 171, 247, 0.3);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
     
     /* Фильтр меток */
     .filter-wrapper {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
+      margin-left: 10px;
     }
     
     #status-filter {
-      padding: 6px 25px 6px 8px;
+      padding: 8px;
       background: #343a40;
       color: #e9ecef;
       border: 1px solid #495057;
       border-radius: 4px;
-      font-size: 0.85rem;
-      min-width: 100px;
-      appearance: none;
-      background-image: url("image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e9ecef' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-      background-repeat: no-repeat;
-      background-position: right 8px center;
-      background-size: 12px;
+      font-size: 0.9rem;
+      min-width: 120px;
     }
     
     #clear-filter {
-      width: 26px;
-      height: 26px;
+      width: 30px;
+      height: 30px;
       background: rgba(77, 171, 247, 0.2);
       border: 1px solid #4dabf7;
       border-radius: 50%;
       color: #4dabf7;
-      font-size: 1rem;
+      font-size: 1.2rem;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
@@ -239,58 +228,120 @@
     
     #clear-filter:hover {
       background: rgba(77, 171, 247, 0.3);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
     
     /* Кнопки управления */
-    .control-btn {
-      padding: 6px 12px;
-      background: rgba(59, 91, 219, 0.2);
-      border: 1px solid #3b5bdb;
+    #reset, #screenshot-btn {
+      padding: 8px 15px;
+      background: #3b5bdb;
+      color: white;
+      border: none;
       border-radius: 4px;
-      color: #a5d8ff;
       cursor: pointer;
-      font-size: 0.85rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      white-space: nowrap;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+      margin-left: 10px;
     }
     
-    .control-btn:hover {
-      background: rgba(59, 91, 219, 0.3);
-      transform: translateY(-1px);
+    #reset:hover, #screenshot-btn:hover {
+      background: #364fc7;
+    }
+    
+    /* Избранное */
+    #favorites-container {
+      background: rgba(30, 30, 40, 0.8);
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      flex: 1 0 100%;
+    }
+    
+    #favorites-container h4 {
+      margin-bottom: 10px;
+      color: #ffd43b;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    
+    #favorites-container h4 .toggle-arrow {
+      transition: transform 0.3s ease;
+    }
+    
+    #favorites-container h4.collapsed .toggle-arrow {
+      transform: rotate(180deg);
+    }
+    
+    #favorites-list {
+      list-style: none;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    
+    #favorites-list.expanded {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    #favorites-list li {
+      padding: 8px;
+      background: rgba(50, 50, 60, 0.6);
+      margin-bottom: 6px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    #favorites-list button {
+      padding: 4px 8px;
+      background: #495057;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    
+    #favorites-list button:hover {
+      background: #5c636a;
     }
     
     /* Слои карты */
-    #layer-control {
+    #layer-select {
       position: absolute;
       bottom: 60px;
       right: 10px;
       z-index: 910;
       background: rgba(30, 30, 40, 0.95);
-      backdrop-filter: blur(10px);
-      border: 1px solid #2c3e50;
-      border-radius: 8px;
-      padding: 8px;
-      display: none;
+      border: 1px solid #495057;
+      border-radius: 6px;
+      padding: 5px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      transition: all 0.3s ease;
       flex-direction: column;
-      gap: 6px;
+      max-height: 0;
+      overflow: hidden;
     }
     
-    #layer-control.expanded {
-      display: flex;
+    #layer-select.expanded {
+      max-height: 200px;
     }
     
     .layer-btn {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       background: rgba(50, 50, 60, 0.8);
       border: 1px solid #495057;
-      border-radius: 6px;
+      border-radius: 50%;
       color: #e9ecef;
-      font-size: 0.9rem;
+      font-size: 1rem;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -304,68 +355,91 @@
       border-color: #4dabf7;
     }
     
-    .layer-btn:hover {
-      background: rgba(50, 50, 60, 1);
-      transform: translateY(-1px);
-    }
-    
-    /* Кнопки нижней панели */
-    #bottom-controls {
+    #layers-toggle {
       position: absolute;
       bottom: 10px;
-      right: 10px;
+      right: 60px;
       z-index: 910;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    
-    .bottom-btn {
+      background: rgba(77, 171, 247, 0.2);
+      border: 1px solid #4dabf7;
+      border-radius: 50%;
       width: 40px;
       height: 40px;
-      background: rgba(30, 30, 40, 0.9);
-      backdrop-filter: blur(5px);
-      border: 1px solid #2c3e50;
-      border-radius: 50%;
-      color: #a5d8ff;
+      color: #4dabf7;
+      font-size: 1.2rem;
       cursor: pointer;
+      transition: all 0.2s;
+      opacity: 0.8;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.1rem;
-      transition: all 0.2s;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     }
     
-    .bottom-btn:hover {
-      background: rgba(59, 91, 219, 0.3);
+    #layers-toggle:hover {
+      background: rgba(77, 171, 247, 0.3);
+      opacity: 1;
       transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
     }
     
     /* Кнопка сворачивания панели */
     #toggle-panel {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 920;
+      top: 10px;
+      right: 10px;
+      z-index: 910;
+      background: #343a40;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    
+    /* Кнопка разворачивания панели (когда она свернута) */
+    #expand-panel {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 910;
       background: rgba(52, 58, 64, 0.9);
       color: white;
       border: none;
       border-radius: 4px;
-      width: 28px;
-      height: 28px;
+      padding: 8px 12px;
       cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-size: 1.1rem;
+      display: none;
     }
     
-    #toggle-panel:hover {
-      background: rgba(52, 58, 64, 1);
-      transform: translateY(-1px);
+    #panel.collapsed ~ #expand-panel {
+      display: block;
+    }
+    
+    /* Кнопка снимка */
+    #screenshot-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      z-index: 910;
+      background: rgba(77, 171, 247, 0.2);
+      border: 1px solid #4dabf7;
+      border-radius: 6px;
+      padding: 8px 15px;
+      color: #4dabf7;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    #screenshot-btn:hover {
+      background: rgba(77, 171, 247, 0.3);
+      opacity: 1;
+      transform: translateY(-2px);
     }
     
     /* Карта */
@@ -378,219 +452,18 @@
       z-index: 500;
     }
     
-    /* Боковая панель (информация о тайле) */
-    #tile-info-panel {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 350px;
-      background: rgba(20, 20, 30, 0.95);
-      backdrop-filter: blur(10px);
-      border-left: 1px solid #2c3e50;
-      z-index: 900;
-      transition: transform 0.3s ease;
-      overflow-y: auto;
-      height: 100%;
-      display: none;
-    }
-    
-    #tile-info-panel.expanded {
-      transform: translateX(0);
-    }
-    
-    #tile-info-panel.collapsed {
-      transform: translateX(100%);
-    }
-    
-    .panel-header {
-      padding: 12px;
-      border-bottom: 1px solid #2c3e50;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .panel-header h3 {
-      margin: 0;
-      color: #ffd43b;
-      font-size: 1.1rem;
-    }
-    
-    .close-btn {
-      background: none;
-      border: none;
-      color: #868e96;
-      cursor: pointer;
-      font-size: 1.2rem;
-      transition: transform 0.2s;
-    }
-    
-    .close-btn:hover {
-      transform: rotate(90deg);
-    }
-    
-    .info-content {
-      padding: 15px;
-      flex: 1;
-    }
-    
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 15px;
-    }
-    
-    .info-item {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    
-    .info-label {
-      font-size: 0.75rem;
-      color: #868e96;
-    }
-    
-    .info-value {
-      font-weight: bold;
-      color: #e9ecef;
-      font-size: 0.9rem;
-    }
-    
-    .mark-buttons {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      margin: 12px 0;
-    }
-    
-    .mark-btn {
-      padding: 6px;
-      background: rgba(40, 40, 50, 0.8);
-      border: 1px solid #495057;
-      border-radius: 4px;
-      color: #e9ecef;
-      cursor: pointer;
-      font-size: 0.8rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-    }
-    
-    .mark-btn:hover {
-      background: rgba(50, 50, 60, 1);
-      transform: translateY(-1px);
-    }
-    
-    .mark-btn.ally {
-      border-color: #40c057;
-      color: #40c057;
-    }
-    
-    .mark-btn.enemy {
-      border-color: #fa5252;
-      color: #fa5252;
-    }
-    
-    .mark-btn.favorite {
-      border-color: #fab005;
-      color: #fab005;
-    }
-    
-    .mark-btn.clear {
-      border-color: #868e96;
-      color: #868e96;
-    }
-    
-    .comment-section {
-      margin: 12px 0;
-    }
-    
-    .comment-section textarea {
-      width: 100%;
-      min-height: 60px;
-      padding: 8px;
-      background: rgba(40, 40, 50, 0.8);
-      border: 1px solid #495057;
-      border-radius: 4px;
-      color: #e9ecef;
-      font-size: 0.85rem;
-      resize: vertical;
-    }
-    
-    .comment-section textarea:focus {
-      outline: none;
-      border-color: #4dabf7;
-      box-shadow: 0 0 0 2px rgba(77, 171, 247, 0.3);
-    }
-    
-    .save-comment-btn {
-      width: 100%;
-      padding: 8px;
-      background: rgba(59, 91, 219, 0.2);
-      border: 1px solid #3b5bdb;
-      border-radius: 4px;
-      color: #a5d8ff;
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-weight: bold;
-      transition: all 0.2s;
-      margin-top: 8px;
-    }
-    
-    .save-comment-btn:hover {
-      background: rgba(59, 91, 219, 0.3);
-      transform: translateY(-1px);
-    }
-    
-    .resources-section {
-      margin-top: 12px;
-      padding-top: 10px;
-      border-top: 1px solid #495057;
-    }
-    
-    .resources-section h4 {
-      color: #ffd43b;
-      margin-bottom: 6px;
-      font-size: 0.9rem;
-    }
-    
-    .resources-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    
-    .resource-item {
-      font-size: 0.8rem;
-      display: flex;
-      justify-content: space-between;
-    }
-    
-    .resource-name {
-      color: #868e96;
-    }
-    
-    .resource-value {
-      font-weight: bold;
-      color: #e9ecef;
-    }
-    
     /* Отладочная панель */
-    #debug-panel {
+    #debug {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(0, 20, 10, 0.95);
+      background: rgba(0, 20, 10, 0.85);
       color: #20c997;
-      font-size: 11px;
-      padding: 10px;
+      font-size: 12px;
+      padding: 12px;
       z-index: 9999;
-      max-height: 30vh;
+      max-height: 40vh;
       overflow: auto;
       font-family: 'Courier New', monospace;
       border-top: 1px solid #20c997;
@@ -598,22 +471,22 @@
     }
     
     .debug-section {
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     
     #debug-log {
-      max-height: 80px;
+      max-height: 120px;
       overflow: auto;
-      margin-top: 8px;
-      padding-top: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
       border-top: 1px dashed #20c997;
     }
     
     .tile-label {
-      background: rgba(0, 0, 0, 0.7);
-      padding: 2px 5px;
-      border-radius: 2px;
-      font-size: 9px;
+      background: rgba(0, 0, 0, 0.0); /* Сделано полностью прозрачным */
+      padding: 3px 6px;
+      border-radius: 3px;
+      font-size: 10px;
       font-weight: bold;
       color: white;
       text-shadow: 0 1px 1px black;
@@ -630,84 +503,24 @@
     }
     
     .loader-spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      border-top: 4px solid #4dabf7;
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255, 255, 255, 0.3);
+      border-top: 5px solid #4dabf7;
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto;
     }
     
     .loader-text {
-      margin-top: 12px;
+      margin-top: 15px;
       text-align: center;
-      font-size: 0.9rem;
+      font-size: 1.1rem;
     }
     
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
-    }
-    
-    /* Адаптивность */
-    @media (max-width: 768px) {
-      #panel {
-        padding: 6px 8px;
-        gap: 6px;
-      }
-      
-      #map-title {
-        font-size: 1rem;
-      }
-      
-      .search-wrapper {
-        min-width: 120px;
-        max-width: 180px;
-      }
-      
-      #search {
-        padding: 5px 30px 5px 8px;
-        font-size: 0.8rem;
-      }
-      
-      #search-clear {
-        right: 25px;
-        font-size: 16px;
-      }
-      
-      #goto-btn {
-        width: 22px;
-        height: 22px;
-        font-size: 0.8rem;
-      }
-      
-      #status-filter {
-        padding: 5px 20px 5px 6px;
-        font-size: 0.75rem;
-        min-width: 80px;
-      }
-      
-      #clear-filter {
-        width: 24px;
-        height: 24px;
-        font-size: 0.9rem;
-      }
-      
-      .control-btn {
-        padding: 5px 10px;
-        font-size: 0.75rem;
-      }
-      
-      #tile-info-panel {
-        width: 300px;
-      }
-      
-      .bottom-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-      }
     }
   </style>
 </head>
@@ -744,112 +557,31 @@
       <button id="clear-filter">×</button>
     </div>
     
-    <button class="control-btn" id="reset-btn">
-      ♻️ Сброс
-    </button>
+    <button id="reset">♻️ Сбросить</button>
+    <button id="screenshot-btn">📸 Снимок</button>
     
-    <button id="toggle-panel">🔽</button>
+    <div id="favorites-container">
+      <h4 id="favorites-header">
+        <span>⭐ Избранное</span>
+        <span class="toggle-arrow">🔽</span>
+      </h4>
+      <ul id="favorites-list"></ul>
+    </div>
   </div>
 
+  <button id="expand-panel">🔼 Развернуть панель</button>
   <div id="map"></div>
   
-  <div id="layer-control">
+  <button id="toggle-panel">🔽</button>
+  <button id="layers-toggle">🗺️</button>
+  <div id="layer-select">
     <button class="layer-btn active" data-layer="neutral" title="Нейтральный">N</button>
     <button class="layer-btn" data-layer="world" title="Мир">W</button>
     <button class="layer-btn" data-layer="satellite" title="Спутник">S</button>
   </div>
+  <button id="screenshot-btn">📸</button>
   
-  <div id="bottom-controls">
-    <button class="bottom-btn" id="layers-btn" title="Слои">🗺️</button>
-    <button class="bottom-btn" id="screenshot-btn" title="Снимок">📸</button>
-    <button class="bottom-btn" id="logs-btn" title="Логи">📝</button>
-  </div>
-
-  <!-- Боковая панель с информацией о тайле -->
-  <div id="tile-info-panel">
-    <div class="panel-header">
-      <h3>Информация о тайле</h3>
-      <button class="close-btn" id="close-info-panel">✕</button>
-    </div>
-    <div class="info-content">
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="info-label">ID Тайла</span>
-          <span class="info-value" id="tile-id">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Статус</span>
-          <span class="info-value" id="tile-status">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Метка</span>
-          <span class="info-value" id="tile-mark">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Комментарий</span>
-          <span class="info-value" id="tile-comment">—</span>
-        </div>
-      </div>
-      
-      <div class="mark-buttons">
-        <button class="mark-btn ally" data-id="" data-type="ally">🟩 Союзник</button>
-        <button class="mark-btn enemy" data-id="" data-type="enemy">🟥 Враг</button>
-        <button class="mark-btn favorite" data-id="" data-type="favorite">⭐ Избранное</button>
-        <button class="mark-btn clear" data-id="" data-type="clear">⚪ Сброс</button>
-      </div>
-      
-      <div class="comment-section">
-        <textarea id="comment-input" placeholder="Ваш комментарий..."></textarea>
-        <button class="save-comment-btn" id="save-comment-btn">💾 Сохранить комментарий</button>
-      </div>
-      
-      <div class="resources-section">
-        <h4>Ресурсы:</h4>
-        <div class="resources-list">
-          <div class="resource-item">
-            <span class="resource-name">Камень</span>
-            <span class="resource-value" id="stone-pct">—</span>
-          </div>
-          <div class="resource-item">
-            <span class="resource-name">Водоросли</span>
-            <span class="resource-value" id="seaweed-pct">—</span>
-          </div>
-          <div class="resource-item">
-            <span class="resource-name">Рыба</span>
-            <span class="resource-value" id="fish-pct">—</span>
-          </div>
-          <div class="resource-item">
-            <span class="resource-name">Кварц</span>
-            <span class="resource-value" id="quartz-pct">—</span>
-          </div>
-          <div class="resource-item">
-            <span class="resource-name">Глина</span>
-            <span class="resource-value" id="clay-pct">—</span>
-          </div>
-          <div class="resource-item">
-            <span class="resource-name">Дерево</span>
-            <span class="resource-value" id="wood-pct">—</span>
-          </div>
-          <div class="resource-item">
-            <span class="resource-name">Животные</span>
-            <span class="resource-value" id="animals-pct">—</span>
-          </div>
-          <div class="resource-item">
-            <span class="resource-name">Травы</span>
-            <span class="resource-value" id="herbs-pct">—</span>
-          </div>
-        </div>
-      </div>
-      
-      <div style="margin-top: 15px;">
-        <a href="#" target="_blank" style="color: #4dabf7; text-decoration: none; font-size: 0.85rem;">
-          🌍 Подробнее на genesis-of-ages.site
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <div id="debug-panel">
+  <div id="debug">
     <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
     <div class="debug-section" id="user-status">Пользователь: ⏳</div>
     <div class="debug-section" id="map-status">Карта: ⏳</div>
@@ -869,6 +601,25 @@
     const degLat = 170/256, degLng = 360/256;
     const CACHE_TTL = 15 * 60 * 1000; // 15 минут
     
+    // Прикольные фразы загрузки
+    const loadingPhrases = [
+      "Подготовка к возрождению цивилизации...",
+      "Анализ геологических данных...",
+      "Сканирование биомов...",
+      "Поиск артефактов...",
+      "Расчет стратегических позиций...",
+      "Синхронизация с орбитальным спутником...",
+      "Дешифровка древних карт...",
+      "Подключение к блокчейн-сети...",
+      "Оптимизация маршрутов добычи...",
+      "Калибровка сенсоров...",
+      "Загрузка данных о ресурсах...",
+      "Проверка наличия воды...",
+      "Анализ плотности населения...",
+      "Подготовка интерфейса карты...",
+      "Инициализация системы навигации..."
+    ];
+    
     // Глобальные переменные
     let map, gridLayer, tileLayer;
     let tileData = [];
@@ -876,7 +627,7 @@
     let currentUser = null;
     let userMarks = {};
     let favorites = [];
-    let currentTileId = null;
+    let phraseIndex = 0;
     
     // Элементы UI
     const loaderScreen = document.getElementById('loader-screen');
@@ -884,8 +635,6 @@
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
     const debugLog = document.getElementById('debug-log');
-    const tileInfoPanel = document.getElementById('tile-info-panel');
-    const closeInfoPanel = document.getElementById('close-info-panel');
     
     // Обновление прогресса загрузки
     function updateProgress(percent, message = '') {
@@ -900,10 +649,16 @@
       }
     }
     
+    // Смена фразы загрузки
+    function changeLoadingPhrase() {
+      if (loaderText && !loaderScreen.classList.contains('fade-out')) {
+        loaderText.textContent = loadingPhrases[phraseIndex];
+        phraseIndex = (phraseIndex + 1) % loadingPhrases.length;
+      }
+    }
+    
     // Логирование в отладочную панель
     function log(message, isError = false) {
-      if (!debugLog) return;
-      
       const now = new Date();
       const timestamp = `[${now.toLocaleTimeString()}]`;
       const logEntry = document.createElement('div');
@@ -972,7 +727,7 @@
           userStatusElement.textContent = `Пользователь: ✅ ${currentUser.first_name}`;
         }
         
-        // Регистрация пользователя в API
+        // --- Регистрация пользователя в API ---
         try {
           const registerResponse = await fetch(`${API_URL}/api/users/register`, {
             method: 'POST',
@@ -994,6 +749,7 @@
         } catch (registerError) {
           console.warn('Ошибка при регистрации пользователя в API:', registerError);
         }
+        // ------------------------------------
         
         // Создаем карту
         const mapElement = document.getElementById('map');
@@ -1140,6 +896,7 @@
         // Первичная отрисовка
         drawGrid();
         drawTiles();
+        renderFavorites();
         
         const apiStatusElement = document.getElementById('api-status');
         if (apiStatusElement) {
@@ -1227,8 +984,8 @@
       Object.values(tileMarkers).forEach(marker => tileLayer.removeLayer(marker));
       tileMarkers = {};
       
-      const filter = document.getElementById('status-filter')?.value || '';
-      const searchValue = document.getElementById('search')?.value.trim() || '';
+      const filter = document.getElementById('status-filter').value;
+      const searchValue = document.getElementById('search').value.trim();
       const bounds = map.getBounds();
       
       tileData.forEach(t => {
@@ -1298,7 +1055,7 @@
         fillOpacity: 0.4
       });
       
-      // Добавление подписи
+      // Добавление подписи (сделано прозрачным)
       if (map.getZoom() >= 5) {
         rect.bindTooltip(`#${t.id_tile}`, {
           permanent: true,
@@ -1307,50 +1064,84 @@
         });
       }
       
-      // Обработчик клика на тайл
-      rect.on('click', () => {
-        showTileInfo(t.id_tile);
-      });
+      // Всплывающее окно
+      const popupContent = `
+        <div style="min-width: 250px">
+          <h3 style="margin-bottom: 12px; color: #4dabf7;">Тайл #${t.id_tile}</h3>
+          <p><strong>Статус:</strong> ${owned ? 'Занят' : 'Свободен'}</p>
+          <p><strong>Метка:</strong> ${status || '—'}</p>
+          <p><strong>Комментарий:</strong> ${comment || '—'}</p>
+          
+          <div style="margin: 15px 0; display: flex; gap: 5px; flex-wrap: wrap;">
+            <button class="mark-btn" data-id="${t.id_tile}" data-type="ally">🟩 Союзник</button>
+            <button class="mark-btn" data-id="${t.id_tile}" data-type="enemy">🟥 Враг</button>
+            <button class="mark-btn" data-id="${t.id_tile}" data-type="favorite">⭐ Избранное</button>
+            <button class="mark-btn" data-id="${t.id_tile}" data-type="clear">⚪ Сброс</button>
+          </div>
+          
+          <textarea id="comment-${t.id_tile}" placeholder="Ваш комментарий..." 
+            style="width: 100%; min-height: 80px; padding: 8px; margin-bottom: 10px;">${comment}</textarea>
+          
+          <button class="save-comment" data-id="${t.id_tile}">💾 Сохранить комментарий</button>
+          
+          <!-- Информация о ресурсах тайла -->
+          <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #495057;">
+            <h4 style="color: #ffd43b; margin-bottom: 8px;">Ресурсы:</h4>
+            ${
+              t.stone_pct ? `<p><strong>Камень:</strong> ${t.stone_pct}%</p>` : ''
+            }
+            ${
+              t.seaweed_pct ? `<p><strong>Водоросли:</strong> ${t.seaweed_pct}%</p>` : ''
+            }
+            ${
+              t.fish_pct ? `<p><strong>Рыба:</strong> ${t.fish_pct}%</p>` : ''
+            }
+            ${
+              t.quartz_pct ? `<p><strong>Кварц:</strong> ${t.quartz_pct}%</p>` : ''
+            }
+            ${
+              t.clay_pct ? `<p><strong>Глина:</strong> ${t.clay_pct}%</p>` : ''
+            }
+            ${
+              t.wood_pct ? `<p><strong>Дерево:</strong> ${t.wood_pct}%</p>` : ''
+            }
+            ${
+              t.animals_pct ? `<p><strong>Животные:</strong> ${t.animals_pct}%</p>` : ''
+            }
+            ${
+              t.herbs_pct ? `<p><strong>Травы:</strong> ${t.herbs_pct}%</p>` : ''
+            }
+          </div>
+          
+          <div style="margin-top: 10px;">
+            <a href="https://genesis-of-ages.site/ru/%d0%b3%d0%b5%d0%be-%d1%8d%d0%ba%d1%81%d0%bf%d0%bb%d0%be%d1%80%d0%b5%d1%80/?tile=${t.id_tile}" target="_blank" style="color: #4dabf7; text-decoration: none;">
+              🌍 Подробнее на genesis-of-ages.site
+            </a>
+          </div>
+        </div>
+      `;
       
+      rect.bindPopup(popupContent);
       return rect;
     }
     
-    // Показать информацию о тайле
-    function showTileInfo(tileId) {
-      const tile = tileData.find(t => t.id_tile === tileId);
-      if (!tile) return;
+    // Отрисовка избранного
+    function renderFavorites() {
+      const favList = document.getElementById('favorites-list');
+      if (!favList) return;
       
-      // Обновляем информацию в панели
-      document.getElementById('tile-id').textContent = `#${tileId}`;
-      document.getElementById('tile-status').textContent = tile.has_owner === 'true' ? 'Занят' : 'Свободен';
-      
-      const tileMarks = userMarks[tileId] || {};
-      const status = 
-        tileMarks.ally ? 'ally' :
-        tileMarks.enemy ? 'enemy' :
-        tileMarks.favorite ? 'favorite' : '';
-      
-      document.getElementById('tile-mark').textContent = status || '—';
-      document.getElementById('tile-comment').textContent = tileMarks.comment || '—';
-      
-      // Обновляем ресурсы
-      document.getElementById('stone-pct').textContent = tile.stone_pct || '—';
-      document.getElementById('seaweed-pct').textContent = tile.seaweed_pct || '—';
-      document.getElementById('fish-pct').textContent = tile.fish_pct || '—';
-      document.getElementById('quartz-pct').textContent = tile.quartz_pct || '—';
-      document.getElementById('clay-pct').textContent = tile.clay_pct || '—';
-      document.getElementById('wood-pct').textContent = tile.wood_pct || '—';
-      document.getElementById('animals-pct').textContent = tile.animals_pct || '—';
-      document.getElementById('herbs-pct').textContent = tile.herbs_pct || '—';
-      
-      // Обновляем кнопки
-      document.querySelectorAll('.mark-btn').forEach(btn => {
-        btn.setAttribute('data-id', tileId);
-      });
-      
-      // Показываем панель
-      tileInfoPanel.classList.add('expanded');
-      currentTileId = tileId;
+      favList.innerHTML = favorites.map(id => {
+        const tile = tileData.find(t => t.id_tile === id);
+        return `
+          <li data-id="${id}">
+            Тайл #${id}
+            <div>
+              <button class="goto-fav" data-id="${id}">➡️</button>
+              <button class="remove-fav" data-id="${id}">✕</button>
+            </div>
+          </li>
+        `;
+      }).join('');
     }
     
     // Сохранение метки
@@ -1410,151 +1201,140 @@
     // Инициализация обработчиков событий
     function initEventListeners() {
       // Очистка поиска
-      const searchClear = document.getElementById('search-clear');
-      if (searchClear) {
-        searchClear.addEventListener('click', () => {
-          document.getElementById('search').value = '';
-          drawTiles();
-        });
-      }
+      document.getElementById('search-clear').addEventListener('click', () => {
+        document.getElementById('search').value = '';
+        drawTiles();
+      });
       
       // Переход к тайлу
-      const gotoBtn = document.getElementById('goto-btn');
-      if (gotoBtn) {
-        gotoBtn.addEventListener('click', () => {
-          const tileId = document.getElementById('search').value.trim();
-          if (!tileId) return;
-          
-          const tile = tileData.find(t => t.id_tile == tileId);
-          if (!tile) {
-            log(`Тайл #${tileId} не найден`, true);
-            return;
-          }
-          
-          map.flyTo([tile.lat, tile.lng], 7, {
-            animate: true,
-            duration: 1
-          });
-        });
-      }
-      
-      // Поиск при вводе
-      const search = document.getElementById('search');
-      if (search) {
-        search.addEventListener('input', () => {
-          drawTiles();
-        });
-      }
-      
-      // Сброс фильтров
-      const resetBtn = document.getElementById('reset-btn');
-      if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-          document.getElementById('search').value = '';
-          document.getElementById('status-filter').value = '';
-          drawGrid();
-          drawTiles();
-        });
-      }
-      
-      // Изменение фильтра
-      const statusFilter = document.getElementById('status-filter');
-      if (statusFilter) {
-        statusFilter.addEventListener('change', () => {
-          drawGrid();
-          drawTiles();
-        });
-      }
-      
-      // Сброс фильтра меток
-      const clearFilter = document.getElementById('clear-filter');
-      if (clearFilter) {
-        clearFilter.addEventListener('click', () => {
-          document.getElementById('status-filter').value = '';
-          drawGrid();
-          drawTiles();
-        });
-      }
-      
-      // Снимок экрана
-      const screenshotBtn = document.getElementById('screenshot-btn');
-      if (screenshotBtn) {
-        screenshotBtn.addEventListener('click', () => {
-          html2canvas(document.getElementById('map')).then(canvas => {
-            const link = document.createElement('a');
-            link.href = canvas.toDataURL('image/png');
-            link.download = `map-${new Date().toISOString().slice(0, 19)}.png`;
-            link.click();
-          });
-        });
-      }
-      
-      // Сворачивание панели
-      const togglePanel = document.getElementById('toggle-panel');
-      if (togglePanel) {
-        togglePanel.addEventListener('click', function() {
-          const panel = document.getElementById('panel');
-          panel.classList.toggle('collapsed');
-          this.textContent = panel.classList.contains('collapsed') ? '🔼' : '🔽';
-        });
-      }
-      
-      // Переключение слоев
-      const layersBtn = document.getElementById('layers-btn');
-      const layerControl = document.getElementById('layer-control');
-      if (layersBtn && layerControl) {
-        layersBtn.addEventListener('click', () => {
-          layerControl.classList.toggle('expanded');
-        });
-      }
-      
-      // Закрытие панели информации о тайле
-      if (closeInfoPanel) {
-        closeInfoPanel.addEventListener('click', () => {
-          tileInfoPanel.classList.remove('expanded');
-          currentTileId = null;
-        });
-      }
-      
-      // Обработка нажатия на кнопки в панели
-      document.querySelectorAll('.mark-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const tileId = btn.dataset.id;
-          const markType = btn.dataset.type;
-          saveMark(tileId, markType);
-          // После сохранения закрываем панель
-          tileInfoPanel.classList.remove('expanded');
-          currentTileId = null;
+      document.getElementById('goto-btn').addEventListener('click', () => {
+        const tileId = document.getElementById('search').value.trim();
+        if (!tileId) return;
+        
+        const tile = tileData.find(t => t.id_tile == tileId);
+        if (!tile) {
+          log(`Тайл #${tileId} не найден`, true);
+          return;
+        }
+        
+        map.flyTo([tile.lat, tile.lng], 7, {
+          animate: true,
+          duration: 1
         });
       });
       
-      // Сохранение комментария
-      const saveCommentBtn = document.getElementById('save-comment-btn');
-      if (saveCommentBtn) {
-        saveCommentBtn.addEventListener('click', () => {
-          const tileId = currentTileId;
-          if (!tileId) return;
-          
-          const comment = document.getElementById('comment-input').value;
-          saveMark(tileId, 'comment', comment);
-          // После сохранения закрываем панель
-          tileInfoPanel.classList.remove('expanded');
-          currentTileId = null;
+      // Поиск при вводе
+      document.getElementById('search').addEventListener('input', () => {
+        drawTiles();
+      });
+      
+      // Сброс фильтров
+      document.getElementById('reset').addEventListener('click', () => {
+        document.getElementById('search').value = '';
+        document.getElementById('status-filter').value = '';
+        drawGrid();
+        drawTiles();
+      });
+      
+      // Изменение фильтра
+      document.getElementById('status-filter').addEventListener('change', () => {
+        drawGrid();
+        drawTiles();
+        renderFavorites();
+      });
+      
+      // Сброс фильтра меток
+      document.getElementById('clear-filter').addEventListener('click', () => {
+        document.getElementById('status-filter').value = '';
+        drawGrid();
+        drawTiles();
+        renderFavorites();
+      });
+      
+      // Снимок экрана
+      document.getElementById('screenshot-btn').addEventListener('click', () => {
+        html2canvas(document.getElementById('map')).then(canvas => {
+          const link = document.createElement('a');
+          link.href = canvas.toDataURL('image/png');
+          link.download = `map-${new Date().toISOString().slice(0, 19)}.png`;
+          link.click();
         });
-      }
+      });
+      
+      // Сворачивание панели
+      document.getElementById('toggle-panel').addEventListener('click', function() {
+        const panel = document.getElementById('panel');
+        panel.classList.toggle('collapsed');
+        this.textContent = panel.classList.contains('collapsed') ? '🔼' : '🔽';
+      });
+      
+      // Развертывание панели (когда она свернута)
+      document.getElementById('expand-panel').addEventListener('click', function() {
+        const panel = document.getElementById('panel');
+        panel.classList.remove('collapsed');
+        document.getElementById('toggle-panel').textContent = '🔽';
+      });
+      
+      // Переключение слоев
+      document.getElementById('layers-toggle').addEventListener('click', function() {
+        const layerSelect = document.getElementById('layer-select');
+        layerSelect.classList.toggle('expanded');
+      });
+      
+      // Сворачивание/разворачивание избранного
+      document.getElementById('favorites-header').addEventListener('click', function() {
+        const list = document.getElementById('favorites-list');
+        list.classList.toggle('expanded');
+        this.classList.toggle('collapsed');
+      });
+      
+      // Делегирование событий для попапов
+      map.on('popupopen', (e) => {
+        const popup = e.popup;
+        if (popup && popup.getElement()) {
+          popup.getElement().addEventListener('click', (event) => {
+            if (event.target.classList.contains('mark-btn')) {
+              const tileId = parseInt(event.target.dataset.id);
+              const markType = event.target.dataset.type;
+              saveMark(tileId, markType);
+            }
+            
+            if (event.target.classList.contains('save-comment')) {
+              const tileId = parseInt(event.target.dataset.id);
+              const comment = document.getElementById(`comment-${tileId}`).value;
+              saveMark(tileId, 'comment', comment);
+            }
+          });
+        }
+      });
+      
+      // Делегирование событий для избранного
+      document.getElementById('favorites-list').addEventListener('click', (event) => {
+        if (!event.target.classList.contains('goto-fav') && 
+            !event.target.classList.contains('remove-fav')) return;
+            
+        const tileId = parseInt(event.target.dataset.id);
+        
+        if (event.target.classList.contains('goto-fav')) {
+          const tile = tileData.find(t => t.id_tile === tileId);
+          if (tile) {
+            map.flyTo([tile.lat, tile.lng], 7, { animate: true, duration: 1 });
+          }
+        } else if (event.target.classList.contains('remove-fav')) {
+          saveMark(tileId, 'clear');
+        }
+      });
       
       // Обновление при перемещении карты
-      if (map) {
-        map.on('moveend', () => {
-          drawGrid();
-          drawTiles();
-        });
-        
-        // Обновление при изменении зума
-        map.on('zoomend', () => {
-          drawTiles();
-        });
-      }
+      map.on('moveend', () => {
+        drawGrid();
+        drawTiles();
+      });
+      
+      // Обновление при изменении зума
+      map.on('zoomend', () => {
+        drawTiles();
+      });
     }
     
     // Инициализация приложения
@@ -1568,6 +1348,9 @@
         
         // Логирование успешного запуска
         log('✅ Приложение успешно запущено');
+        
+        // Запуск смены фраз загрузки
+        setInterval(changeLoadingPhrase, 5000);
         
       } catch (error) {
         log(`⚠️ Критическая ошибка инициализации: ${error.message}`, true);
