@@ -5,8 +5,11 @@
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <!-- Mapbox GL CSS -->
-  <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
+  <!-- MapLibre вместо Mapbox -->
+  <link href='https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css' rel='stylesheet' />
+  
+  <!-- Иконки для интерфейса -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   
   <style>
     * {
@@ -17,7 +20,7 @@
     
     html, body {
       height: 100%;
-      background: #000;
+      background: #0d1117;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       overflow: hidden;
       color: #fff;
@@ -34,8 +37,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: url('./1755546482.png') center/cover no-repeat;
-      background-color: rgba(0, 0, 0, 0.9);
+      background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9)), url('./1755546482.png') center/cover no-repeat;
       z-index: 1000;
       transition: opacity 0.5s ease;
     }
@@ -86,347 +88,237 @@
       text-align: center;
     }
     
-    /* Панель управления */
-    #panel {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: rgba(20, 20, 30, 0.95);
-      color: #fff;
+    /* Основной контейнер */
+    .app-container {
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      padding: 12px;
-      gap: 10px;
-      z-index: 900;
+      height: 100vh;
+    }
+    
+    /* Боковая панель */
+    .sidebar {
+      width: 350px;
+      background: rgba(20, 20, 30, 0.95);
+      border-right: 1px solid #2c3e50;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width 0.3s ease;
       backdrop-filter: blur(5px);
+    }
+    
+    .sidebar.collapsed {
+      width: 60px;
+    }
+    
+    .sidebar-header {
+      padding: 15px;
+      background: rgba(30, 30, 40, 0.95);
       border-bottom: 1px solid #2c3e50;
-      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     
-    #panel.collapsed {
-      transform: translateY(-100%);
-    }
-    
-    #map-title {
-      font-size: 1.4rem;
+    .sidebar-title {
+      font-size: 1.2rem;
       font-weight: bold;
       color: #74c0fc;
-      margin-right: 10px;
+      white-space: nowrap;
+      overflow: hidden;
     }
     
-    /* Поиск тайла */
-    .search-wrapper {
-      position: relative;
+    .toggle-sidebar {
+      background: none;
+      border: none;
+      color: #74c0fc;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+    
+    /* Поиск и фильтры */
+    .search-section {
+      padding: 15px;
+      border-bottom: 1px solid #2c3e50;
+    }
+    
+    .search-box {
       display: flex;
-      align-items: center;
-      background: rgba(40, 40, 50, 0.8);
-      border-radius: 6px;
-      padding: 5px;
+      margin-bottom: 15px;
+    }
+    
+    .search-input {
       flex: 1;
-      min-width: 200px;
-    }
-    
-    #search {
-      width: 100%;
-      padding: 8px 40px 8px 12px;
-      background: transparent;
+      padding: 10px 15px;
+      background: rgba(40, 40, 50, 0.8);
       border: 1px solid #495057;
-      border-radius: 4px;
+      border-radius: 4px 0 0 4px;
       color: #e9ecef;
       font-size: 1rem;
     }
     
-    #search:focus {
-      outline: none;
-      border-color: #4dabf7;
-      box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.3);
-    }
-    
-    #search-clear {
-      position: absolute;
-      right: 35px;
+    .search-button {
+      padding: 10px 15px;
+      background: #4dabf7;
+      border: none;
+      border-radius: 0 4px 4px 0;
+      color: white;
       cursor: pointer;
-      color: #adb5bd;
-      font-size: 20px;
-      transition: color 0.2s;
     }
     
-    #search-clear:hover {
-      color: #ff6b6b;
-    }
-    
-    #goto-btn {
-      position: absolute;
-      right: 5px;
-      width: 30px;
-      height: 30px;
-      background: rgba(77, 171, 247, 0.2);
-      border: 1px solid #4dabf7;
-      border-radius: 50%;
-      color: #4dabf7;
-      font-size: 1.2rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    #goto-btn:hover {
-      background: rgba(77, 171, 247, 0.3);
-      transform: translateY(-2px);
-    }
-    
-    /* Фильтр меток */
-    .filter-wrapper {
-      display: flex;
-      align-items: center;
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: 10px;
-      margin-left: 10px;
     }
     
-    #status-filter {
-      padding: 8px;
-      background: #343a40;
-      color: #e9ecef;
-      border: 1px solid #495057;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      min-width: 120px;
-    }
-    
-    #clear-filter {
-      width: 30px;
-      height: 30px;
-      background: rgba(77, 171, 247, 0.2);
-      border: 1px solid #4dabf7;
-      border-radius: 50%;
-      color: #4dabf7;
-      font-size: 1.2rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    #clear-filter:hover {
-      background: rgba(77, 171, 247, 0.3);
-      transform: translateY(-2px);
-    }
-    
-    /* Кнопки управления */
-    #reset, #screenshot-btn {
-      padding: 8px 15px;
-      background: #3b5bdb;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.95rem;
-      transition: background 0.2s;
-      margin-left: 10px;
-    }
-    
-    #reset:hover, #screenshot-btn:hover {
-      background: #364fc7;
-    }
-    
-    /* Избранное */
-    #favorites-container {
-      background: rgba(30, 30, 40, 0.8);
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 10px;
-      flex: 1 0 100%;
-    }
-    
-    #favorites-container h4 {
-      margin-bottom: 10px;
-      color: #ffd43b;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-    }
-    
-    #favorites-container h4 .toggle-arrow {
-      transition: transform 0.3s ease;
-    }
-    
-    #favorites-container h4.collapsed .toggle-arrow {
-      transform: rotate(180deg);
-    }
-    
-    #favorites-list {
-      list-style: none;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-    }
-    
-    #favorites-list.expanded {
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    
-    #favorites-list li {
-      padding: 8px;
-      background: rgba(50, 50, 60, 0.6);
-      margin-bottom: 6px;
-      border-radius: 4px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    #favorites-list button {
-      padding: 4px 8px;
-      background: #495057;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      margin-left: 5px;
-    }
-    
-    #favorites-list button:hover {
-      background: #5c636a;
-    }
-    
-    /* Слои карты */
-    #layer-select {
-      position: absolute;
-      bottom: 60px;
-      right: 10px;
-      z-index: 910;
-      background: rgba(30, 30, 40, 0.95);
-      border: 1px solid #495057;
-      border-radius: 6px;
-      padding: 5px;
-      display: flex;
-      gap: 5px;
-      align-items: center;
-      transition: all 0.3s ease;
-      flex-direction: column;
-      max-height: 0;
-      overflow: hidden;
-    }
-    
-    #layer-select.expanded {
-      max-height: 200px;
-    }
-    
-    .layer-btn {
-      width: 40px;
-      height: 40px;
+    .filter-btn {
+      padding: 8px 12px;
       background: rgba(50, 50, 60, 0.8);
       border: 1px solid #495057;
-      border-radius: 50%;
+      border-radius: 4px;
       color: #e9ecef;
-      font-size: 1rem;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      text-align: center;
       transition: all 0.2s;
     }
     
-    .layer-btn.active {
+    .filter-btn.active {
       background: #4dabf7;
       color: white;
       border-color: #4dabf7;
     }
     
-    #layers-toggle {
-      position: absolute;
-      bottom: 10px;
-      right: 60px;
-      z-index: 910;
-      background: rgba(77, 171, 247, 0.2);
-      border: 1px solid #4dabf7;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      color: #4dabf7;
-      font-size: 1.2rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      opacity: 0.8;
+    /* Список избранного */
+    .favorites-section {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .section-header {
+      padding: 12px 15px;
+      background: rgba(30, 30, 40, 0.95);
+      border-bottom: 1px solid #2c3e50;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
+      cursor: pointer;
     }
     
-    #layers-toggle:hover {
-      background: rgba(77, 171, 247, 0.3);
-      opacity: 1;
-      transform: translateY(-2px);
+    .section-title {
+      font-size: 1rem;
+      color: #ffd43b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     
-    /* Кнопка сворачивания панели */
-    #toggle-panel {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 910;
-      background: #343a40;
-      color: white;
-      border: none;
+    .section-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    
+    .favorites-list {
+      list-style: none;
+    }
+    
+    .favorite-item {
+      padding: 10px;
+      background: rgba(50, 50, 60, 0.6);
+      margin-bottom: 8px;
       border-radius: 4px;
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
     }
     
-    /* Кнопка снимка */
-    #screenshot-btn {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      z-index: 910;
-      background: rgba(77, 171, 247, 0.2);
-      border: 1px solid #4dabf7;
-      border-radius: 6px;
-      padding: 8px 15px;
-      color: #4dabf7;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      opacity: 0.8;
+    .favorite-item:hover {
+      background: rgba(50, 50, 60, 0.8);
+    }
+    
+    .favorite-actions {
       display: flex;
-      align-items: center;
       gap: 5px;
     }
     
-    #screenshot-btn:hover {
-      background: rgba(77, 171, 247, 0.3);
-      opacity: 1;
-      transform: translateY(-2px);
+    .action-btn {
+      padding: 5px 8px;
+      background: #495057;
+      border: none;
+      border-radius: 3px;
+      color: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    
+    .action-btn:hover {
+      background: #5c636a;
     }
     
     /* Карта */
+    .map-container {
+      flex: 1;
+      position: relative;
+    }
+    
     #map {
       position: absolute;
       top: 0;
       bottom: 0;
       left: 0;
       right: 0;
-      z-index: 500;
+    }
+    
+    /* Панель управления картой */
+    .map-controls {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .control-btn {
+      width: 40px;
+      height: 40px;
+      background: rgba(30, 30, 40, 0.95);
+      border: 1px solid #495057;
+      border-radius: 50%;
+      color: #e9ecef;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      backdrop-filter: blur(5px);
+    }
+    
+    .control-btn:hover {
+      background: rgba(50, 50, 60, 0.95);
+      transform: translateY(-2px);
     }
     
     /* Стили для маркеров */
     .tile-marker {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       border-radius: 4px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s;
+    }
+    
+    .tile-marker:hover {
+      transform: scale(1.1);
     }
     
     .tile-label {
@@ -443,6 +335,7 @@
       padding: 15px;
       border-radius: 8px;
       min-width: 280px;
+      backdrop-filter: blur(5px);
     }
     
     .mapboxgl-popup-close-button {
@@ -450,106 +343,144 @@
       font-size: 18px;
     }
     
-    .popup-actions {
+    .popup-header {
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #495057;
+    }
+    
+    .popup-title {
+      font-size: 1.2rem;
+      color: #74c0fc;
+      margin-bottom: 5px;
+    }
+    
+    .popup-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    
+    .info-item {
       display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      margin: 15px 0;
+      flex-direction: column;
     }
     
-    .mark-btn {
-      padding: 5px 8px;
-      background: #495057;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
+    .info-label {
+      font-size: 0.8rem;
+      color: #adb5bd;
+    }
+    
+    .info-value {
       font-size: 0.9rem;
+      color: white;
     }
     
-    .mark-btn:hover {
+    .popup-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    
+    .action-button {
+      padding: 8px;
+      background: #495057;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: background 0.2s;
+    }
+    
+    .action-button:hover {
       background: #5c636a;
     }
     
-    .comment-input {
+    .action-button.ally {
+      background: #2b8a3e;
+    }
+    
+    .action-button.ally:hover {
+      background: #2f9e44;
+    }
+    
+    .action-button.enemy {
+      background: #c92a2a;
+    }
+    
+    .action-button.enemy:hover {
+      background: #e03131;
+    }
+    
+    .action-button.favorite {
+      background: #e67700;
+    }
+    
+    .action-button.favorite:hover {
+      background: #f59f00;
+    }
+    
+    .comment-section {
+      margin-top: 15px;
+    }
+    
+    .comment-textarea {
       width: 100%;
       min-height: 80px;
-      padding: 8px;
+      padding: 10px;
       background: #343a40;
       color: white;
       border: 1px solid #495057;
       border-radius: 4px;
-      margin-bottom: 10px;
       resize: vertical;
+      margin-bottom: 10px;
     }
     
-    .save-comment {
+    .save-button {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
       background: #3b5bdb;
-      color: white;
       border: none;
       border-radius: 4px;
+      color: white;
       cursor: pointer;
+      transition: background 0.2s;
     }
     
-    .save-comment:hover {
+    .save-button:hover {
       background: #364fc7;
     }
     
-    /* Отладочная панель */
-    #debug {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(0, 20, 10, 0.85);
-      color: #20c997;
-      font-size: 12px;
-      padding: 12px;
-      z-index: 9999;
-      max-height: 40vh;
-      overflow: auto;
-      font-family: 'Courier New', monospace;
-      border-top: 1px solid #20c997;
-      display: none;
-    }
-    
-    .debug-section {
-      margin-bottom: 10px;
-    }
-    
-    #debug-log {
-      max-height: 120px;
-      overflow: auto;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px dashed #20c997;
-    }
-    
-    /* Лоадер */
-    .loader {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 2000;
-    }
-    
-    .loader-spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid rgba(255, 255, 255, 0.3);
-      border-top: 5px solid #4dabf7;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .app-container {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 40vh;
+      }
+      
+      .sidebar.collapsed {
+        width: 100%;
+        height: 50px;
+      }
+      
+      .sidebar-header {
+        padding: 10px;
+      }
+      
+      .search-section {
+        padding: 10px;
+      }
     }
   </style>
 </head>
@@ -565,60 +496,80 @@
     </div>
   </div>
 
-  <div id="panel">
-    <strong id="map-title">🧭 GENESIS WAR MAP</strong>
-    
-    <div class="search-wrapper">
-      <input type="text" id="search" placeholder="Тайл-ID" />
-      <span id="search-clear">×</span>
-      <button id="goto-btn">➡️</button>
+  <div class="app-container">
+    <!-- Боковая панель -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">GENESIS WAR MAP</div>
+        <button class="toggle-sidebar" id="toggle-sidebar">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+      </div>
+      
+      <div class="search-section">
+        <div class="search-box">
+          <input type="text" class="search-input" id="search-input" placeholder="Введите ID тайла..." />
+          <button class="search-button" id="search-button">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+        
+        <div class="filter-grid">
+          <button class="filter-btn" data-filter="all">
+            <i class="fas fa-layer-group"></i> Все
+          </button>
+          <button class="filter-btn" data-filter="ally">
+            <i class="fas fa-handshake"></i> Союзники
+          </button>
+          <button class="filter-btn" data-filter="enemy">
+            <i class="fas fa-skull-crossbones"></i> Враги
+          </button>
+          <button class="filter-btn" data-filter="favorite">
+            <i class="fas fa-star"></i> Избранное
+          </button>
+        </div>
+      </div>
+      
+      <div class="favorites-section">
+        <div class="section-header" id="favorites-header">
+          <div class="section-title">
+            <i class="fas fa-star"></i> Избранные тайлы
+          </div>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        
+        <div class="section-content">
+          <ul class="favorites-list" id="favorites-list">
+            <!-- Список избранного будет заполнен динамически -->
+          </ul>
+        </div>
+      </div>
     </div>
     
-    <div class="filter-wrapper">
-      <select id="status-filter">
-        <option value="">— Все —</option>
-        <option value="ally">🟩 Союзник</option>
-        <option value="enemy">🟥 Враг</option>
-        <option value="favorite">⭐ Избранное</option>
-        <option value="clear">⚪ Без метки</option>
-      </select>
-      <button id="clear-filter">×</button>
+    <!-- Контейнер карты -->
+    <div class="map-container">
+      <div id="map"></div>
+      
+      <!-- Панель управления картой -->
+      <div class="map-controls">
+        <button class="control-btn" id="zoom-in" title="Приблизить">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button class="control-btn" id="zoom-out" title="Отдалить">
+          <i class="fas fa-minus"></i>
+        </button>
+        <button class="control-btn" id="reset-view" title="Сбросить вид">
+          <i class="fas fa-globe"></i>
+        </button>
+        <button class="control-btn" id="screenshot" title="Сделать скриншот">
+          <i class="fas fa-camera"></i>
+        </button>
+      </div>
     </div>
-    
-    <button id="reset">♻️ Сбросить</button>
-    
-    <div id="favorites-container">
-      <h4 id="favorites-header">
-        <span>⭐ Избранное</span>
-        <span class="toggle-arrow">🔽</span>
-      </h4>
-      <ul id="favorites-list"></ul>
-    </div>
-  </div>
-
-  <div id="map"></div>
-  
-  <button id="toggle-panel">🔽</button>
-  <button id="layers-toggle">🗺️</button>
-  <div id="layer-select">
-    <button class="layer-btn active" data-layer="neutral" title="Нейтральный">N</button>
-    <button class="layer-btn" data-layer="world" title="Мир">W</button>
-    <button class="layer-btn" data-layer="satellite" title="Спутник">S</button>
-  </div>
-  <button id="screenshot-btn">📸</button>
-  
-  <div id="debug">
-    <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
-    <div class="debug-section" id="user-status">Пользователь: ⏳</div>
-    <div class="debug-section" id="map-status">Карта: ⏳</div>
-    <div class="debug-section" id="api-status">API: ⏳</div>
-    <div class="debug-section" id="cache-status">Кеш: ⏳</div>
-    <div class="debug-section" id="error-log">Ошибки: ⏳</div>
-    <div id="debug-log"></div>
   </div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+  <script src='https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js'></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <script>
@@ -627,9 +578,6 @@
     const degLat = 170/256, degLng = 360/256;
     const CACHE_TTL = 15 * 60 * 1000; // 15 минут
     
-    // Mapbox accessToken
-    mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA';
-    
     // Глобальные переменные
     let map;
     let tileData = [];
@@ -637,114 +585,151 @@
     let currentUser = null;
     let userMarks = {};
     let favorites = [];
+    let currentFilter = 'all';
     
     // Элементы UI
     const loaderScreen = document.getElementById('loader-screen');
     const loaderText = document.getElementById('loader-text');
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
-    const debugLog = document.getElementById('debug-log');
     
-    // Обновление прогресса загрузки
-    function updateProgress(percent, message = '') {
-      if (progressFill) {
-        progressFill.style.width = `${percent}%`;
-      }
-      if (progressText) {
-        progressText.textContent = `${Math.round(percent)}%`;
-      }
-      if (message && loaderText) {
-        loaderText.textContent = message;
+    // Инициализация приложения
+    async function initApp() {
+      try {
+        updateProgress(10, 'Инициализация приложения...');
+        
+        // Инициализация Telegram WebApp
+        const user = initTelegram();
+        
+        // Инициализация интерфейса
+        initUI();
+        
+        // Инициализация карты
+        await initMap();
+        
+        updateProgress(30, 'Загрузка данных...');
+        
+        // Загрузка данных
+        await loadData();
+        
+        updateProgress(70, 'Отрисовка карты...');
+        
+        // Отрисовка тайлов
+        drawTiles();
+        renderFavorites();
+        
+        updateProgress(100, 'Готово!');
+        
+        // Скрываем загрузочный экран
+        setTimeout(() => {
+          if (loaderScreen) {
+            loaderScreen.classList.add('fade-out');
+          }
+        }, 500);
+        
+      } catch (error) {
+        console.error('Ошибка инициализации:', error);
+        alert('Произошла критическая ошибка при запуске приложения');
       }
     }
     
-    // Логирование в отладочную панель
-    function log(message, isError = false) {
-      if (!debugLog) return;
-      
-      const now = new Date();
-      const timestamp = `[${now.toLocaleTimeString()}]`;
-      const logEntry = document.createElement('div');
-      
-      logEntry.textContent = `${timestamp} ${message}`;
-      logEntry.className = isError ? 'error' : '';
-      
-      debugLog.appendChild(logEntry);
-      debugLog.scrollTop = debugLog.scrollHeight;
-      
-      if (isError) {
-        console.error(message);
-        document.getElementById('error-log').textContent = `Ошибки: 🔴 ${message.substring(0, 50)}...`;
-      } else {
-        console.log(message);
-      }
-    }
-    
-    // Показать/скрыть лоадер
-    function showLoader(visible) {
-      const loader = document.querySelector('.loader');
-      if (loader) {
-        loader.style.display = visible ? 'block' : 'none';
-      }
-    }
-    
-    // Проверка Telegram WebApp
+    // Инициализация Telegram WebApp
     function initTelegram() {
       const tg = window.Telegram?.WebApp;
       
       if (tg) {
         tg.ready();
         tg.expand();
-        log('🤖 Telegram WebApp готов');
-        document.getElementById('tg-status').textContent = 'Telegram WebApp: ✅';
-        
         return tg.initDataUnsafe?.user || null;
       }
       
-      log('Telegram WebApp не обнаружен, работаем в автономном режиме');
-      document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
-      return { id: 'test-user', first_name: 'Тестовый пользователь' };
+      // Тестовый пользователь для разработки
+      return { 
+        id: 'test-user', 
+        first_name: 'Тестовый пользователь',
+        last_name: 'Тестовый',
+        username: 'testuser'
+      };
+    }
+    
+    // Инициализация интерфейса
+    function initUI() {
+      // Переключение боковой панели
+      document.getElementById('toggle-sidebar').addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
+        this.innerHTML = sidebar.classList.contains('collapsed') ? 
+          '<i class="fas fa-chevron-right"></i>' : 
+          '<i class="fas fa-chevron-left"></i>';
+      });
+      
+      // Поиск тайлов
+      document.getElementById('search-button').addEventListener('click', searchTile);
+      document.getElementById('search-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') searchTile();
+      });
+      
+      // Фильтры
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          
+          currentFilter = this.dataset.filter;
+          drawTiles();
+        });
+      });
+      
+      // Управление картой
+      document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
+      document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
+      document.getElementById('reset-view').addEventListener('click', resetView);
+      document.getElementById('screenshot').addEventListener('click', takeScreenshot);
+      
+      // Избранное
+      document.getElementById('favorites-header').addEventListener('click', function() {
+        const content = this.nextElementSibling;
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        this.querySelector('.fa-chevron-down').classList.toggle('fa-chevron-up');
+      });
     }
     
     // Инициализация карты
-    async function initMap(user) {
-      try {
-        currentUser = user;
-        log(`👤 Пользователь: ${currentUser.first_name} (${currentUser.id})`);
-        document.getElementById('user-status').textContent = `Пользователь: ✅ ${currentUser.first_name}`;
-        
-        // Создаем карту
-        map = new mapboxgl.Map({
-          container: 'map',
-          style: 'mapbox://styles/mapbox/light-v11',
-          center: [-123.10, 49.25], // [lng, lat]
-          zoom: 6,
-          minZoom: 3,
-          maxZoom: 10,
-          attributionControl: false
-        });
-        
-        map.addControl(new mapboxgl.NavigationControl(), 'bottom-left');
-        log('🗺️ Карта создана');
-        document.getElementById('map-status').textContent = 'Карта: ✅ Инициализирована';
-        
-        // Загрузка данных
-        await loadData();
-        
-        // Инициализация событий
-        initEventListeners();
-        
-      } catch (error) {
-        log(`⚠️ Ошибка инициализации карты: ${error.message}`, true);
-        alert('Критическая ошибка при инициализации карты');
-      }
+    async function initMap() {
+      // Создаем карту с использованием MapLibre
+      map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://demotiles.maplibre.org/style.json',
+        center: [-123.10, 49.25], // [lng, lat]
+        zoom: 6,
+        minZoom: 3,
+        maxZoom: 10,
+        attributionControl: false
+      });
+      
+      // Добавляем элементы управления
+      map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+      
+      // Обработчики событий карты
+      map.on('load', () => {
+        console.log('Карта успешно загружена');
+      });
+      
+      map.on('moveend', () => {
+        drawTiles();
+      });
+      
+      map.on('zoomend', () => {
+        drawTiles();
+      });
+      
+      return new Promise((resolve) => {
+        map.on('load', resolve);
+      });
     }
     
     // Загрузка данных
     async function loadData() {
-      showLoader(true);
-      log('🔄 Загрузка данных...');
-      
       try {
         // Регистрация пользователя в API
         try {
@@ -758,9 +743,8 @@
               username: currentUser.username
             })
           });
-          log('👤 Пользователь зарегистрирован в API');
         } catch (error) {
-          log('⚠️ Не удалось зарегистрировать пользователя в API', true);
+          console.error('Ошибка регистрации пользователя:', error);
         }
         
         // Загрузка пользовательских меток
@@ -778,8 +762,6 @@
           }
         });
         
-        log(`📌 Загружено ${marks.length} пользовательских меток`);
-        
         // Загрузка кеша тайлов
         let cacheValid = false;
         try {
@@ -789,18 +771,15 @@
             const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
             if (cacheAge < CACHE_TTL) {
               tileData = Array.isArray(cache.data.tiles) ? cache.data.tiles : Object.values(cache.data.tiles || {});
-              log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
-              document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
               cacheValid = true;
             }
           }
         } catch (error) {
-          log('ℹ️ Кеш не найден или устарел');
+          console.error('Ошибка загрузки кеша:', error);
         }
         
         // Если кеш устарел или отсутствует
         if (!cacheValid) {
-          log('⏬ Загрузка данных с основного сервера...');
           const tileResponse = await fetch(`${API_URL}/api/proxy/tile-info`);
           if (!tileResponse.ok) throw new Error(`Ошибка загрузки тайлов: ${tileResponse.status}`);
           
@@ -814,34 +793,17 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ tilesResponse })
             });
-            log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
-            document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
           } catch (error) {
-            log('⚠️ Не удалось сохранить кеш', true);
+            console.error('Ошибка сохранения кеша:', error);
           }
         }
         
         // Инициализация координат
         initTileCoordinates();
         
-        // Первичная отрисовка
-        drawTiles();
-        renderFavorites();
-        
-        document.getElementById('api-status').textContent = 'API: ✅ Работает';
-        log('✅ Все данные успешно загружены');
-        
       } catch (error) {
-        log(`⚠️ Ошибка загрузки данных: ${error.message}`, true);
-        document.getElementById('api-status').textContent = `API: 🔴 Ошибка (${error.message})`;
-      } finally {
-        showLoader(false);
-        // Скрываем загрузочный экран
-        setTimeout(() => {
-          if (loaderScreen) {
-            loaderScreen.classList.add('fade-out');
-          }
-        }, 500);
+        console.error('Ошибка загрузки данных:', error);
+        throw error;
       }
     }
     
@@ -855,7 +817,7 @@
         
         const x = parseInt(t.id_tile) % 256;
         const y = Math.floor(parseInt(t.id_tile)/256);
-        t.lng = refLng + (x - refX) * degLng; // Важно: lng first для Mapbox
+        t.lng = refLng + (x - refX) * degLng; // lng first для MapLibre
         t.lat = refLat - (y - refY) * degLat;
       });
     }
@@ -866,8 +828,7 @@
       Object.values(tileMarkers).forEach(marker => marker.remove());
       tileMarkers = {};
       
-      const filter = document.getElementById('status-filter').value;
-      const searchValue = document.getElementById('search').value.trim();
+      const searchValue = document.getElementById('search-input').value.trim();
       const bounds = map.getBounds();
       
       tileData.forEach(t => {
@@ -881,10 +842,10 @@
           tileMarks.enemy ? 'enemy' :
           tileMarks.favorite ? 'favorite' : '';
         
-        if (filter === 'ally' && !tileMarks.ally) return;
-        if (filter === 'enemy' && !tileMarks.enemy) return;
-        if (filter === 'favorite' && !tileMarks.favorite) return;
-        if (filter === 'clear' && status) return;
+        // Применяем фильтры
+        if (currentFilter === 'ally' && !tileMarks.ally) return;
+        if (currentFilter === 'enemy' && !tileMarks.enemy) return;
+        if (currentFilter === 'favorite' && !tileMarks.favorite) return;
         if (searchValue && String(t.id_tile) !== searchValue) return;
         if (!bounds.contains([t.lng, t.lat])) return;
         
@@ -900,7 +861,6 @@
         marks.enemy ? 'enemy' :
         marks.favorite ? 'favorite' : '';
       
-      const isFav = favorites.includes(t.id_tile);
       const comment = marks.comment || '';
       const owned = t.has_owner === 'true' || t.has_owner === true;
       
@@ -928,7 +888,7 @@
       }
       
       // Создаем маркер
-      const marker = new mapboxgl.Marker({ element })
+      const marker = new maplibregl.Marker({ element })
         .setLngLat([t.lng, t.lat])
         .addTo(map);
       
@@ -949,24 +909,47 @@
       const owned = t.has_owner === 'true' || t.has_owner === true;
       
       const popupContent = document.createElement('div');
+      
       popupContent.innerHTML = `
-        <h3>Тайл #${t.id_tile}</h3>
-        <p><strong>Статус:</strong> ${owned ? 'Занят' : 'Свободен'}</p>
-        <p><strong>Метка:</strong> ${status || '—'}</p>
-        <p><strong>Комментарий:</strong> ${comment || '—'}</p>
-        
-        <div class="popup-actions">
-          <button class="mark-btn" data-id="${t.id_tile}" data-type="ally">🟩 Союзник</button>
-          <button class="mark-btn" data-id="${t.id_tile}" data-type="enemy">🟥 Враг</button>
-          <button class="mark-btn" data-id="${t.id_tile}" data-type="favorite">⭐ Избранное</button>
-          <button class="mark-btn" data-id="${t.id_tile}" data-type="clear">⚪ Сброс</button>
+        <div class="popup-header">
+          <div class="popup-title">Тайл #${t.id_tile}</div>
         </div>
         
-        <textarea class="comment-input" id="comment-${t.id_tile}" placeholder="Ваш комментарий...">${comment}</textarea>
-        <button class="save-comment" data-id="${t.id_tile}">💾 Сохранить комментарий</button>
+        <div class="popup-info">
+          <div class="info-item">
+            <span class="info-label">Статус:</span>
+            <span class="info-value">${owned ? 'Занят' : 'Свободен'}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Метка:</span>
+            <span class="info-value">${status || '—'}</span>
+          </div>
+        </div>
+        
+        <div class="popup-actions">
+          <button class="action-button ally" data-id="${t.id_tile}" data-type="ally">
+            <i class="fas fa-handshake"></i> Союзник
+          </button>
+          <button class="action-button enemy" data-id="${t.id_tile}" data-type="enemy">
+            <i class="fas fa-skull-crossbones"></i> Враг
+          </button>
+          <button class="action-button favorite" data-id="${t.id_tile}" data-type="favorite">
+            <i class="fas fa-star"></i> В избранное
+          </button>
+          <button class="action-button" data-id="${t.id_tile}" data-type="clear">
+            <i class="fas fa-times"></i> Сбросить
+          </button>
+        </div>
+        
+        <div class="comment-section">
+          <textarea class="comment-textarea" id="comment-${t.id_tile}" placeholder="Ваш комментарий...">${comment}</textarea>
+          <button class="save-button" data-id="${t.id_tile}">
+            <i class="fas fa-save"></i> Сохранить комментарий
+          </button>
+        </div>
       `;
       
-      const popup = new mapboxgl.Popup({ offset: 25 })
+      const popup = new maplibregl.Popup({ offset: 25 })
         .setDOMContent(popupContent);
       
       // Добавляем обработчики событий после создания попапа
@@ -974,14 +957,24 @@
         const popupElement = popup.getElement();
         if (popupElement) {
           popupElement.addEventListener('click', (e) => {
-            if (e.target.classList.contains('mark-btn')) {
-              const tileId = e.target.dataset.id;
-              const markType = e.target.dataset.type;
+            if (e.target.classList.contains('action-button') || 
+                e.target.parentElement.classList.contains('action-button')) {
+              
+              const button = e.target.classList.contains('action-button') ? 
+                e.target : e.target.parentElement;
+              
+              const tileId = button.dataset.id;
+              const markType = button.dataset.type;
               saveMark(tileId, markType);
             }
             
-            if (e.target.classList.contains('save-comment')) {
-              const tileId = e.target.dataset.id;
+            if (e.target.classList.contains('save-button') || 
+                e.target.parentElement.classList.contains('save-button')) {
+              
+              const button = e.target.classList.contains('save-button') ? 
+                e.target : e.target.parentElement;
+              
+              const tileId = button.dataset.id;
               const comment = document.getElementById(`comment-${tileId}`).value;
               saveMark(tileId, 'comment', comment);
             }
@@ -992,23 +985,52 @@
       return popup;
     }
     
-    // Отрисовка избранного
-    function renderFavorites() {
-      const favList = document.getElementById('favorites-list');
-      if (!favList) return;
+    // Поиск тайла
+    function searchTile() {
+      const tileId = document.getElementById('search-input').value.trim();
+      if (!tileId) return;
       
-      favList.innerHTML = favorites.map(id => {
-        const tile = tileData.find(t => t.id_tile === id);
-        return `
-          <li data-id="${id}">
-            Тайл #${id}
-            <div>
-              <button class="goto-fav" data-id="${id}">➡️</button>
-              <button class="remove-fav" data-id="${id}">✕</button>
-            </div>
-          </li>
-        `;
-      }).join('');
+      const tile = tileData.find(t => t.id_tile == tileId);
+      if (!tile) {
+        alert(`Тайл #${tileId} не найден`);
+        return;
+      }
+      
+      // Центрируем карту на найденном тайле
+      map.flyTo({
+        center: [tile.lng, tile.lat],
+        zoom: 7,
+        essential: true
+      });
+    }
+    
+    // Сброс вида карты
+    function resetView() {
+      map.flyTo({
+        center: [-123.10, 49.25],
+        zoom: 6,
+        essential: true
+      });
+      
+      // Сброс фильтров
+      document.getElementById('search-input').value = '';
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === 'all') btn.classList.add('active');
+      });
+      
+      currentFilter = 'all';
+      drawTiles();
+    }
+    
+    // Скриншот карты
+    function takeScreenshot() {
+      html2canvas(document.getElementById('map')).then(canvas => {
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = `genesis-war-map-${new Date().toISOString().slice(0, 19)}.png`;
+        link.click();
+      });
     }
     
     // Сохранение метки
@@ -1027,9 +1049,6 @@
         
         if (!response.ok) throw new Error(`Ошибка сохранения: ${response.status}`);
         
-        const result = await response.json();
-        log(`💾 Метка сохранена: ${tileId} (${markType})`);
-        
         // Обновление локального состояния
         if (!userMarks[tileId]) userMarks[tileId] = {};
         
@@ -1047,112 +1066,38 @@
         drawTiles();
         renderFavorites();
         
-        return result;
       } catch (error) {
-        log(`⚠️ Ошибка сохранения метки: ${error.message}`, true);
+        console.error('Ошибка сохранения метки:', error);
+        alert('Ошибка сохранения метки');
       }
     }
     
-    // Инициализация обработчиков событий
-    function initEventListeners() {
-      // Очистка поиска
-      document.getElementById('search-clear').addEventListener('click', () => {
-        document.getElementById('search').value = '';
-        drawTiles();
-      });
+    // Отрисовка избранного
+    function renderFavorites() {
+      const favList = document.getElementById('favorites-list');
+      if (!favList) return;
       
-      // Переход к тайлу
-      document.getElementById('goto-btn').addEventListener('click', () => {
-        const tileId = document.getElementById('search').value.trim();
-        if (!tileId) return;
-        
-        const tile = tileData.find(t => t.id_tile == tileId);
-        if (!tile) {
-          log(`Тайл #${tileId} не найден`, true);
-          return;
-        }
-        
-        map.flyTo({
-          center: [tile.lng, tile.lat],
-          zoom: 7,
-          essential: true
-        });
-      });
+      favList.innerHTML = favorites.map(id => {
+        const tile = tileData.find(t => t.id_tile === id);
+        return `
+          <li class="favorite-item">
+            <span>Тайл #${id}</span>
+            <div class="favorite-actions">
+              <button class="action-btn goto-fav" data-id="${id}" title="Перейти">
+                <i class="fas fa-location-arrow"></i>
+              </button>
+              <button class="action-btn remove-fav" data-id="${id}" title="Удалить">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </li>
+        `;
+      }).join('');
       
-      // Поиск при вводе
-      document.getElementById('search').addEventListener('input', () => {
-        drawTiles();
-      });
-      
-      // Сброс фильтров
-      document.getElementById('reset').addEventListener('click', () => {
-        document.getElementById('search').value = '';
-        document.getElementById('status-filter').value = '';
-        drawTiles();
-      });
-      
-      // Изменение фильтра
-      document.getElementById('status-filter').addEventListener('change', () => {
-        drawTiles();
-      });
-      
-      // Сброс фильтра меток
-      document.getElementById('clear-filter').addEventListener('click', () => {
-        document.getElementById('status-filter').value = '';
-        drawTiles();
-      });
-      
-      // Снимок экрана
-      document.getElementById('screenshot-btn').addEventListener('click', () => {
-        html2canvas(document.getElementById('map')).then(canvas => {
-          const link = document.createElement('a');
-          link.href = canvas.toDataURL('image/png');
-          link.download = `genesis-war-map-${new Date().toISOString().slice(0, 19)}.png`;
-          link.click();
-        });
-      });
-      
-      // Сворачивание панели
-      document.getElementById('toggle-panel').addEventListener('click', function() {
-        const panel = document.getElementById('panel');
-        panel.classList.toggle('collapsed');
-        this.textContent = panel.classList.contains('collapsed') ? '🔼' : '🔽';
-      });
-      
-      // Переключение слоев
-      document.getElementById('layers-toggle').addEventListener('click', function() {
-        const layerSelect = document.getElementById('layer-select');
-        layerSelect.classList.toggle('expanded');
-      });
-      
-      // Выбор слоя карты
-      document.querySelectorAll('.layer-btn').forEach(btn => {
+      // Добавляем обработчики событий для избранного
+      favList.querySelectorAll('.goto-fav').forEach(btn => {
         btn.addEventListener('click', () => {
-          document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          
-          const layerName = btn.dataset.layer;
-          const styles = {
-            neutral: 'mapbox://styles/mapbox/light-v11',
-            world: 'mapbox://styles/mapbox/streets-v12',
-            satellite: 'mapbox://styles/mapbox/satellite-v9'
-          };
-          
-          map.setStyle(styles[layerName]);
-        });
-      });
-      
-      // Сворачивание/разворачивание избранного
-      document.getElementById('favorites-header').addEventListener('click', function() {
-        const list = document.getElementById('favorites-list');
-        list.classList.toggle('expanded');
-        this.classList.toggle('collapsed');
-      });
-      
-      // Делегирование событий для избранного
-      document.getElementById('favorites-list').addEventListener('click', (event) => {
-        if (event.target.classList.contains('goto-fav')) {
-          const tileId = event.target.dataset.id;
+          const tileId = btn.dataset.id;
           const tile = tileData.find(t => t.id_tile === tileId);
           if (tile) {
             map.flyTo({
@@ -1161,38 +1106,27 @@
               essential: true
             });
           }
-        } else if (event.target.classList.contains('remove-fav')) {
-          const tileId = event.target.dataset.id;
+        });
+      });
+      
+      favList.querySelectorAll('.remove-fav').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tileId = btn.dataset.id;
           saveMark(tileId, 'clear');
-        }
-      });
-      
-      // Обновление при перемещении карты
-      map.on('moveend', () => {
-        drawTiles();
-      });
-      
-      // Обновление при изменении зума
-      map.on('zoomend', () => {
-        drawTiles();
+        });
       });
     }
     
-    // Инициализация приложения
-    async function initApp() {
-      try {
-        // Инициализация Telegram
-        const user = initTelegram();
-        
-        // Инициализация карты
-        await initMap(user);
-        
-        // Логирование успешного запуска
-        log('✅ Приложение успешно запущено');
-        
-      } catch (error) {
-        log(`⚠️ Критическая ошибка инициализации: ${error.message}`, true);
-        alert('Произошла критическая ошибка при запуске приложения');
+    // Обновление прогресса загрузки
+    function updateProgress(percent, message = '') {
+      if (progressFill) {
+        progressFill.style.width = `${percent}%`;
+      }
+      if (progressText) {
+        progressText.textContent = `${Math.round(percent)}%`;
+      }
+      if (message && loaderText) {
+        loaderText.textContent = message;
       }
     }
     
