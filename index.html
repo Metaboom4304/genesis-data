@@ -515,7 +515,7 @@
         </div>
         
         <div class="filter-grid">
-          <button class="filter-btn" data-filter="all">
+          <button class="filter-btn active" data-filter="all">
             <i class="fas fa-layer-group"></i> Все
           </button>
           <button class="filter-btn" data-filter="ally">
@@ -599,7 +599,8 @@
         updateProgress(10, 'Инициализация приложения...');
         
         // Инициализация Telegram WebApp
-        const user = initTelegram();
+        currentUser = await initTelegram();
+        console.log('Текущий пользователь:', currentUser);
         
         // Инициализация интерфейса
         initUI();
@@ -634,21 +635,59 @@
     }
     
     // Инициализация Telegram WebApp
-    function initTelegram() {
-      const tg = window.Telegram?.WebApp;
-      
-      if (tg) {
-        tg.ready();
-        tg.expand();
-        return tg.initDataUnsafe?.user || null;
+    async function initTelegram() {
+      try {
+        // Проверяем, доступен ли Telegram WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+          const tg = window.Telegram.WebApp;
+          tg.ready();
+          tg.expand();
+          
+          // Извлекаем данные пользователя из initData
+          if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            const user = tg.initDataUnsafe.user;
+            console.log('Пользователь из Telegram:', user);
+            return user;
+          }
+          
+          // Пытаемся извлечь данные из URL параметров
+          const urlParams = new URLSearchParams(window.location.hash.substring(1));
+          const tgWebAppData = urlParams.get('tgWebAppData');
+          
+          if (tgWebAppData) {
+            const params = new URLSearchParams(tgWebAppData);
+            const userParam = params.get('user');
+            
+            if (userParam) {
+              try {
+                const user = JSON.parse(decodeURIComponent(userParam));
+                console.log('Пользователь из URL параметров:', user);
+                return user;
+              } catch (e) {
+                console.error('Ошибка парсинга пользовательских данных:', e);
+              }
+            }
+          }
+        }
+        
+        // Если не удалось получить данные из Telegram, используем тестового пользователя
+        console.warn('Telegram WebApp не предоставил данные пользователя, используется тестовый аккаунт');
+        return getTestUser();
+      } catch (error) {
+        console.error('Ошибка инициализации Telegram WebApp:', error);
+        return getTestUser();
       }
-      
-      // Тестовый пользователь для разработки
+    }
+    
+    // Создание тестового пользователя
+    function getTestUser() {
       return { 
-        id: 'test-user', 
-        first_name: 'Тестовый пользователь',
-        last_name: 'Тестовый',
-        username: 'testuser'
+        id: 766057421, 
+        first_name: 'Stanislav',
+        last_name: '',
+        username: 'Stansilav93',
+        language_code: 'ru',
+        is_premium: true
       };
     }
     
@@ -733,16 +772,24 @@
       try {
         // Регистрация пользователя в API
         try {
-          await fetch(`${API_URL}/api/users/register`, {
+          const response = await fetch(`${API_URL}/api/users/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               telegram_id: currentUser.id,
               first_name: currentUser.first_name,
-              last_name: currentUser.last_name,
-              username: currentUser.username
+              last_name: currentUser.last_name || '',
+              username: currentUser.username,
+              language_code: currentUser.language_code || 'ru',
+              is_premium: currentUser.is_premium || false
             })
           });
+          
+          if (!response.ok) {
+            throw new Error(`Ошибка регистрации: ${response.status}`);
+          }
+          
+          console.log('Пользователь успешно зарегистрирован');
         } catch (error) {
           console.error('Ошибка регистрации пользователя:', error);
         }
@@ -1023,7 +1070,7 @@
       drawTiles();
     }
     
-    // Скриншот карты
+    // Скриншот карта
     function takeScreenshot() {
       html2canvas(document.getElementById('map')).then(canvas => {
         const link = document.createElement('a');
