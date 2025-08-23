@@ -5,8 +5,8 @@
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <!-- Mapbox GL CSS -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet" />
   
   <style>
     * {
@@ -43,20 +43,6 @@
     .loader-screen.fade-out {
       opacity: 0;
       pointer-events: none;
-    }
-    
-    .loader-logo {
-      width: 120px;
-      height: 120px;
-      background: url('./1755546482.png') center/contain no-repeat;
-      margin-bottom: 30px;
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
     }
     
     .loader-text {
@@ -116,7 +102,7 @@
       z-index: 900;
       backdrop-filter: blur(5px);
       border-bottom: 1px solid #2c3e50;
-      transition: transform 0.3s ease;
+      transition: all 0.3s ease;
     }
     
     #panel.collapsed {
@@ -144,7 +130,7 @@
     
     #search {
       width: 100%;
-      padding: 8px 70px 8px 12px;
+      padding: 8px 40px 8px 12px;
       background: transparent;
       border: 1px solid #495057;
       border-radius: 4px;
@@ -502,36 +488,11 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    
-    /* Кнопка логов */
-    #logs-btn {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 910;
-      background: rgba(77, 171, 247, 0.2);
-      border: 1px solid #4dabf7;
-      border-radius: 4px;
-      padding: 8px 12px;
-      color: #4dabf7;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    
-    #logs-btn:hover {
-      background: rgba(77, 171, 247, 0.3);
-      transform: translateY(-2px);
-    }
   </style>
 </head>
 <body>
   <!-- Загрузочный экран -->
   <div class="loader-screen" id="loader-screen">
-    <div class="loader-logo"></div>
     <div class="loader-text" id="loader-text">Подготовка к возрождению цивилизации...</div>
     <div class="progress-container">
       <div class="progress-bar">
@@ -583,7 +544,6 @@
     <button class="layer-btn" data-layer="satellite" title="Спутник">S</button>
   </div>
   <button id="screenshot-btn">📸</button>
-  <button id="logs-btn">📝 Логи</button>
   
   <div id="debug">
     <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
@@ -596,7 +556,7 @@
   </div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <script>
@@ -604,6 +564,9 @@
     const API_URL = 'https://genesis-map-api.onrender.com'; // URL нового API сервиса
     const degLat = 170/256, degLng = 360/256;
     const CACHE_TTL = 15 * 60 * 1000; // 15 минут
+    
+    // Mapbox accessToken (можно использовать публичный)
+    mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA';
     
     // Глобальные переменные
     let map, gridLayer, tileLayer;
@@ -652,10 +615,7 @@
       
       if (isError) {
         console.error(message);
-        const errorLogElement = document.getElementById('error-log');
-        if (errorLogElement) {
-          errorLogElement.textContent = `Ошибки: 🔴 ${message.substring(0, 50)}...`;
-        }
+        document.getElementById('error-log').textContent = `Ошибки: 🔴 ${message.substring(0, 50)}...`;
       } else {
         console.log(message);
       }
@@ -676,19 +636,13 @@
       if (tg) {
         tg.ready();
         log('🤖 Telegram WebApp готов');
-        const tgStatusElement = document.getElementById('tg-status');
-        if (tgStatusElement) {
-          tgStatusElement.textContent = 'Telegram WebApp: ✅';
-        }
+        document.getElementById('tg-status').textContent = 'Telegram WebApp: ✅';
         
         return tg.initDataUnsafe?.user || null;
       }
       
       log('Telegram WebApp не обнаружен, работаем в автономном режиме');
-      const tgStatusElement = document.getElementById('tg-status');
-      if (tgStatusElement) {
-        tgStatusElement.textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
-      }
+      document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
       return null;
     }
     
@@ -696,13 +650,35 @@
     async function initMap(user) {
       try {
         currentUser = user || { id: 'test-user', first_name: 'Тестовый пользователь' };
+        document.getElementById('login-container').style.display = 'none';
         document.body.classList.add('logged-in');
         
         log(`👤 Пользователь: ${currentUser.first_name} (${currentUser.id})`);
-        const userStatusElement = document.getElementById('user-status');
-        if (userStatusElement) {
-          userStatusElement.textContent = `Пользователь: ✅ ${currentUser.first_name}`;
+        document.getElementById('user-status').textContent = `Пользователь: ✅ ${currentUser.first_name}`;
+        
+        // --- Регистрация пользователя в API ---
+        try {
+          const registerResponse = await fetch(`${API_URL}/api/users/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              telegram_id: currentUser.id,
+              first_name: currentUser.first_name,
+              last_name: currentUser.last_name,
+              username: currentUser.username
+            })
+          });
+          
+          if (!registerResponse.ok) {
+            const errorText = await registerResponse.text();
+            console.warn('Не удалось зарегистрировать пользователя в API:', errorText);
+          } else {
+            console.log('Пользователь успешно зарегистрирован/обновлён в API');
+          }
+        } catch (registerError) {
+          console.warn('Ошибка при регистрации пользователя в API:', registerError);
         }
+        // ------------------------------------
         
         // Создаем карту
         const mapElement = document.getElementById('map');
@@ -710,8 +686,10 @@
           throw new Error('Элемент карты (#map) не найден!');
         }
         
-        map = L.map('map', {
-          center: [49.25, -123.10],
+        map = new mapboxgl.Map({
+          container: 'map',
+          style: 'mapbox://styles/mapbox/light-v11',
+          center: [-123.10, 49.25],
           zoom: 6,
           minZoom: 3,
           maxZoom: 10,
@@ -719,24 +697,16 @@
           zoomControl: false
         });
         
-        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+        map.addControl(new mapboxgl.NavigationControl(), 'bottom-left');
         log('🗺️ Карта создана');
-        const mapStatusElement = document.getElementById('map-status');
-        if (mapStatusElement) {
-          mapStatusElement.textContent = 'Карта: ✅ Инициализирована';
-        }
+        document.getElementById('map-status').textContent = 'Карта: ✅ Инициализирована';
         
         // Базовые слои
         const layers = {
-          neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
-          world: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
-          satellite: L.tileLayer(
-            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            { attribution: 'Esri' }
-          )
+          neutral: 'mapbox://styles/mapbox/light-v11',
+          world: 'mapbox://styles/mapbox/streets-v12',
+          satellite: 'mapbox://styles/mapbox/satellite-v9'
         };
-        
-        layers.neutral.addTo(map);
         
         // Установка активного слоя по умолчанию
         document.querySelectorAll('.layer-btn').forEach(btn => {
@@ -745,14 +715,13 @@
             btn.classList.add('active');
             
             const layerName = btn.dataset.layer;
-            Object.values(layers).forEach(l => map.removeLayer(l));
-            layers[layerName].addTo(map);
+            map.setStyle(layers[layerName]);
           });
         });
         
         // Группы слоев
-        gridLayer = L.layerGroup().addTo(map);
-        tileLayer = L.layerGroup().addTo(map);
+        gridLayer = new mapboxgl.Marker({ element: document.createElement('div') }).setLngLat([0, 0]).addTo(map);
+        tileLayer = new mapboxgl.Marker({ element: document.createElement('div') }).setLngLat([0, 0]).addTo(map);
         
         // Загрузка данных
         await loadData();
@@ -805,10 +774,7 @@
                 // Исправлено: данные приходят в формате { tiles: [...] }
                 tileData = Array.isArray(cache.data.tiles) ? Object.values(cache.data.tiles) : Object.values(cache.data.tiles || {});
                 log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
-                const cacheStatusElement = document.getElementById('cache-status');
-                if (cacheStatusElement) {
-                  cacheStatusElement.textContent = 'Кеш: ✅ Актуальный';
-                }
+                document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
               } else {
                  log('ℹ️ Кеш устарел, будет загружен свежий');
               }
@@ -833,10 +799,7 @@
                 body: JSON.stringify({ tilesResponse }) // Сохраняем весь объект
               });
               log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
-              const cacheStatusElement = document.getElementById('cache-status');
-              if (cacheStatusElement) {
-                cacheStatusElement.textContent = 'Кеш: ✅ Обновлен';
-              }
+              document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
           } catch (cacheErr) {
               log(`⚠️ Не удалось сохранить кеш: ${cacheErr.message}`, true);
               // Продолжаем работу даже если кеш не сохранился
@@ -851,18 +814,12 @@
         drawTiles();
         renderFavorites();
         
-        const apiStatusElement = document.getElementById('api-status');
-        if (apiStatusElement) {
-          apiStatusElement.textContent = 'API: ✅ Работает';
-        }
+        document.getElementById('api-status').textContent = 'API: ✅ Работает';
         log('✅ Все данные успешно загружены');
         
       } catch (error) {
         log(`⚠️ Ошибка загрузки данных: ${error.message}`, true);
-        const apiStatusElement = document.getElementById('api-status');
-        if (apiStatusElement) {
-          apiStatusElement.textContent = `API: 🔴 Ошибка (${error.message})`;
-        }
+        document.getElementById('api-status').textContent = `API: 🔴 Ошибка (${error.message})`;
       } finally {
         showLoader(false);
         // Скрываем загрузочный экран
@@ -915,17 +872,15 @@
         
         if (!bounds.contains([t.lat, t.lng])) return;
         
-        const tileBounds = L.latLngBounds(
-          [t.lat - degLat/2, t.lng - degLng/2],
-          [t.lat + degLat/2, t.lng + degLng/2]
+        const tileBounds = mapboxgl.LngLatBounds(
+          [t.lng - degLng/2, t.lat - degLat/2],
+          [t.lng + degLng/2, t.lat + degLat/2]
         );
         
-        L.rectangle(tileBounds, {
-          stroke: true,
-          weight: 0.6,
-          color: '#555',
-          fill: false
-        }).addTo(gridLayer);
+        new mapboxgl.Marker({
+          element: document.createElement('div'),
+          anchor: 'center'
+        }).setLngLat([t.lng, t.lat]).addTo(gridLayer);
       });
     }
     
@@ -975,9 +930,9 @@
         return;
       }
       
-      const tileBounds = L.latLngBounds(
-        [t.lat - degLat/2, t.lng - degLng/2],
-        [t.lat + degLat/2, t.lng + degLng/2]
+      const tileBounds = mapboxgl.LngLatBounds(
+        [t.lng - degLng/2, t.lat - degLat/2],
+        [t.lng + degLng/2, t.lat + degLat/2]
       );
       
       const status = 
@@ -999,22 +954,29 @@
                     status === 'enemy' ? '#e03131' :
                     status === 'favorite' ? '#f59f00' : '#343a40';
       
-      const rect = L.rectangle(tileBounds, {
-        stroke: true,
-        weight: 1.5,
-        color: stroke,
-        dashArray: status ? '5' : null,
-        fillColor: fill,
-        fillOpacity: 0.4
-      });
+      const element = document.createElement('div');
+      element.style.width = '100%';
+      element.style.height = '100%';
+      element.style.backgroundColor = fill;
+      element.style.border = `1.5px solid ${stroke}`;
+      element.style.borderRadius = '4px';
+      element.style.opacity = '0.4';
+      
+      if (status) {
+        element.style.borderStyle = 'dashed';
+      }
+      
+      const marker = new mapboxgl.Marker({
+        element: element,
+        anchor: 'center'
+      }).setLngLat([t.lng, t.lat]);
       
       // Добавление подписи
       if (map.getZoom() >= 5) {
-        rect.bindTooltip(`#${t.id_tile}`, {
-          permanent: true,
-          direction: 'center',
-          className: 'tile-label'
-        });
+        const label = document.createElement('div');
+        label.textContent = `#${t.id_tile}`;
+        label.className = 'tile-label';
+        element.appendChild(label);
       }
       
       // Всплывающее окно
@@ -1074,12 +1036,8 @@
         </div>
       `;
       
-      rect.bindPopup(popupContent, {
-        autoClose: false,
-        closeOnClick: false,
-        closeButton: true
-      });
-      return rect;
+      marker.setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent));
+      return marker;
     }
     
     // Отрисовка избранного
@@ -1087,59 +1045,14 @@
       const favList = document.getElementById('favorites-list');
       if (!favList) return;
       
-      // Получаем текущий фильтр
-      const filter = document.getElementById('status-filter').value;
-      
-      // Фильтруем тайлы по выбранной метке
-      let filteredTiles = [];
-      if (filter) {
-        tileData.forEach(t => {
-          const tileMarks = userMarks[t.id_tile] || {};
-          const status = 
-            tileMarks.ally ? 'ally' :
-            tileMarks.enemy ? 'enemy' :
-            tileMarks.favorite ? 'favorite' : '';
-          
-          if (filter === 'ally' && tileMarks.ally) {
-            filteredTiles.push({ id: t.id_tile, status: 'ally' });
-          } else if (filter === 'enemy' && tileMarks.enemy) {
-            filteredTiles.push({ id: t.id_tile, status: 'enemy' });
-          } else if (filter === 'favorite' && tileMarks.favorite) {
-            filteredTiles.push({ id: t.id_tile, status: 'favorite' });
-          } else if (filter === 'clear' && !status) {
-            filteredTiles.push({ id: t.id_tile, status: 'clear' });
-          }
-        });
-      } else {
-        // Если фильтр не выбран, показываем все отмеченные тайлы
-        Object.keys(userMarks).forEach(tileId => {
-          const tileMarks = userMarks[tileId] || {};
-          const status = 
-            tileMarks.ally ? 'ally' :
-            tileMarks.enemy ? 'enemy' :
-            tileMarks.favorite ? 'favorite' : '';
-          
-          if (status) {
-            filteredTiles.push({ id: tileId, status: status });
-          }
-        });
-      }
-      
-      // Сортируем по ID
-      filteredTiles.sort((a, b) => parseInt(a.id) - parseInt(b.id));
-      
-      favList.innerHTML = filteredTiles.map(tile => {
-        let statusIcon = '';
-        if (tile.status === 'ally') statusIcon = '🟩';
-        else if (tile.status === 'enemy') statusIcon = '🟥';
-        else if (tile.status === 'favorite') statusIcon = '⭐';
-        
+      favList.innerHTML = favorites.map(id => {
+        const tile = tileData.find(t => t.id_tile === id);
         return `
-          <li data-id="${tile.id}">
-            Тайл #${tile.id} ${statusIcon}
+          <li data-id="${id}">
+            Тайл #${id}
             <div>
-              <button class="goto-fav" data-id="${tile.id}">➡️</button>
-              <button class="remove-fav" data-id="${tile.id}">✕</button>
+              <button class="goto-fav" data-id="${id}">➡️</button>
+              <button class="remove-fav" data-id="${id}">✕</button>
             </div>
           </li>
         `;
@@ -1236,7 +1149,6 @@
         document.getElementById('status-filter').value = '';
         drawGrid();
         drawTiles();
-        renderFavorites();
       });
       
       // Изменение фильтра
@@ -1330,14 +1242,6 @@
       // Обновление при изменении зума
       map.on('zoomend', () => {
         drawTiles();
-      });
-      
-      // Кнопка логов
-      document.getElementById('logs-btn').addEventListener('click', () => {
-        const debugPanel = document.getElementById('debug');
-        if (debugPanel) {
-          debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
-        }
       });
     }
     
