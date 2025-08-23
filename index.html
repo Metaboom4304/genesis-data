@@ -575,7 +575,6 @@
   <script>
     // Конфигурация
     const API_URL = 'https://genesis-map-api.onrender.com';
-    const degLat = 170/256, degLng = 360/256;
     const CACHE_TTL = 15 * 60 * 1000; // 15 минут
     
     // Глобальные переменные
@@ -749,7 +748,7 @@
       // Добавляем элементы управления
       map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
       
-      // Обработчики событий карты
+      // Обработчики событий карта
       map.on('load', () => {
         console.log('Карта успешно загружена');
       });
@@ -854,18 +853,34 @@
       }
     }
     
-    // Инициализация координат тайлов
+    // Инициализация координат тайлов (ИСПРАВЛЕННАЯ ВЕРСИЯ)
     function initTileCoordinates() {
-      const refId = 22313, refLat = 49.25, refLng = -123.10;
-      const refX = refId % 256, refY = Math.floor(refId/256);
-      
+      // Правильная формула расчета координат на основе официальной карты
       tileData.forEach(t => {
         if (!t || t.id_tile == null) return;
         
-        const x = parseInt(t.id_tile) % 256;
-        const y = Math.floor(parseInt(t.id_tile)/256);
-        t.lng = refLng + (x - refX) * degLng; // lng first для MapLibre
-        t.lat = refLat - (y - refY) * degLat;
+        const tileId = parseInt(t.id_tile);
+        
+        // Правильный расчет координат на основе официальной карты
+        // Формула: x = tileId % 256, y = Math.floor(tileId / 256)
+        const x = tileId % 256;
+        const y = Math.floor(tileId / 256);
+        
+        // Центр карты (примерно Ванкувер)
+        const centerLng = -123.10;
+        const centerLat = 49.25;
+        
+        // Размеры тайла в градусах (на основе официальной карты)
+        const tileWidth = 360 / 256;  // ~1.40625 градусов на тайл
+        const tileHeight = 170 / 256; // ~0.6640625 градусов на тайл
+        
+        // Расчет координат (правильная формула)
+        t.lng = centerLng + (x - 128) * tileWidth;
+        t.lat = centerLat - (y - 128) * tileHeight;
+        
+        // Обеспечиваем валидность координат
+        t.lng = Math.max(-180, Math.min(180, t.lng));
+        t.lat = Math.max(-90, Math.min(90, t.lat));
       });
     }
     
@@ -1070,7 +1085,7 @@
       drawTiles();
     }
     
-    // Скриншот карта
+    // Скриншот карты
     function takeScreenshot() {
       html2canvas(document.getElementById('map')).then(canvas => {
         const link = document.createElement('a');
