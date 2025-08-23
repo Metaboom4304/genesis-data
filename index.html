@@ -418,6 +418,85 @@
       z-index: 500;
     }
     
+    /* Стили для маркеров */
+    .tile-marker {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .tile-label {
+      font-size: 10px;
+      color: white;
+      text-shadow: 0 0 2px black;
+      font-weight: bold;
+    }
+    
+    /* Всплывающее окно */
+    .mapboxgl-popup-content {
+      background: rgba(30, 30, 40, 0.95);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      min-width: 280px;
+    }
+    
+    .mapboxgl-popup-close-button {
+      color: white;
+      font-size: 18px;
+    }
+    
+    .popup-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: 15px 0;
+    }
+    
+    .mark-btn {
+      padding: 5px 8px;
+      background: #495057;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    
+    .mark-btn:hover {
+      background: #5c636a;
+    }
+    
+    .comment-input {
+      width: 100%;
+      min-height: 80px;
+      padding: 8px;
+      background: #343a40;
+      color: white;
+      border: 1px solid #495057;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      resize: vertical;
+    }
+    
+    .save-comment {
+      width: 100%;
+      padding: 8px;
+      background: #3b5bdb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .save-comment:hover {
+      background: #364fc7;
+    }
+    
     /* Отладочная панель */
     #debug {
       position: fixed;
@@ -448,16 +527,6 @@
       border-top: 1px dashed #20c997;
     }
     
-    .tile-label {
-      background: rgba(0, 0, 0, 0.7);
-      padding: 3px 6px;
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: bold;
-      color: white;
-      text-shadow: 0 1px 1px black;
-    }
-    
     /* Лоадер */
     .loader {
       display: none;
@@ -476,12 +545,6 @@
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto;
-    }
-    
-    .loader-text {
-      margin-top: 15px;
-      text-align: center;
-      font-size: 1.1rem;
     }
     
     @keyframes spin {
@@ -523,7 +586,6 @@
     </div>
     
     <button id="reset">♻️ Сбросить</button>
-    <button id="screenshot-btn">📸 Снимок</button>
     
     <div id="favorites-container">
       <h4 id="favorites-header">
@@ -561,15 +623,15 @@
   
   <script>
     // Конфигурация
-    const API_URL = 'https://genesis-map-api.onrender.com'; // URL нового API сервиса
+    const API_URL = 'https://genesis-map-api.onrender.com';
     const degLat = 170/256, degLng = 360/256;
     const CACHE_TTL = 15 * 60 * 1000; // 15 минут
     
-    // Mapbox accessToken (можно использовать публичный)
+    // Mapbox accessToken
     mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA';
     
     // Глобальные переменные
-    let map, gridLayer, tileLayer;
+    let map;
     let tileData = [];
     let tileMarkers = {};
     let currentUser = null;
@@ -598,10 +660,7 @@
     
     // Логирование в отладочную панель
     function log(message, isError = false) {
-      if (!debugLog) {
-        console.log('Debug log element not found');
-        return;
-      }
+      if (!debugLog) return;
       
       const now = new Date();
       const timestamp = `[${now.toLocaleTimeString()}]`;
@@ -623,7 +682,7 @@
     
     // Показать/скрыть лоадер
     function showLoader(visible) {
-      const loader = document.getElementById('loader');
+      const loader = document.querySelector('.loader');
       if (loader) {
         loader.style.display = visible ? 'block' : 'none';
       }
@@ -635,6 +694,7 @@
       
       if (tg) {
         tg.ready();
+        tg.expand();
         log('🤖 Telegram WebApp готов');
         document.getElementById('tg-status').textContent = 'Telegram WebApp: ✅';
         
@@ -643,85 +703,30 @@
       
       log('Telegram WebApp не обнаружен, работаем в автономном режиме');
       document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
-      return null;
+      return { id: 'test-user', first_name: 'Тестовый пользователь' };
     }
     
     // Инициализация карты
     async function initMap(user) {
       try {
-        currentUser = user || { id: 'test-user', first_name: 'Тестовый пользователь' };
-        document.getElementById('login-container').style.display = 'none';
-        document.body.classList.add('logged-in');
-        
+        currentUser = user;
         log(`👤 Пользователь: ${currentUser.first_name} (${currentUser.id})`);
         document.getElementById('user-status').textContent = `Пользователь: ✅ ${currentUser.first_name}`;
         
-        // --- Регистрация пользователя в API ---
-        try {
-          const registerResponse = await fetch(`${API_URL}/api/users/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              telegram_id: currentUser.id,
-              first_name: currentUser.first_name,
-              last_name: currentUser.last_name,
-              username: currentUser.username
-            })
-          });
-          
-          if (!registerResponse.ok) {
-            const errorText = await registerResponse.text();
-            console.warn('Не удалось зарегистрировать пользователя в API:', errorText);
-          } else {
-            console.log('Пользователь успешно зарегистрирован/обновлён в API');
-          }
-        } catch (registerError) {
-          console.warn('Ошибка при регистрации пользователя в API:', registerError);
-        }
-        // ------------------------------------
-        
         // Создаем карту
-        const mapElement = document.getElementById('map');
-        if (!mapElement) {
-          throw new Error('Элемент карты (#map) не найден!');
-        }
-        
         map = new mapboxgl.Map({
           container: 'map',
           style: 'mapbox://styles/mapbox/light-v11',
-          center: [-123.10, 49.25],
+          center: [-123.10, 49.25], // [lng, lat]
           zoom: 6,
           minZoom: 3,
           maxZoom: 10,
-          attributionControl: false,
-          zoomControl: false
+          attributionControl: false
         });
         
         map.addControl(new mapboxgl.NavigationControl(), 'bottom-left');
         log('🗺️ Карта создана');
         document.getElementById('map-status').textContent = 'Карта: ✅ Инициализирована';
-        
-        // Базовые слои
-        const layers = {
-          neutral: 'mapbox://styles/mapbox/light-v11',
-          world: 'mapbox://styles/mapbox/streets-v12',
-          satellite: 'mapbox://styles/mapbox/satellite-v9'
-        };
-        
-        // Установка активного слоя по умолчанию
-        document.querySelectorAll('.layer-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            const layerName = btn.dataset.layer;
-            map.setStyle(layers[layerName]);
-          });
-        });
-        
-        // Группы слоев
-        gridLayer = new mapboxgl.Marker({ element: document.createElement('div') }).setLngLat([0, 0]).addTo(map);
-        tileLayer = new mapboxgl.Marker({ element: document.createElement('div') }).setLngLat([0, 0]).addTo(map);
         
         // Загрузка данных
         await loadData();
@@ -741,9 +746,26 @@
       log('🔄 Загрузка данных...');
       
       try {
-        // Загрузка пользовательских данных
+        // Регистрация пользователя в API
+        try {
+          await fetch(`${API_URL}/api/users/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              telegram_id: currentUser.id,
+              first_name: currentUser.first_name,
+              last_name: currentUser.last_name,
+              username: currentUser.username
+            })
+          });
+          log('👤 Пользователь зарегистрирован в API');
+        } catch (error) {
+          log('⚠️ Не удалось зарегистрировать пользователя в API', true);
+        }
+        
+        // Загрузка пользовательских меток
         const userResponse = await fetch(`${API_URL}/api/marks/${currentUser.id}`);
-        if (!userResponse.ok) throw new Error(`Ошибка загрузки меток: ${userResponse.status} ${userResponse.statusText}`);
+        if (!userResponse.ok) throw new Error(`Ошибка загрузки меток: ${userResponse.status}`);
         
         const marks = await userResponse.json();
         userMarks = {};
@@ -759,50 +781,43 @@
         log(`📌 Загружено ${marks.length} пользовательских меток`);
         
         // Загрузка кеша тайлов
-        const cacheResponse = await fetch(`${API_URL}/api/tiles-cache`);
-        if (!cacheResponse.ok) {
-            if (cacheResponse.status === 404) {
-                log('ℹ️ Кеш не найден, будет загружен свежий');
-            } else {
-                throw new Error(`Ошибка загрузки кеша: ${cacheResponse.status} ${cacheResponse.statusText}`);
-            }
-        } else {
+        let cacheValid = false;
+        try {
+          const cacheResponse = await fetch(`${API_URL}/api/tiles-cache`);
+          if (cacheResponse.ok) {
             const cache = await cacheResponse.json();
-            if (cache && cache.data) {
-              const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
-              if (cacheAge < CACHE_TTL) {
-                // Исправлено: данные приходят в формате { tiles: [...] }
-                tileData = Array.isArray(cache.data.tiles) ? Object.values(cache.data.tiles) : Object.values(cache.data.tiles || {});
-                log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
-                document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
-              } else {
-                 log('ℹ️ Кеш устарел, будет загружен свежий');
-              }
+            const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
+            if (cacheAge < CACHE_TTL) {
+              tileData = Array.isArray(cache.data.tiles) ? cache.data.tiles : Object.values(cache.data.tiles || {});
+              log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
+              document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
+              cacheValid = true;
             }
+          }
+        } catch (error) {
+          log('ℹ️ Кеш не найден или устарел');
         }
         
         // Если кеш устарел или отсутствует
-        if (!tileData.length) {
+        if (!cacheValid) {
           log('⏬ Загрузка данных с основного сервера...');
           const tileResponse = await fetch(`${API_URL}/api/proxy/tile-info`);
-          if (!tileResponse.ok) throw new Error(`Ошибка загрузки тайлов: ${tileResponse.status} ${tileResponse.statusText}`);
+          if (!tileResponse.ok) throw new Error(`Ошибка загрузки тайлов: ${tileResponse.status}`);
           
           const tilesResponse = await tileResponse.json();
-          // Исправлено: данные приходят в формате { tiles: [...] }
-          tileData = Array.isArray(tilesResponse.tiles) ? Object.values(tilesResponse.tiles) : Object.values(tilesResponse.tiles || {});
+          tileData = Array.isArray(tilesResponse.tiles) ? tilesResponse.tiles : Object.values(tilesResponse.tiles || {});
           
           // Сохраняем в кеш
           try {
-              await fetch(`${API_URL}/api/tiles-cache`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tilesResponse }) // Сохраняем весь объект
-              });
-              log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
-              document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
-          } catch (cacheErr) {
-              log(`⚠️ Не удалось сохранить кеш: ${cacheErr.message}`, true);
-              // Продолжаем работу даже если кеш не сохранился
+            await fetch(`${API_URL}/api/tiles-cache`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tilesResponse })
+            });
+            log(`💾 Сохранен новый кеш (${tileData.length} тайлов)`);
+            document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
+          } catch (error) {
+            log('⚠️ Не удалось сохранить кеш', true);
           }
         }
         
@@ -810,7 +825,6 @@
         initTileCoordinates();
         
         // Первичная отрисовка
-        drawGrid();
         drawTiles();
         renderFavorites();
         
@@ -833,63 +847,23 @@
     
     // Инициализация координат тайлов
     function initTileCoordinates() {
-      console.log('tileData перед initTileCoordinates:', tileData);
-      
-      // Проверка, что tileData - массив
-      if (!Array.isArray(tileData) || tileData.length === 0) {
-        console.warn('initTileCoordinates: tileData пуст или не является массивом', tileData);
-        return;
-      }
-
       const refId = 22313, refLat = 49.25, refLng = -123.10;
       const refX = refId % 256, refY = Math.floor(refId/256);
       
-      tileData.forEach((t, index) => {
-        // Проверка, что t - объект и имеет id_tile
-        if (!t || typeof t !== 'object' || t.id_tile == null) {
-            console.warn(`initTileCoordinates: Некорректный объект тайла на позиции ${index}`, t);
-            return; // Пропускаем этот тайл
-        }
-        const x = parseInt(t.id_tile) % 256, y = Math.floor(parseInt(t.id_tile)/256);
-        t.lat = refLat - (y - refY) * degLat;
-        t.lng = refLng + (x - refX) * degLng;
-        console.log(`Тайл ${t.id_tile}: lat=${t.lat}, lng=${t.lng}`);
-      });
-    }
-    
-    // Отрисовка сетки
-    function drawGrid() {
-      if (!gridLayer) return;
-      
-      gridLayer.clearLayers();
-      const bounds = map.getBounds();
-      
       tileData.forEach(t => {
-        // Проверка на существование lat/lng
-        if (!t || t.lat === undefined || t.lng === undefined) {
-          return;
-        }
+        if (!t || t.id_tile == null) return;
         
-        if (!bounds.contains([t.lat, t.lng])) return;
-        
-        const tileBounds = mapboxgl.LngLatBounds(
-          [t.lng - degLng/2, t.lat - degLat/2],
-          [t.lng + degLng/2, t.lat + degLat/2]
-        );
-        
-        new mapboxgl.Marker({
-          element: document.createElement('div'),
-          anchor: 'center'
-        }).setLngLat([t.lng, t.lat]).addTo(gridLayer);
+        const x = parseInt(t.id_tile) % 256;
+        const y = Math.floor(parseInt(t.id_tile)/256);
+        t.lng = refLng + (x - refX) * degLng; // Важно: lng first для Mapbox
+        t.lat = refLat - (y - refY) * degLat;
       });
     }
     
     // Отрисовка тайлов
     function drawTiles() {
-      if (!tileLayer) return;
-      
-      tileLayer.clearLayers();
-      Object.values(tileMarkers).forEach(marker => tileLayer.removeLayer(marker));
+      // Очищаем предыдущие маркеры
+      Object.values(tileMarkers).forEach(marker => marker.remove());
       tileMarkers = {};
       
       const filter = document.getElementById('status-filter').value;
@@ -897,10 +871,8 @@
       const bounds = map.getBounds();
       
       tileData.forEach(t => {
-        // Проверка на существование lat/lng
-        if (!t || t.lat === undefined || t.lng === undefined) {
-          return;
-        }
+        // Пропускаем тайлы без координат
+        if (!t || t.lat === undefined || t.lng === undefined) return;
         
         // Фильтрация
         const tileMarks = userMarks[t.id_tile] || {};
@@ -914,27 +886,15 @@
         if (filter === 'favorite' && !tileMarks.favorite) return;
         if (filter === 'clear' && status) return;
         if (searchValue && String(t.id_tile) !== searchValue) return;
-        if (!bounds.contains([t.lat, t.lng])) return;
+        if (!bounds.contains([t.lng, t.lat])) return;
         
-        // Создание маркера
+        // Создаем маркер
         tileMarkers[t.id_tile] = createTileMarker(t, tileMarks);
-        tileLayer.addLayer(tileMarkers[t.id_tile]);
       });
     }
     
     // Создание маркера для тайла
     function createTileMarker(t, marks) {
-      // Проверка на существование lat/lng
-      if (!t || t.lat === undefined || t.lng === undefined) {
-        console.warn('createTileMarker: Некорректные координаты тайла', t);
-        return;
-      }
-      
-      const tileBounds = mapboxgl.LngLatBounds(
-        [t.lng - degLng/2, t.lat - degLat/2],
-        [t.lng + degLng/2, t.lat + degLat/2]
-      );
-      
       const status = 
         marks.ally ? 'ally' :
         marks.enemy ? 'enemy' :
@@ -955,89 +915,81 @@
                     status === 'favorite' ? '#f59f00' : '#343a40';
       
       const element = document.createElement('div');
-      element.style.width = '100%';
-      element.style.height = '100%';
+      element.className = 'tile-marker';
       element.style.backgroundColor = fill;
-      element.style.border = `1.5px solid ${stroke}`;
-      element.style.borderRadius = '4px';
-      element.style.opacity = '0.4';
-      
-      if (status) {
-        element.style.borderStyle = 'dashed';
-      }
-      
-      const marker = new mapboxgl.Marker({
-        element: element,
-        anchor: 'center'
-      }).setLngLat([t.lng, t.lat]);
+      element.style.border = `2px solid ${stroke}`;
       
       // Добавление подписи
       if (map.getZoom() >= 5) {
         const label = document.createElement('div');
-        label.textContent = `#${t.id_tile}`;
         label.className = 'tile-label';
+        label.textContent = `#${t.id_tile}`;
         element.appendChild(label);
       }
       
-      // Всплывающее окно
-      const popupContent = `
-        <div style="min-width: 250px">
-          <h3 style="margin-bottom: 12px; color: #4dabf7;">Тайл #${t.id_tile}</h3>
-          <p><strong>Статус:</strong> ${owned ? 'Занят' : 'Свободен'}</p>
-          <p><strong>Метка:</strong> ${status || '—'}</p>
-          <p><strong>Комментарий:</strong> ${comment || '—'}</p>
-          
-          <div style="margin: 15px 0; display: flex; gap: 5px; flex-wrap: wrap;">
-            <button class="mark-btn" data-id="${t.id_tile}" data-type="ally">🟩 Союзник</button>
-            <button class="mark-btn" data-id="${t.id_tile}" data-type="enemy">🟥 Враг</button>
-            <button class="mark-btn" data-id="${t.id_tile}" data-type="favorite">⭐ Избранное</button>
-            <button class="mark-btn" data-id="${t.id_tile}" data-type="clear">⚪ Сброс</button>
-          </div>
-          
-          <textarea id="comment-${t.id_tile}" placeholder="Ваш комментарий..." 
-            style="width: 100%; min-height: 80px; padding: 8px; margin-bottom: 10px;">${comment}</textarea>
-          
-          <button class="save-comment" data-id="${t.id_tile}">💾 Сохранить комментарий</button>
-          
-          <!-- Информация о ресурсах тайла -->
-          <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #495057;">
-            <h4 style="color: #ffd43b; margin-bottom: 8px;">Ресурсы:</h4>
-            ${
-              t.stone_pct ? `<p><strong>Камень:</strong> ${t.stone_pct}%</p>` : ''
-            }
-            ${
-              t.seaweed_pct ? `<p><strong>Водоросли:</strong> ${t.seaweed_pct}%</p>` : ''
-            }
-            ${
-              t.fish_pct ? `<p><strong>Рыба:</strong> ${t.fish_pct}%</p>` : ''
-            }
-            ${
-              t.quartz_pct ? `<p><strong>Кварц:</strong> ${t.quartz_pct}%</p>` : ''
-            }
-            ${
-              t.clay_pct ? `<p><strong>Глина:</strong> ${t.clay_pct}%</p>` : ''
-            }
-            ${
-              t.wood_pct ? `<p><strong>Дерево:</strong> ${t.wood_pct}%</p>` : ''
-            }
-            ${
-              t.animals_pct ? `<p><strong>Животные:</strong> ${t.animals_pct}%</p>` : ''
-            }
-            ${
-              t.herbs_pct ? `<p><strong>Травы:</strong> ${t.herbs_pct}%</p>` : ''
-            }
-          </div>
-          
-          <div style="margin-top: 10px;">
-            <a href="https://genesis-of-ages.site/ru/%d0%b3%d0%b5%d0%be-%d1%8d%d0%ba%d1%81%d0%bf%d0%bb%d0%be%d1%80%d0%b5%d1%80/?tile=${t.id_tile}" target="_blank" style="color: #4dabf7; text-decoration: none;">
-              🌍 Подробнее на genesis-of-ages.site
-            </a>
-          </div>
+      // Создаем маркер
+      const marker = new mapboxgl.Marker({ element })
+        .setLngLat([t.lng, t.lat])
+        .addTo(map);
+      
+      // Добавляем всплывающее окно
+      marker.setPopup(createTilePopup(t, marks));
+      
+      return marker;
+    }
+    
+    // Создание всплывающего окна для тайла
+    function createTilePopup(t, marks) {
+      const status = 
+        marks.ally ? 'ally' :
+        marks.enemy ? 'enemy' :
+        marks.favorite ? 'favorite' : '';
+      
+      const comment = marks.comment || '';
+      const owned = t.has_owner === 'true' || t.has_owner === true;
+      
+      const popupContent = document.createElement('div');
+      popupContent.innerHTML = `
+        <h3>Тайл #${t.id_tile}</h3>
+        <p><strong>Статус:</strong> ${owned ? 'Занят' : 'Свободен'}</p>
+        <p><strong>Метка:</strong> ${status || '—'}</p>
+        <p><strong>Комментарий:</strong> ${comment || '—'}</p>
+        
+        <div class="popup-actions">
+          <button class="mark-btn" data-id="${t.id_tile}" data-type="ally">🟩 Союзник</button>
+          <button class="mark-btn" data-id="${t.id_tile}" data-type="enemy">🟥 Враг</button>
+          <button class="mark-btn" data-id="${t.id_tile}" data-type="favorite">⭐ Избранное</button>
+          <button class="mark-btn" data-id="${t.id_tile}" data-type="clear">⚪ Сброс</button>
         </div>
+        
+        <textarea class="comment-input" id="comment-${t.id_tile}" placeholder="Ваш комментарий...">${comment}</textarea>
+        <button class="save-comment" data-id="${t.id_tile}">💾 Сохранить комментарий</button>
       `;
       
-      marker.setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent));
-      return marker;
+      const popup = new mapboxgl.Popup({ offset: 25 })
+        .setDOMContent(popupContent);
+      
+      // Добавляем обработчики событий после создания попапа
+      setTimeout(() => {
+        const popupElement = popup.getElement();
+        if (popupElement) {
+          popupElement.addEventListener('click', (e) => {
+            if (e.target.classList.contains('mark-btn')) {
+              const tileId = e.target.dataset.id;
+              const markType = e.target.dataset.type;
+              saveMark(tileId, markType);
+            }
+            
+            if (e.target.classList.contains('save-comment')) {
+              const tileId = e.target.dataset.id;
+              const comment = document.getElementById(`comment-${tileId}`).value;
+              saveMark(tileId, 'comment', comment);
+            }
+          });
+        }
+      }, 100);
+      
+      return popup;
     }
     
     // Отрисовка избранного
@@ -1073,7 +1025,7 @@
           })
         });
         
-        if (!response.ok) throw new Error(`Ошибка сохранения: ${response.status} ${response.statusText}`);
+        if (!response.ok) throw new Error(`Ошибка сохранения: ${response.status}`);
         
         const result = await response.json();
         log(`💾 Метка сохранена: ${tileId} (${markType})`);
@@ -1092,24 +1044,12 @@
         }
         
         // Обновление UI
-        updateTile(tileId);
+        drawTiles();
         renderFavorites();
         
         return result;
       } catch (error) {
         log(`⚠️ Ошибка сохранения метки: ${error.message}`, true);
-      }
-    }
-    
-    // Обновление тайла
-    function updateTile(id) {
-      if (tileMarkers[id]) {
-        tileLayer.removeLayer(tileMarkers[id]);
-        const tile = tileData.find(t => t.id_tile === id);
-        if (tile) {
-          tileMarkers[id] = createTileMarker(tile, userMarks[id] || {});
-          tileLayer.addLayer(tileMarkers[id]);
-        }
       }
     }
     
@@ -1132,9 +1072,10 @@
           return;
         }
         
-        map.flyTo([tile.lat, tile.lng], 7, {
-          animate: true,
-          duration: 1
+        map.flyTo({
+          center: [tile.lng, tile.lat],
+          zoom: 7,
+          essential: true
         });
       });
       
@@ -1147,23 +1088,18 @@
       document.getElementById('reset').addEventListener('click', () => {
         document.getElementById('search').value = '';
         document.getElementById('status-filter').value = '';
-        drawGrid();
         drawTiles();
       });
       
       // Изменение фильтра
       document.getElementById('status-filter').addEventListener('change', () => {
-        drawGrid();
         drawTiles();
-        renderFavorites();
       });
       
       // Сброс фильтра меток
       document.getElementById('clear-filter').addEventListener('click', () => {
         document.getElementById('status-filter').value = '';
-        drawGrid();
         drawTiles();
-        renderFavorites();
       });
       
       // Снимок экрана
@@ -1171,7 +1107,7 @@
         html2canvas(document.getElementById('map')).then(canvas => {
           const link = document.createElement('a');
           link.href = canvas.toDataURL('image/png');
-          link.download = `map-${new Date().toISOString().slice(0, 19)}.png`;
+          link.download = `genesis-war-map-${new Date().toISOString().slice(0, 19)}.png`;
           link.click();
         });
       });
@@ -1189,6 +1125,23 @@
         layerSelect.classList.toggle('expanded');
       });
       
+      // Выбор слоя карты
+      document.querySelectorAll('.layer-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          const layerName = btn.dataset.layer;
+          const styles = {
+            neutral: 'mapbox://styles/mapbox/light-v11',
+            world: 'mapbox://styles/mapbox/streets-v12',
+            satellite: 'mapbox://styles/mapbox/satellite-v9'
+          };
+          
+          map.setStyle(styles[layerName]);
+        });
+      });
+      
       // Сворачивание/разворачивание избранного
       document.getElementById('favorites-header').addEventListener('click', function() {
         const list = document.getElementById('favorites-list');
@@ -1196,46 +1149,26 @@
         this.classList.toggle('collapsed');
       });
       
-      // Делегирование событий для попапов
-      map.on('popupopen', (e) => {
-        const popup = e.popup;
-        if (popup && popup.getElement()) {
-          popup.getElement().addEventListener('click', (event) => {
-            if (event.target.classList.contains('mark-btn')) {
-              const tileId = parseInt(event.target.dataset.id);
-              const markType = event.target.dataset.type;
-              saveMark(tileId, markType);
-            }
-            
-            if (event.target.classList.contains('save-comment')) {
-              const tileId = parseInt(event.target.dataset.id);
-              const comment = document.getElementById(`comment-${tileId}`).value;
-              saveMark(tileId, 'comment', comment);
-            }
-          });
-        }
-      });
-      
       // Делегирование событий для избранного
       document.getElementById('favorites-list').addEventListener('click', (event) => {
-        if (!event.target.classList.contains('goto-fav') && 
-            !event.target.classList.contains('remove-fav')) return;
-            
-        const tileId = parseInt(event.target.dataset.id);
-        
         if (event.target.classList.contains('goto-fav')) {
+          const tileId = event.target.dataset.id;
           const tile = tileData.find(t => t.id_tile === tileId);
           if (tile) {
-            map.flyTo([tile.lat, tile.lng], 7, { animate: true, duration: 1 });
+            map.flyTo({
+              center: [tile.lng, tile.lat],
+              zoom: 7,
+              essential: true
+            });
           }
         } else if (event.target.classList.contains('remove-fav')) {
+          const tileId = event.target.dataset.id;
           saveMark(tileId, 'clear');
         }
       });
       
       // Обновление при перемещении карты
       map.on('moveend', () => {
-        drawGrid();
         drawTiles();
       });
       
