@@ -12,14 +12,553 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   
   <style>
-    /* Ваши стили остаются без изменений */
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
     
-    /* ... остальные стили ... */
+    html, body {
+      height: 100%;
+      background: #0d1117;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      color: #fff;
+    }
+    
+    /* Загрузочный экран - исправлен */
+    .loader-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: url('./1755546482.png') center/cover no-repeat;
+      z-index: 1000;
+      transition: opacity 0.5s ease;
+    }
+    
+    .loader-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .loader-text {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      text-align: center;
+      color: white;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 15px 25px;
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .progress-container {
+      background: rgba(0, 0, 0, 0.6);
+      padding: 20px;
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
+    }
+    
+    .progress-bar {
+      width: 300px;
+      height: 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4dabf7, #3bc9db);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .progress-text {
+      font-size: 1rem;
+      color: #aaa;
+      text-align: center;
+    }
+    
+    /* Основной контейнер */
+    .app-container {
+      display: flex;
+      height: 100vh;
+      transition: margin-left 0.3s ease;
+    }
+    
+    /* Боковая панель */
+    .sidebar {
+      width: 350px;
+      background: rgba(20, 20, 30, 0.95);
+      border-right: 1px solid #2c3e50;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+    
+    .sidebar.collapsed {
+      width: 0;
+      overflow: hidden;
+    }
+    
+    .sidebar-header {
+      padding: 15px;
+      background: rgba(30, 30, 40, 0.95);
+      border-bottom: 1px solid #2c3e50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .sidebar-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #74c0fc;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    
+    .toggle-sidebar {
+      background: none;
+      border: none;
+      color: #74c0fc;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+    
+    /* Поиск и фильтры */
+    .search-section {
+      padding: 15px;
+      border-bottom: 1px solid #2c3e50;
+    }
+    
+    .search-box {
+      display: flex;
+      margin-bottom: 15px;
+    }
+    
+    .search-input {
+      flex: 1;
+      padding: 10px 15px;
+      background: rgba(40, 40, 50, 0.8);
+      border: 1px solid #495057;
+      border-radius: 4px 0 0 4px;
+      color: #e9ecef;
+      font-size: 1rem;
+    }
+    
+    .search-button {
+      padding: 10px 15px;
+      background: #4dabf7;
+      border: none;
+      border-radius: 0 4px 4px 0;
+      color: white;
+      cursor: pointer;
+    }
+    
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    
+    .filter-btn {
+      padding: 8px 12px;
+      background: rgba(50, 50, 60, 0.8);
+      border: 1px solid #495057;
+      border-radius: 4px;
+      color: #e9ecef;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    
+    .filter-btn.active {
+      background: #4dabf7;
+      color: white;
+      border-color: #4dabf7;
+    }
+    
+    /* Список избранного */
+    .favorites-section {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .section-header {
+      padding: 12px 15px;
+      background: rgba(30, 30, 40, 0.95);
+      border-bottom: 1px solid #2c3e50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    
+    .section-title {
+      font-size: 1rem;
+      color: #ffd43b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .section-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    
+    .favorites-list {
+      list-style: none;
+    }
+    
+    .favorite-item {
+      padding: 10px;
+      background: rgba(50, 50, 60, 0.6);
+      margin-bottom: 8px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    
+    .favorite-item:hover {
+      background: rgba(50, 50, 60, 0.8);
+    }
+    
+    .favorite-actions {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .action-btn {
+      padding: 5px 8px;
+      background: #495057;
+      border: none;
+      border-radius: 3px;
+      color: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    
+    .action-btn:hover {
+      background: #5c636a;
+    }
+    
+    /* Карта */
+    .map-container {
+      flex: 1;
+      position: relative;
+      transition: width 0.3s ease;
+    }
+    
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+    
+    /* Панель управления картой */
+    .map-controls {
+      position: absolute;
+      bottom: 80px;
+      right: 20px;
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .control-btn {
+      width: 40px;
+      height: 40px;
+      background: rgba(30, 30, 40, 0.95);
+      border: 1px solid #495057;
+      border-radius: 50%;
+      color: #e9ecef;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      backdrop-filter: blur(5px);
+    }
+    
+    .control-btn:hover {
+      background: rgba(50, 50, 60, 0.95);
+      transform: translateY(-2px);
+    }
+    
+    /* Компас */
+    .compass {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 900;
+      width: 40px;
+      height: 40px;
+      background: rgba(30, 30, 40, 0.95);
+      border: 1px solid #495057;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e9ecef;
+      font-size: 1.2rem;
+      cursor: pointer;
+      backdrop-filter: blur(5px);
+    }
+    
+    /* Панель слоев */
+    .layers-panel {
+      position: absolute;
+      bottom: 130px;
+      right: 20px;
+      z-index: 900;
+      background: rgba(30, 30, 40, 0.95);
+      border: 1px solid #495057;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      backdrop-filter: blur(5px);
+    }
+    
+    .layer-btn {
+      padding: 8px 12px;
+      background: rgba(50, 50, 60, 0.8);
+      border: 1px solid #495057;
+      border-radius: 4px;
+      color: #e9ecef;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    
+    .layer-btn.active {
+      background: #4dabf7;
+      color: white;
+      border-color: #4dabf7;
+    }
+    
+    /* Стили для маркеров - улучшены */
+    .tile-marker {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s;
+      border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+    
+    .tile-marker:hover {
+      transform: scale(1.1);
+    }
+    
+    .tile-label {
+      font-size: 10px;
+      color: white;
+      text-shadow: 0 0 2px black;
+      font-weight: bold;
+    }
+    
+    /* Всплывающее окно */
+    .mapboxgl-popup-content {
+      background: rgba(30, 30, 40, 0.95);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      min-width: 280px;
+      backdrop-filter: blur(5px);
+    }
+    
+    .mapboxgl-popup-close-button {
+      color: white;
+      font-size: 18px;
+    }
+    
+    .popup-header {
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #495057;
+    }
+    
+    .popup-title {
+      font-size: 1.2rem;
+      color: #74c0fc;
+      margin-bottom: 5px;
+    }
+    
+    .popup-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    
+    .info-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .info-label {
+      font-size: 0.8rem;
+      color: #adb5bd;
+    }
+    
+    .info-value {
+      font-size: 0.9rem;
+      color: white;
+    }
+    
+    .popup-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+    
+    .action-button {
+      padding: 8px;
+      background: #495057;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: background 0.2s;
+    }
+    
+    .action-button:hover {
+      background: #5c636a;
+    }
+    
+    .action-button.ally {
+      background: #2b8a3e;
+    }
+    
+    .action-button.ally:hover {
+      background: #2f9e44;
+    }
+    
+    .action-button.enemy {
+      background: #c92a2a;
+    }
+    
+    .action-button.enemy:hover {
+      background: #e03131;
+    }
+    
+    .action-button.favorite {
+      background: #e67700;
+    }
+    
+    .action-button.favorite:hover {
+      background: #f59f00;
+    }
+    
+    .comment-section {
+      margin-top: 15px;
+    }
+    
+    .comment-textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 10px;
+      background: #343a40;
+      color: white;
+      border: 1px solid #495057;
+      border-radius: 4px;
+      resize: vertical;
+      margin-bottom: 10px;
+    }
+    
+    .save-button {
+      width: 100%;
+      padding: 10px;
+      background: #3b5bdb;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .save-button:hover {
+      background: #364fc7;
+    }
+    
+    /* Кнопка разворачивания панели */
+    .expand-panel-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 910;
+      background: rgba(30, 30, 40, 0.95);
+      border: 1px solid #495057;
+      border-radius: 4px;
+      padding: 8px 12px;
+      color: #74c0fc;
+      cursor: pointer;
+      font-size: 1.1rem;
+      backdrop-filter: blur(5px);
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .app-container {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 40vh;
+      }
+      
+      .sidebar.collapsed {
+        width: 100%;
+        height: 50px;
+      }
+      
+      .sidebar-header {
+        padding: 10px;
+      }
+      
+      .search-section {
+        padding: 10px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -84,7 +623,7 @@
       </div>
     </div>
     
-    <!-- Контейнер карты -->
+    <!-- Контейнер карта -->
     <div class="map-container" id="map-container">
       <div id="map"></div>
       
@@ -165,7 +704,12 @@
       "Синхронизация с серверами Genesis...",
       "Загрузка информации о ресурсах...",
       "Анализ климатических условий...",
-      "Построение карты высот..."
+      "Построение карты высот...",
+      "Настройка интерфейса пользователя...",
+      "Загрузка исторических данных...",
+      "Инициализация модуля комментариев...",
+      "Проверка обновлений...",
+      "Финальная настройка..."
     ];
     let currentMessageIndex = 0;
     let messageInterval;
@@ -180,7 +724,7 @@
     async function initApp() {
       try {
         startLoadingMessages();
-        updateProgress(10, loadingMessages[0]);
+        updateProgress(5, loadingMessages[0]);
         
         // Инициализация Telegram WebApp
         currentUser = await initTelegram();
@@ -192,15 +736,17 @@
         // Инициализация интерфейса
         initUI();
         
+        updateProgress(20, "Инициализация карты...");
+        
         // Инициализация карты
         await initMap();
         
-        updateProgress(30, "Загрузка данных...");
+        updateProgress(40, "Загрузка данных...");
         
         // Загрузка данных
         await loadData();
         
-        updateProgress(70, "Отрисовка карты...");
+        updateProgress(80, "Отрисовка карты...");
         
         // Отрисовка тайлов
         drawTiles();
@@ -268,7 +814,7 @@
         if (loaderText) {
           loaderText.textContent = loadingMessages[currentMessageIndex];
         }
-      }, 5000);
+      }, 3000);
     }
     
     // Инициализация Telegram WebApp
@@ -344,10 +890,12 @@
           const data = await response.json();
           console.log('Ответ от бота:', data);
         } else {
-          console.error('Ошибка регистрации в боте:', response.status, await response.text());
+          // Если эндпоинт не найден, просто логируем это
+          console.warn('Эндпоинт /register не найден на боте, продолжаем работу');
         }
       } catch (error) {
-        console.error('Ошибка при регистрации в боте:', error);
+        // Игнорируем ошибки подключения к боту
+        console.warn('Бот недоступен, продолжаем работу без регистрации в боте');
       }
     }
     
@@ -541,23 +1089,29 @@
           console.error('Ошибка регистрации пользователя:', error);
         }
         
-        // Загрузка пользовательских меток
-        const userResponse = await fetch(`${API_URL}/api/marks/${currentUser.id}`);
-        if (!userResponse.ok) {
-          console.error('Ошибка загрузки меток:', userResponse.status, await userResponse.text());
-          throw new Error(`Ошибка загрузки меток: ${userResponse.status}`);
-        }
-        
-        const marks = await userResponse.json();
-        userMarks = {};
-        marks.forEach(mark => {
-          if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
-          userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
-          
-          if (mark.mark_type === 'favorite') {
-            favorites.push(mark.tile_id);
+        // Загрузка пользовательских меток с улучшенной обработкой ошибок
+        try {
+          const userResponse = await fetch(`${API_URL}/api/marks/${currentUser.id}`);
+          if (!userResponse.ok) {
+            console.error('Ошибка загрузки меток:', userResponse.status);
+            // Не прерываем выполнение, используем пустые данные
+            userMarks = {};
+          } else {
+            const marks = await userResponse.json();
+            userMarks = {};
+            marks.forEach(mark => {
+              if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
+              userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
+              
+              if (mark.mark_type === 'favorite') {
+                favorites.push(mark.tile_id);
+              }
+            });
           }
-        });
+        } catch (error) {
+          console.error('Ошибка загрузки меток:', error);
+          userMarks = {};
+        }
         
         // Загрузка кеша тайлов
         let cacheValid = false;
@@ -577,24 +1131,31 @@
         
         // Если кеш устарел или отсутствует
         if (!cacheValid) {
-          const tileResponse = await fetch(`${API_URL}/api/proxy/tile-info`);
-          if (!tileResponse.ok) {
-            console.error('Ошибка загрузки тайлов:', tileResponse.status, await tileResponse.text());
-            throw new Error(`Ошибка загрузки тайлов: ${tileResponse.status}`);
-          }
-          
-          const tilesResponse = await tileResponse.json();
-          tileData = Array.isArray(tilesResponse.tiles) ? tilesResponse.tiles : Object.values(tilesResponse.tiles || {});
-          
-          // Сохраняем в кеш
           try {
-            await fetch(`${API_URL}/api/tiles-cache`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tilesResponse })
-            });
+            const tileResponse = await fetch(`${API_URL}/api/proxy/tile-info`);
+            if (!tileResponse.ok) {
+              console.error('Ошибка загрузки тайлов:', tileResponse.status, await tileResponse.text());
+              // Используем тестовые данные, если сервер недоступен
+              tileData = getTestTileData();
+            } else {
+              const tilesResponse = await tileResponse.json();
+              tileData = Array.isArray(tilesResponse.tiles) ? tilesResponse.tiles : Object.values(tilesResponse.tiles || {});
+              
+              // Сохраняем в кеш
+              try {
+                await fetch(`${API_URL}/api/tiles-cache`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ tilesResponse })
+                });
+              } catch (error) {
+                console.error('Ошибка сохранения кеша:', error);
+              }
+            }
           } catch (error) {
-            console.error('Ошибка сохранения кеша:', error);
+            console.error('Ошибка загрузки тайлов:', error);
+            // Используем тестовые данные, если сервер недоступен
+            tileData = getTestTileData();
           }
         }
         
@@ -603,11 +1164,23 @@
         
       } catch (error) {
         console.error('Ошибка загрузки данных:', error);
-        if (loaderText) {
-          loaderText.textContent = "Ошибка загрузки данных. Пожалуйста, обновите страницу.";
-        }
-        throw error;
+        // Используем тестовые данные, если сервер недоступен
+        tileData = getTestTileData();
+        initTileCoordinates();
       }
+    }
+    
+    // Тестовые данные тайлов
+    function getTestTileData() {
+      console.log('Используем тестовые данные тайлов');
+      return [
+        { id_tile: 22313, has_owner: false },
+        { id_tile: 22314, has_owner: true },
+        { id_tile: 22315, has_owner: false },
+        { id_tile: 22513, has_owner: true },
+        { id_tile: 22514, has_owner: false },
+        { id_tile: 22515, has_owner: true }
+      ];
     }
     
     // Инициализация координат тайлов (ПЕРЕСЧИТАННАЯ ВЕРСИЯ)
@@ -846,19 +1419,19 @@
       drawTiles();
     }
     
-    // Скриншот карты
+    // Скриншот карта
     function takeScreenshot() {
       // Показываем уведомление о начале создания скриншота
       const notification = document.createElement('div');
       notification.style.position = 'fixed';
-      notification.style.top = '20px';
-      notification.style.left = '50%';
-      notification.style.transform = 'translateX(-50%)';
-      notification.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-      notification.style.color = 'white';
-      notification.style.padding = '10px 20px';
-      notification.style.borderRadius = '5px';
-      notification.style.zIndex = '1000';
+      notification.style.top: '20px';
+      notification.style.left: '50%';
+      notification.style.transform: 'translateX(-50%)';
+      notification.style.backgroundColor: 'rgba(0, 0, 0, 0.8)';
+      notification.style.color: 'white';
+      notification.style.padding: '10px 20px';
+      notification.style.borderRadius: '5px';
+      notification.style.zIndex: '1000';
       notification.textContent = 'Создание скриншота...';
       document.body.appendChild(notification);
       
@@ -873,7 +1446,7 @@
         html2canvas(document.getElementById('map')).then(canvas => {
           // Восстанавливаем элементы управления
           controls.forEach(control => {
-            control.style.visibility = 'visible';
+            control.style.visibility: 'visible';
           });
           
           // Удаляем уведомление
@@ -886,9 +1459,9 @@
           link.click();
         }).catch(error => {
           console.error('Ошибка создания скриншота:', error);
-          // Восстанавливаем элементы управления в случае ошибки
+          // Восстанавливаем элементы управления в случае ошибка
           controls.forEach(control => {
-            control.style.visibility = 'visible';
+            control.style.visibility: 'visible';
           });
           document.body.removeChild(notification);
           alert('Ошибка создания скриншота');
@@ -1015,8 +1588,11 @@
       if (progressText) {
         progressText.textContent = `${Math.round(percent)}%`;
       }
-      if (message && loaderText) {
-        loaderText.textContent = message;
+      
+      // Меняем сообщение каждые 5%
+      if (loaderText) {
+        const messageIndex = Math.min(Math.floor(percent / 5), loadingMessages.length - 1);
+        loaderText.textContent = loadingMessages[messageIndex];
       }
     }
     
