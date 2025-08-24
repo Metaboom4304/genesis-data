@@ -52,14 +52,18 @@
       margin-bottom: 20px;
       text-align: center;
       color: white;
-      background: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+      background: rgba(0, 0, 0, 0.6);
       padding: 15px 25px;
       border-radius: 10px;
       backdrop-filter: blur(5px);
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .progress-container {
-      background: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+      background: rgba(0, 0, 0, 0.6);
       padding: 20px;
       border-radius: 10px;
       backdrop-filter: blur(5px);
@@ -92,6 +96,7 @@
     .app-container {
       display: flex;
       height: 100vh;
+      transition: margin-left 0.3s ease;
     }
     
     /* Боковая панель */
@@ -107,7 +112,8 @@
     }
     
     .sidebar.collapsed {
-      width: 60px;
+      width: 0;
+      overflow: hidden;
     }
     
     .sidebar-header {
@@ -262,6 +268,7 @@
     .map-container {
       flex: 1;
       position: relative;
+      transition: width 0.3s ease;
     }
     
     #map {
@@ -275,7 +282,7 @@
     /* Панель управления картой */
     .map-controls {
       position: absolute;
-      bottom: 20px;
+      bottom: 80px;
       right: 20px;
       z-index: 900;
       display: flex;
@@ -322,6 +329,39 @@
       font-size: 1.2rem;
       cursor: pointer;
       backdrop-filter: blur(5px);
+    }
+    
+    /* Панель слоев */
+    .layers-panel {
+      position: absolute;
+      bottom: 130px;
+      right: 20px;
+      z-index: 900;
+      background: rgba(30, 30, 40, 0.95);
+      border: 1px solid #495057;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      backdrop-filter: blur(5px);
+    }
+    
+    .layer-btn {
+      padding: 8px 12px;
+      background: rgba(50, 50, 60, 0.8);
+      border: 1px solid #495057;
+      border-radius: 4px;
+      color: #e9ecef;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    
+    .layer-btn.active {
+      background: #4dabf7;
+      color: white;
+      border-color: #4dabf7;
     }
     
     /* Стили для маркеров - улучшены */
@@ -478,6 +518,22 @@
       background: #364fc7;
     }
     
+    /* Кнопка разворачивания панели */
+    .expand-panel-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 910;
+      background: rgba(30, 30, 40, 0.95);
+      border: 1px solid #495057;
+      border-radius: 4px;
+      padding: 8px 12px;
+      color: #74c0fc;
+      cursor: pointer;
+      font-size: 1.1rem;
+      backdrop-filter: blur(5px);
+    }
+    
     /* Адаптивность */
     @media (max-width: 768px) {
       .app-container {
@@ -508,7 +564,7 @@
 <body>
   <!-- Загрузочный экран -->
   <div class="loader-screen" id="loader-screen">
-    <div class="loader-text" id="loader-text">Подготовка к возрождению цивилизации...</div>
+    <div class="loader-text" id="loader-text">Инициализация карты древних цивилизаций...</div>
     <div class="progress-container">
       <div class="progress-bar">
         <div class="progress-fill" id="progress-fill"></div>
@@ -568,12 +624,30 @@
     </div>
     
     <!-- Контейнер карты -->
-    <div class="map-container">
+    <div class="map-container" id="map-container">
       <div id="map"></div>
+      
+      <!-- Кнопка разворачивания панели -->
+      <button class="expand-panel-btn" id="expand-panel-btn">
+        <i class="fas fa-chevron-right"></i>
+      </button>
       
       <!-- Компас -->
       <div class="compass" id="compass">
         <i class="fas fa-compass"></i>
+      </div>
+      
+      <!-- Панель слоев -->
+      <div class="layers-panel" id="layers-panel">
+        <button class="layer-btn active" data-layer="standard">
+          <i class="fas fa-map"></i> Стандартная
+        </button>
+        <button class="layer-btn" data-layer="satellite">
+          <i class="fas fa-satellite"></i> Спутник
+        </button>
+        <button class="layer-btn" data-layer="dark">
+          <i class="fas fa-moon"></i> Тёмная
+        </button>
       </div>
       
       <!-- Панель управления картой -->
@@ -590,6 +664,9 @@
         <button class="control-btn" id="screenshot" title="Сделать скриншот">
           <i class="fas fa-camera"></i>
         </button>
+        <button class="control-btn" id="layers-toggle" title="Слои карты">
+          <i class="fas fa-layer-group"></i>
+        </button>
       </div>
     </div>
   </div>
@@ -601,6 +678,7 @@
   <script>
     // Конфигурация
     const API_URL = 'https://genesis-map-api.onrender.com';
+    const BOT_API_URL = 'https://genesis-war-bot.onrender.com';
     const CACHE_TTL = 15 * 60 * 1000; // 15 минут
     
     // Глобальные переменные
@@ -611,6 +689,25 @@
     let userMarks = {};
     let favorites = [];
     let currentFilter = 'all';
+    let loadingMessages = [
+      "Инициализация карты древних цивилизаций...",
+      "Загрузка данных о тайлах...",
+      "Анализ ресурсов территории...",
+      "Сканирование вражеских позиций...",
+      "Построение стратегических маршрутов...",
+      "Обновление карты союзников...",
+      "Калибровка навигационных систем...",
+      "Загрузка тактических данных...",
+      "Инициализация системы меток...",
+      "Оптимизация производительности...",
+      "Подготовка к возрождению цивилизации...",
+      "Синхронизация с серверами Genesis...",
+      "Загрузка информации о ресурсах...",
+      "Анализ климатических условий...",
+      "Построение карты высот..."
+    ];
+    let currentMessageIndex = 0;
+    let messageInterval;
     
     // Элементы UI
     const loaderScreen = document.getElementById('loader-screen');
@@ -621,7 +718,8 @@
     // Инициализация приложения
     async function initApp() {
       try {
-        updateProgress(10, 'Инициализация приложения...');
+        startLoadingMessages();
+        updateProgress(10, loadingMessages[0]);
         
         // Инициализация Telegram WebApp
         currentUser = await initTelegram();
@@ -633,23 +731,24 @@
         // Инициализация карты
         await initMap();
         
-        updateProgress(30, 'Загрузка данных...');
+        updateProgress(30, "Загрузка данных...");
         
         // Загрузка данных
         await loadData();
         
-        updateProgress(70, 'Отрисовка карты...');
+        updateProgress(70, "Отрисовка карты...");
         
         // Отрисовка тайлов
         drawTiles();
         renderFavorites();
         
-        updateProgress(100, 'Готово!');
+        updateProgress(100, "Готово!");
         
         // Скрываем загрузочный экран
         setTimeout(() => {
           if (loaderScreen) {
             loaderScreen.classList.add('fade-out');
+            clearInterval(messageInterval);
           }
         }, 500);
         
@@ -657,6 +756,16 @@
         console.error('Ошибка инициализации:', error);
         alert('Произошла критическая ошибка при запуске приложения');
       }
+    }
+    
+    // Запуск меняющихся сообщений загрузки
+    function startLoadingMessages() {
+      messageInterval = setInterval(() => {
+        currentMessageIndex = (currentMessageIndex + 1) % loadingMessages.length;
+        if (loaderText) {
+          loaderText.textContent = loadingMessages[currentMessageIndex];
+        }
+      }, 5000);
     }
     
     // Инициализация Telegram WebApp
@@ -672,6 +781,10 @@
           if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
             const user = tg.initDataUnsafe.user;
             console.log('Пользователь из Telegram:', user);
+            
+            // Регистрируем пользователя в боте
+            await registerUserInBot(user);
+            
             return user;
           }
           
@@ -687,6 +800,10 @@
               try {
                 const user = JSON.parse(decodeURIComponent(userParam));
                 console.log('Пользователь из URL параметров:', user);
+                
+                // Регистрируем пользователя в боте
+                await registerUserInBot(user);
+                
                 return user;
               } catch (e) {
                 console.error('Ошибка парсинга пользовательских данных:', e);
@@ -701,6 +818,31 @@
       } catch (error) {
         console.error('Ошибка инициализации Telegram WebApp:', error);
         return getTestUser();
+      }
+    }
+    
+    // Регистрация пользователя в боте
+    async function registerUserInBot(user) {
+      try {
+        const response = await fetch(`${BOT_API_URL}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name || '',
+            username: user.username,
+            language_code: user.language_code || 'ru'
+          })
+        });
+        
+        if (response.ok) {
+          console.log('Пользователь успешно зарегистрирован в боте');
+        } else {
+          console.error('Ошибка регистрации в боте:', response.status);
+        }
+      } catch (error) {
+        console.error('Ошибка при регистрации в боте:', error);
       }
     }
     
@@ -719,13 +861,8 @@
     // Инициализация интерфейса
     function initUI() {
       // Переключение боковой панели
-      document.getElementById('toggle-sidebar').addEventListener('click', function() {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('collapsed');
-        this.innerHTML = sidebar.classList.contains('collapsed') ? 
-          '<i class="fas fa-chevron-right"></i>' : 
-          '<i class="fas fa-chevron-left"></i>';
-      });
+      document.getElementById('toggle-sidebar').addEventListener('click', toggleSidebar);
+      document.getElementById('expand-panel-btn').addEventListener('click', toggleSidebar);
       
       // Поиск тайлов
       document.getElementById('search-button').addEventListener('click', searchTile);
@@ -749,6 +886,17 @@
       document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
       document.getElementById('reset-view').addEventListener('click', resetView);
       document.getElementById('screenshot').addEventListener('click', takeScreenshot);
+      document.getElementById('layers-toggle').addEventListener('click', toggleLayersPanel);
+      
+      // Слои карты
+      document.querySelectorAll('.layer-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          
+          changeMapStyle(this.dataset.layer);
+        });
+      });
       
       // Избранное
       document.getElementById('favorites-header').addEventListener('click', function() {
@@ -763,12 +911,43 @@
       });
     }
     
+    // Переключение боковой панели
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const expandBtn = document.getElementById('expand-panel-btn');
+      const mapContainer = document.getElementById('map-container');
+      
+      sidebar.classList.toggle('collapsed');
+      
+      if (sidebar.classList.contains('collapsed')) {
+        expandBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+        mapContainer.style.marginLeft = '0';
+      } else {
+        expandBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        mapContainer.style.marginLeft = '0';
+      }
+      
+      // Обновляем размер карты
+      setTimeout(() => {
+        if (map) {
+          map.resize();
+          drawTiles();
+        }
+      }, 300);
+    }
+    
+    // Переключение панели слоев
+    function toggleLayersPanel() {
+      const layersPanel = document.getElementById('layers-panel');
+      layersPanel.style.display = layersPanel.style.display === 'none' ? 'flex' : 'none';
+    }
+    
     // Инициализация карты
     async function initMap() {
       // Создаем карту с использованием MapLibre
       map = new maplibregl.Map({
         container: 'map',
-        style: 'https://demotiles.maplibre.org/style.json',
+        style: getMapStyle('standard'),
         center: [-123.10, 49.25], // [lng, lat]
         zoom: 6,
         minZoom: 3,
@@ -797,9 +976,29 @@
         drawTiles();
       });
       
+      map.on('resize', () => {
+        drawTiles();
+      });
+      
       return new Promise((resolve) => {
         map.on('load', resolve);
       });
+    }
+    
+    // Получение стиля карты
+    function getMapStyle(styleName) {
+      const styles = {
+        standard: 'https://demotiles.maplibre.org/style.json',
+        satellite: 'https://api.maptiler.com/maps/hybrid/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL',
+        dark: 'https://api.maptiler.com/maps/dark-matter/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL'
+      };
+      
+      return styles[styleName] || styles.standard;
+    }
+    
+    // Изменение стиля карты
+    function changeMapStyle(styleName) {
+      map.setStyle(getMapStyle(styleName));
     }
     
     // Обновление вращения компаса
@@ -1134,12 +1333,52 @@
     
     // Скриншот карты
     function takeScreenshot() {
-      html2canvas(document.getElementById('map')).then(canvas => {
-        const link = document.createElement('a');
-        link.href = canvas.toDataURL('image/png');
-        link.download = `genesis-war-map-${new Date().toISOString().slice(0, 19)}.png`;
-        link.click();
+      // Показываем уведомление о начале создания скриншота
+      const notification = document.createElement('div');
+      notification.style.position = 'fixed';
+      notification.style.top = '20px';
+      notification.style.left = '50%';
+      notification.style.transform = 'translateX(-50%)';
+      notification.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      notification.style.color = 'white';
+      notification.style.padding = '10px 20px';
+      notification.style.borderRadius = '5px';
+      notification.style.zIndex = '1000';
+      notification.textContent = 'Создание скриншота...';
+      document.body.appendChild(notification);
+      
+      // Скрываем элементы управления для скриншота
+      const controls = document.querySelectorAll('.map-controls, .compass, .layers-panel, .expand-panel-btn');
+      controls.forEach(control => {
+        control.style.visibility = 'hidden';
       });
+      
+      // Даем время на скрытие элементов
+      setTimeout(() => {
+        html2canvas(document.getElementById('map')).then(canvas => {
+          // Восстанавливаем элементы управления
+          controls.forEach(control => {
+            control.style.visibility = 'visible';
+          });
+          
+          // Удаляем уведомление
+          document.body.removeChild(notification);
+          
+          // Создаем и скачиваем скриншот
+          const link = document.createElement('a');
+          link.href = canvas.toDataURL('image/png');
+          link.download = `genesis-war-map-${new Date().toISOString().slice(0, 19)}.png`;
+          link.click();
+        }).catch(error => {
+          console.error('Ошибка создания скриншота:', error);
+          // Восстанавливаем элементы управления в случае ошибки
+          controls.forEach(control => {
+            control.style.visibility = 'visible';
+          });
+          document.body.removeChild(notification);
+          alert('Ошибка создания скриншота');
+        });
+      }, 100);
     }
     
     // Сохранение метки
@@ -1174,6 +1413,22 @@
         // Обновление UI
         drawTiles();
         renderFavorites();
+        
+        // Отправляем уведомление в бот
+        try {
+          await fetch(`${BOT_API_URL}/notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: currentUser.id,
+              tile_id: tileId,
+              action: markType,
+              comment: comment
+            })
+          });
+        } catch (botError) {
+          console.error('Ошибка отправки уведомления в бот:', botError);
+        }
         
       } catch (error) {
         console.error('Ошибка сохранения метки:', error);
