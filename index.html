@@ -26,7 +26,7 @@
       color: #fff;
     }
     
-    /* Загрузочный экран */
+    /* Загрузочный экран - исправлен */
     .loader-screen {
       position: fixed;
       top: 0;
@@ -37,7 +37,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9)), url('./1755546482.png') center/cover no-repeat;
+      background: url('./1755546482.png') center/cover no-repeat;
       z-index: 1000;
       transition: opacity 0.5s ease;
     }
@@ -52,14 +52,14 @@
       margin-bottom: 20px;
       text-align: center;
       color: white;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
       padding: 15px 25px;
       border-radius: 10px;
       backdrop-filter: blur(5px);
     }
     
     .progress-container {
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
       padding: 20px;
       border-radius: 10px;
       backdrop-filter: blur(5px);
@@ -304,7 +304,27 @@
       transform: translateY(-2px);
     }
     
-    /* Стили для маркеров */
+    /* Компас */
+    .compass {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 900;
+      width: 40px;
+      height: 40px;
+      background: rgba(30, 30, 40, 0.95);
+      border: 1px solid #495057;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e9ecef;
+      font-size: 1.2rem;
+      cursor: pointer;
+      backdrop-filter: blur(5px);
+    }
+    
+    /* Стили для маркеров - улучшены */
     .tile-marker {
       width: 24px;
       height: 24px;
@@ -315,6 +335,7 @@
       justify-content: center;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       transition: transform 0.2s;
+      border: 2px solid rgba(255, 255, 255, 0.8);
     }
     
     .tile-marker:hover {
@@ -550,6 +571,11 @@
     <div class="map-container">
       <div id="map"></div>
       
+      <!-- Компас -->
+      <div class="compass" id="compass">
+        <i class="fas fa-compass"></i>
+      </div>
+      
       <!-- Панель управления картой -->
       <div class="map-controls">
         <button class="control-btn" id="zoom-in" title="Приблизить">
@@ -730,6 +756,11 @@
         content.style.display = content.style.display === 'none' ? 'block' : 'none';
         this.querySelector('.fa-chevron-down').classList.toggle('fa-chevron-up');
       });
+      
+      // Компас - сброс вращения карты
+      document.getElementById('compass').addEventListener('click', function() {
+        map.resetNorthPitch();
+      });
     }
     
     // Инициализация карты
@@ -748,7 +779,12 @@
       // Добавляем элементы управления
       map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
       
-      // Обработчики событий карта
+      // Обновляем компас при вращении карты
+      map.on('rotate', () => {
+        updateCompassRotation();
+      });
+      
+      // Обработчики событий карты
       map.on('load', () => {
         console.log('Карта успешно загружена');
       });
@@ -764,6 +800,13 @@
       return new Promise((resolve) => {
         map.on('load', resolve);
       });
+    }
+    
+    // Обновление вращения компаса
+    function updateCompassRotation() {
+      const compass = document.getElementById('compass');
+      const rotation = map.getBearing() * -1; // Инвертируем вращение
+      compass.style.transform = `rotate(${rotation}deg)`;
     }
     
     // Загрузка данных
@@ -853,34 +896,38 @@
       }
     }
     
-    // Инициализация координат тайлов (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+    // Инициализация координат тайлов (ПЕРЕСЧИТАННАЯ ВЕРСИЯ)
     function initTileCoordinates() {
-      // Правильная формула расчета координат на основе официальной карты
+      // Правильная формула расчета координат на основе предоставленных данных
       tileData.forEach(t => {
         if (!t || t.id_tile == null) return;
         
         const tileId = parseInt(t.id_tile);
         
-        // Правильный расчет координат на основе официальной карты
-        // Формула: x = tileId % 256, y = Math.floor(tileId / 256)
+        // Размеры тайла в градусах (на основе официальных данных)
+        const tileWidth = 1.40625;  // градусов долготы
+        const tileHeight = 0.915483; // градусов широты
+        
+        // Опорный тайл 22313 (Ванкувер)
+        const refId = 22313;
+        const refX = refId % 256;
+        const refY = Math.floor(refId / 256);
+        const refLng = -123.046875; // Центр тайла 22313
+        const refLat = 49.3802405;  // Центр тайла 22313
+        
+        // Координаты текущего тайла
         const x = tileId % 256;
         const y = Math.floor(tileId / 256);
         
-        // Центр карты (примерно Ванкувер)
-        const centerLng = -123.10;
-        const centerLat = 49.25;
-        
-        // Размеры тайла в градусах (на основе официальной карты)
-        const tileWidth = 360 / 256;  // ~1.40625 градусов на тайл
-        const tileHeight = 170 / 256; // ~0.6640625 градусов на тайл
-        
         // Расчет координат (правильная формула)
-        t.lng = centerLng + (x - 128) * tileWidth;
-        t.lat = centerLat - (y - 128) * tileHeight;
+        t.lng = refLng + (x - refX) * tileWidth;
+        t.lat = refLat - (y - refY) * tileHeight;
         
         // Обеспечиваем валидность координат
         t.lng = Math.max(-180, Math.min(180, t.lng));
         t.lat = Math.max(-90, Math.min(90, t.lat));
+        
+        console.log(`Тайл ${t.id_tile}: lat=${t.lat}, lng=${t.lng}`);
       });
     }
     
@@ -926,15 +973,15 @@
       const comment = marks.comment || '';
       const owned = t.has_owner === 'true' || t.has_owner === true;
       
-      // Стилизация
+      // Стилизация - улучшенная
       const fill = status === 'ally' ? '#40c057' :
                   status === 'enemy' ? '#fa5252' :
                   status === 'favorite' ? '#fab005' :
-                  owned ? '#4dabf7' : '#495057';
+                  owned ? '#4dabf7' : 'rgba(73, 80, 87, 0.7)'; // Полупрозрачный для незанятых
                   
       const stroke = status === 'ally' ? '#2f9e44' :
                     status === 'enemy' ? '#e03131' :
-                    status === 'favorite' ? '#f59f00' : '#343a40';
+                    status === 'favorite' ? '#f59f00' : 'rgba(255, 255, 255, 0.5)'; // Светлая обводка
       
       const element = document.createElement('div');
       element.className = 'tile-marker';
