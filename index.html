@@ -37,7 +37,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: url('./1755546482.png') center/cover no-repeat;
+      background: #0d1117;
       z-index: 1000;
       transition: opacity 0.5s ease;
     }
@@ -704,7 +704,7 @@
       "Синхронизация с серверами Genesis...",
       "Загрузка информации о ресурсах...",
       "Анализ климатических условий...",
-      "Построение карты высот...",
+      "Построение карта высот...",
       "Настройка интерфейса пользователя...",
       "Загрузка исторических данных...",
       "Инициализация модуля комментариев...",
@@ -1185,36 +1185,32 @@
     
     // Инициализация координат тайлов (ПЕРЕСЧИТАННАЯ ВЕРСИЯ)
     function initTileCoordinates() {
-      // Правильная формула расчета координат на основе предоставленных данных
       tileData.forEach(t => {
         if (!t || t.id_tile == null) return;
         
         const tileId = parseInt(t.id_tile);
         
-        // Размеры тайла в градусах (на основе официальных данных)
-        const tileWidth = 1.40625;  // градусов долготы
-        const tileHeight = 0.915483; // градусов широты
+        // Правильная формула расчета координат
+        const tileX = tileId % 256;
+        const tileY = Math.floor(tileId / 256);
         
-        // Опорный тайл 22313 (Ванкувер)
-        const refId = 22313;
-        const refX = refId % 256;
-        const refY = Math.floor(refId / 256);
-        const refLng = -123.046875; // Центр тайла 22313
-        const refLat = 49.3802405;  // Центр тайла 22313
+        // Начальные координаты для тайла 22313 (Ванкувер)
+        const refX = 113;  // 22313 % 256 = 113
+        const refY = 87;   // Math.floor(22313 / 256) = 87
         
-        // Координаты текущего тайла
-        const x = tileId % 256;
-        const y = Math.floor(tileId / 256);
+        // Размеры тайла в градусах
+        const tileWidth = 1.40625;
+        const tileHeight = 0.915483;
         
-        // Расчет координат (правильная формула)
-        t.lng = refLng + (x - refX) * tileWidth;
-        t.lat = refLat - (y - refY) * tileHeight;
+        // Центральные координаты тайла 22313
+        const refLng = -123.046875;
+        const refLat = 49.3802405;
         
-        // Обеспечиваем валидность координат
-        t.lng = Math.max(-180, Math.min(180, t.lng));
-        t.lat = Math.max(-90, Math.min(90, t.lat));
+        // Расчет координат текущего тайла
+        t.lng = refLng + (tileX - refX) * tileWidth;
+        t.lat = refLat - (tileY - refY) * tileHeight;
         
-        console.log(`Тайл ${t.id_tile}: lat=${t.lat}, lng=${t.lng}`);
+        console.log(`Тайл ${t.id_tile}: X=${tileX}, Y=${tileY}, lat=${t.lat}, lng=${t.lng}`);
       });
     }
     
@@ -1419,19 +1415,19 @@
       drawTiles();
     }
     
-    // Скриншот карта
+    // Скриншот карты - ИСПРАВЛЕННАЯ ВЕРСИЯ
     function takeScreenshot() {
       // Показываем уведомление о начале создания скриншота
       const notification = document.createElement('div');
       notification.style.position = 'fixed';
-      notification.style.top: '20px';
-      notification.style.left: '50%';
-      notification.style.transform: 'translateX(-50%)';
-      notification.style.backgroundColor: 'rgba(0, 0, 0, 0.8)';
-      notification.style.color: 'white';
-      notification.style.padding: '10px 20px';
-      notification.style.borderRadius: '5px';
-      notification.style.zIndex: '1000';
+      notification.style.top = '20px';
+      notification.style.left = '50%';
+      notification.style.transform = 'translateX(-50%)';
+      notification.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      notification.style.color = 'white';
+      notification.style.padding = '10px 20px';
+      notification.style.borderRadius = '5px';
+      notification.style.zIndex = '1000';
       notification.textContent = 'Создание скриншота...';
       document.body.appendChild(notification);
       
@@ -1446,7 +1442,7 @@
         html2canvas(document.getElementById('map')).then(canvas => {
           // Восстанавливаем элементы управления
           controls.forEach(control => {
-            control.style.visibility: 'visible';
+            control.style.visibility = 'visible';
           });
           
           // Удаляем уведомление
@@ -1459,9 +1455,9 @@
           link.click();
         }).catch(error => {
           console.error('Ошибка создания скриншота:', error);
-          // Восстанавливаем элементы управления в случае ошибка
+          // Восстанавливаем элементы управления в случае ошибки
           controls.forEach(control => {
-            control.style.visibility: 'visible';
+            control.style.visibility = 'visible';
           });
           document.body.removeChild(notification);
           alert('Ошибка создания скриншота');
