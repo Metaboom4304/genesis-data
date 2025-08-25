@@ -678,7 +678,7 @@
   <script>
     // Конфигурация - ИСПРАВЛЕННЫЕ URL
     const API_URL = 'https://genesis-data.onrender.com';
-    const BOT_API_URL = 'https://genesis-war-bot.onrender.com';
+    const BOT_API_URL = 'https://genesis-map-api.onrender.com';
     const CACHE_TTL = 15 * 60 * 1000; // 15 минут
     
     // Глобальные переменные
@@ -704,7 +704,7 @@
       "Синхронизация с серверами Genesis...",
       "Загрузка информации о ресурсах...",
       "Анализ климатических условий...",
-      "Построение карта высот...",
+      "Построение карты высот...",
       "Настройка интерфейса пользователя...",
       "Загрузка исторических данных...",
       "Инициализация модуля комментариев...",
@@ -941,7 +941,7 @@
       document.getElementById('screenshot').addEventListener('click', takeScreenshot);
       document.getElementById('layers-toggle').addEventListener('click', toggleLayersPanel);
       
-      // Слои карты
+      // Слои карта
       document.querySelectorAll('.layer-btn').forEach(btn => {
         btn.addEventListener('click', function() {
           document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
