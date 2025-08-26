@@ -677,7 +677,7 @@
   
   <script>
     // Конфигурация - ИСПРАВЛЕННЫЕ URL
-    const API_URL = 'https://genesis-data.onrender.com';
+    const API_URL = 'https://genesis-map-api.onrender.com';
     const BOT_API_URL = 'https://genesis-map-api.onrender.com';
     const CACHE_TTL = 15 * 60 * 1000; // 15 минут
     
@@ -1008,8 +1008,8 @@
         attributionControl: false
       });
       
-      // Добавляем элементы управления
-      map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+      // Убираем стандартные элементы управления (кнопки +, - и компас)
+      // НЕ добавляем NavigationControl
       
       // Обновляем компас при вращении карты
       map.on('rotate', () => {
@@ -1038,12 +1038,63 @@
       });
     }
     
-    // Получение стиля карты
+    // Получение стиля карты - ИСПРАВЛЕННАЯ ВЕРСИЯ
     function getMapStyle(styleName) {
       const styles = {
-        standard: 'https://demotiles.maplibre.org/style.json',
-        satellite: 'https://api.maptiler.com/maps/hybrid/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL',
-        dark: 'https://api.maptiler.com/maps/dark-matter/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL'
+        standard: {
+          version: 8,
+          sources: {
+            'osm': {
+              type: 'raster',
+              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              attribution: '© OpenStreetMap contributors'
+            }
+          },
+          layers: [{
+            id: 'osm',
+            type: 'raster',
+            source: 'osm',
+            minzoom: 0,
+            maxzoom: 22
+          }]
+        },
+        satellite: {
+          version: 8,
+          sources: {
+            'satellite': {
+              type: 'raster',
+              tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+              tileSize: 256,
+              attribution: '© Esri'
+            }
+          },
+          layers: [{
+            id: 'satellite',
+            type: 'raster',
+            source: 'satellite',
+            minzoom: 0,
+            maxzoom: 22
+          }]
+        },
+        dark: {
+          version: 8,
+          sources: {
+            'dark': {
+              type: 'raster',
+              tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              attribution: '© CartoDB'
+            }
+          },
+          layers: [{
+            id: 'dark',
+            type: 'raster',
+            source: 'dark',
+            minzoom: 0,
+            maxzoom: 22
+          }]
+        }
       };
       
       return styles[styleName] || styles.standard;
@@ -1052,6 +1103,11 @@
     // Изменение стиля карты
     function changeMapStyle(styleName) {
       map.setStyle(getMapStyle(styleName));
+      
+      // После смены стиля нужно перерисовать маркеры
+      map.once('idle', () => {
+        drawTiles();
+      });
     }
     
     // Обновление вращения компаса
@@ -1426,7 +1482,7 @@
       notification.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
       notification.style.color = 'white';
       notification.style.padding = '10px 20px';
-      notification.style.borderRadius = '5px';
+      notification.style.borrowRadius = '5px';
       notification.style.zIndex = '1000';
       notification.textContent = 'Создание скриншота...';
       document.body.appendChild(notification);
