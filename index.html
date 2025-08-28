@@ -26,7 +26,7 @@
       color: #fff;
     }
     
-    /* Загрузочный экран - исправлен */
+    /* Загрузочный экран с фоновой картинкой */
     .loader-screen {
       position: fixed;
       top: 0;
@@ -37,7 +37,8 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: #0d1117;
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)), 
+                  url('background.jpg') center/cover no-repeat;
       z-index: 1000;
       transition: opacity 0.5s ease;
     }
@@ -676,10 +677,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <script>
-    // Конфигурация - ИСПРАВЛЕННЫЕ URL
+    // Конфигурация
     const API_URL = 'https://genesis-map-api.onrender.com';
     const BOT_API_URL = 'https://genesis-map-api.onrender.com';
-    const CACHE_TTL = 15 * 60 * 1000; // 15 минут
+    const CACHE_TTL = 60 * 60 * 1000; // 1 час
     
     // Глобальные переменные
     let map;
@@ -704,7 +705,7 @@
       "Синхронизация с серверами Genesis...",
       "Загрузка информации о ресурсах...",
       "Анализ климатических условий...",
-      "Построение карты высот...",
+      "Построение карта высот...",
       "Настройка интерфейса пользователя...",
       "Загрузка исторических данных...",
       "Инициализация модуля комментариев...",
@@ -870,7 +871,7 @@
       }
     }
     
-    // Регистрация пользователя в боте - ИСПРАВЛЕННАЯ ВЕРСИЯ
+    // Регистрация пользователя в боте
     async function registerUserInBot(user) {
       try {
         const response = await fetch(`${BOT_API_URL}/register`, {
@@ -890,11 +891,9 @@
           const data = await response.json();
           console.log('Ответ от бота:', data);
         } else {
-          // Если эндпоинт не найден, просто логируем это
           console.warn('Эндпоинт /register не найден на боте, продолжаем работу');
         }
       } catch (error) {
-        // Игнорируем ошибки подключения к боту
         console.warn('Бот недоступен, продолжаем работу без регистрации в боте');
       }
     }
@@ -1008,9 +1007,6 @@
         attributionControl: false
       });
       
-      // Убираем стандартные элементы управления (кнопки +, - и компас)
-      // НЕ добавляем NavigationControl
-      
       // Обновляем компас при вращении карты
       map.on('rotate', () => {
         updateCompassRotation();
@@ -1038,7 +1034,7 @@
       });
     }
     
-    // Получение стиля карты - ИСПРАВЛЕННАЯ ВЕРСИЯ
+    // Получение стиля карты
     function getMapStyle(styleName) {
       const styles = {
         standard: {
@@ -1117,7 +1113,7 @@
       compass.style.transform = `rotate(${rotation}deg)`;
     }
     
-    // Загрузка данных - ИСПРАВЛЕННАЯ ВЕРСИЯ
+    // Загрузка данных - ОБНОВЛЕННАЯ ВЕРСИЯ
     async function loadData() {
       try {
         // Регистрация пользователя в API
@@ -1145,12 +1141,11 @@
           console.error('Ошибка регистрации пользователя:', error);
         }
         
-        // Загрузка пользовательских меток с улучшенной обработкой ошибок
+        // Загрузка пользовательских меток
         try {
           const userResponse = await fetch(`${API_URL}/api/marks/${currentUser.id}`);
           if (!userResponse.ok) {
             console.error('Ошибка загрузки меток:', userResponse.status);
-            // Не прерываем выполнение, используем пустые данные
             userMarks = {};
           } else {
             const marks = await userResponse.json();
@@ -1169,50 +1164,29 @@
           userMarks = {};
         }
         
-        // Загрузка кеша тайлов
-        let cacheValid = false;
+        // Загрузка кеша тайлов - ОСНОВНОЕ ИЗМЕНЕНИЕ!
         try {
           const cacheResponse = await fetch(`${API_URL}/api/tiles-cache`);
-          if (cacheResponse.ok) {
-            const cache = await cacheResponse.json();
-            const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
-            if (cacheAge < CACHE_TTL) {
-              tileData = Array.isArray(cache.data.tiles) ? cache.data.tiles : Object.values(cache.data.tiles || {});
-              cacheValid = true;
-            }
+          if (!cacheResponse.ok) {
+            throw new Error(`HTTP error! status: ${cacheResponse.status}`);
           }
-        } catch (error) {
-          console.error('Ошибка загрузки кеша:', error);
-        }
-        
-        // Если кеш устарел или отсутствует
-        if (!cacheValid) {
-          try {
-            const tileResponse = await fetch(`${API_URL}/api/proxy/tile-info`);
-            if (!tileResponse.ok) {
-              console.error('Ошибка загрузки тайлов:', tileResponse.status, await tileResponse.text());
-              // Используем тестовые данные, если сервер недоступен
-              tileData = getTestTileData();
-            } else {
-              const tilesResponse = await tileResponse.json();
-              tileData = Array.isArray(tilesResponse.tiles) ? tilesResponse.tiles : Object.values(tilesResponse.tiles || {});
-              
-              // Сохраняем в кеш
-              try {
-                await fetch(`${API_URL}/api/tiles-cache`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ tilesResponse })
-                });
-              } catch (error) {
-                console.error('Ошибка сохранения кеша:', error);
-              }
-            }
-          } catch (error) {
-            console.error('Ошибка загрузки тайлов:', error);
-            // Используем тестовые данные, если сервер недоступен
+          
+          const data = await cacheResponse.json();
+          console.log('Данные от API:', data);
+          
+          // НОВЫЙ ФОРМАТ ДАННЫХ - tiles объект, а не массив
+          if (data.tiles && typeof data.tiles === 'object') {
+            // Преобразуем объект в массив
+            tileData = Object.values(data.tiles);
+            console.log(`Загружено ${tileData.length} тайлов из кэша`);
+          } else {
+            console.warn('Неверный формат данных тайлов, используем тестовые данные');
             tileData = getTestTileData();
           }
+          
+        } catch (error) {
+          console.error('Ошибка загрузки кеша:', error);
+          tileData = getTestTileData();
         }
         
         // Инициализация координат
@@ -1220,7 +1194,6 @@
         
       } catch (error) {
         console.error('Ошибка загрузки данных:', error);
-        // Используем тестовые данные, если сервер недоступен
         tileData = getTestTileData();
         initTileCoordinates();
       }
@@ -1230,41 +1203,37 @@
     function getTestTileData() {
       console.log('Используем тестовые данные тайлов');
       return [
-        { id_tile: 22313, has_owner: false },
-        { id_tile: 22314, has_owner: true },
-        { id_tile: 22315, has_owner: false },
-        { id_tile: 22513, has_owner: true },
-        { id_tile: 22514, has_owner: false },
-        { id_tile: 22515, has_owner: true }
+        { id_tile: 22313, lat: 49.2827, lng: -123.1207, has_owner: true },
+        { id_tile: 22314, lat: 49.2827, lng: -123.1107, has_owner: false },
+        { id_tile: 22315, lat: 49.2727, lng: -123.1207, has_owner: true },
+        { id_tile: 22316, lat: 49.2727, lng: -123.1107, has_owner: false }
       ];
     }
     
-    // Инициализация координат тайлов (ПЕРЕСЧИТАННАЯ ВЕРСИЯ)
+    // Инициализация координат тайлов - ОБНОВЛЕННАЯ ВЕРСИЯ
     function initTileCoordinates() {
       tileData.forEach(t => {
         if (!t || t.id_tile == null) return;
         
         const tileId = parseInt(t.id_tile);
         
-        // Правильная формула расчета координат
+        // Если координаты уже есть (из API) - используем их
+        if (t.lat !== undefined && t.lng !== undefined) {
+          console.log(`Тайл ${t.id_tile}: уже есть координаты [${t.lat}, ${t.lng}]`);
+          return;
+        }
+        
+        // Расчет координат для тайлов без координат
         const tileX = tileId % 256;
         const tileY = Math.floor(tileId / 256);
         
-        // Начальные координаты для тайла 22313 (Ванкувер)
-        const refX = 113;  // 22313 % 256 = 113
-        const refY = 87;   // Math.floor(22313 / 256) = 87
+        // Начальные координаты для Vancouver area
+        const baseLng = -123.0;
+        const baseLat = 49.2;
+        const tileSize = 0.01; // Размер тайла в градусах
         
-        // Размеры тайла в градусах
-        const tileWidth = 1.40625;
-        const tileHeight = 0.915483;
-        
-        // Центральные координаты тайла 22313
-        const refLng = -123.046875;
-        const refLat = 49.3802405;
-        
-        // Расчет координат текущего тайла
-        t.lng = refLng + (tileX - refX) * tileWidth;
-        t.lat = refLat - (tileY - refY) * tileHeight;
+        t.lng = baseLng + (tileX * tileSize);
+        t.lat = baseLat - (tileY * tileSize);
         
         console.log(`Тайл ${t.id_tile}: X=${tileX}, Y=${tileY}, lat=${t.lat}, lng=${t.lng}`);
       });
@@ -1312,15 +1281,15 @@
       const comment = marks.comment || '';
       const owned = t.has_owner === 'true' || t.has_owner === true;
       
-      // Стилизация - улучшенная
+      // Стилизация
       const fill = status === 'ally' ? '#40c057' :
                   status === 'enemy' ? '#fa5252' :
                   status === 'favorite' ? '#fab005' :
-                  owned ? '#4dabf7' : 'rgba(73, 80, 87, 0.7)'; // Полупрозрачный для незанятых
+                  owned ? '#4dabf7' : 'rgba(73, 80, 87, 0.7)';
                   
       const stroke = status === 'ally' ? '#2f9e44' :
                     status === 'enemy' ? '#e03131' :
-                    status === 'favorite' ? '#f59f00' : 'rgba(255, 255, 255, 0.5)'; // Светлая обводка
+                    status === 'favorite' ? '#f59f00' : 'rgba(255, 255, 255, 0.5)';
       
       const element = document.createElement('div');
       element.className = 'tile-marker';
@@ -1471,9 +1440,8 @@
       drawTiles();
     }
     
-    // Скриншот карты - ИСПРАВЛЕННАЯ ВЕРСИЯ
+    // Скриншот карты
     function takeScreenshot() {
-      // Показываем уведомление о начале создания скриншота
       const notification = document.createElement('div');
       notification.style.position = 'fixed';
       notification.style.top = '20px';
@@ -1482,36 +1450,30 @@
       notification.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
       notification.style.color = 'white';
       notification.style.padding = '10px 20px';
-      notification.style.borrowRadius = '5px';
+      notification.style.borderRadius = '5px';
       notification.style.zIndex = '1000';
       notification.textContent = 'Создание скриншота...';
       document.body.appendChild(notification);
       
-      // Скрываем элементы управления для скриншота
       const controls = document.querySelectorAll('.map-controls, .compass, .layers-panel, .expand-panel-btn');
       controls.forEach(control => {
         control.style.visibility = 'hidden';
       });
       
-      // Даем время на скрытие элементов
       setTimeout(() => {
         html2canvas(document.getElementById('map')).then(canvas => {
-          // Восстанавливаем элементы управления
           controls.forEach(control => {
             control.style.visibility = 'visible';
           });
           
-          // Удаляем уведомление
           document.body.removeChild(notification);
           
-          // Создаем и скачиваем скриншот
           const link = document.createElement('a');
           link.href = canvas.toDataURL('image/png');
           link.download = `genesis-war-map-${new Date().toISOString().slice(0, 19)}.png`;
           link.click();
         }).catch(error => {
           console.error('Ошибка создания скриншота:', error);
-          // Восстанавливаем элементы управления в случае ошибки
           controls.forEach(control => {
             control.style.visibility = 'visible';
           });
@@ -1521,7 +1483,7 @@
       }, 100);
     }
     
-    // Сохранение метки - ИСПРАВЛЕННАЯ ВЕРСИЯ
+    // Сохранение метки
     async function saveMark(tileId, markType, comment = null) {
       try {
         const payload = {
@@ -1624,7 +1586,7 @@
         });
       });
       
-      favList.querySelectorAll('.remove-fav').forEach(btn => {
+           favList.querySelectorAll('.remove-fav').forEach(btn => {
         btn.addEventListener('click', () => {
           const tileId = btn.dataset.id;
           saveMark(tileId, 'clear');
