@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GENESIS WAR MAP</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- MapLibre GL JS -->
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
+    <!-- html2canvas for screenshots -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         /* Основные стили */
@@ -70,14 +74,12 @@
             background: rgba(40, 40, 50, 0.8);
             border-radius: 5px;
             overflow: hidden;
-            margin-bottom: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #4dabf7, #3bc9db);
-            width: 0%;
+            width: 0;
             transition: width 0.3s ease;
         }
 
@@ -123,7 +125,7 @@
             margin: 0;
         }
 
-        .expand-panel-btn {
+        .toggle-sidebar {
             background: none;
             border: none;
             color: #adb5bd;
@@ -134,7 +136,7 @@
             transition: background 0.2s;
         }
 
-        .expand-panel-btn:hover {
+        .toggle-sidebar:hover {
             background: rgba(255, 255, 255, 0.1);
         }
 
@@ -171,11 +173,6 @@
             border-radius: 0 4px 4px 0;
             color: white;
             cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .search-button:hover {
-            background: #339af0;
         }
 
         .filter-grid {
@@ -193,7 +190,6 @@
             cursor: pointer;
             text-align: center;
             transition: all 0.2s;
-            font-size: 0.9rem;
         }
 
         .filter-btn:hover {
@@ -280,7 +276,7 @@
         /* Панель управления картой */
         .map-controls {
             position: absolute;
-            bottom: 20px;
+            bottom: 80px;
             right: 20px;
             z-index: 900;
             display: flex;
@@ -309,6 +305,32 @@
             transform: translateY(-2px);
         }
 
+        /* Компас */
+        .compass {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 900;
+            width: 40px;
+            height: 40px;
+            background: rgba(30, 30, 40, 0.95);
+            border: 1px solid #495057;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e9ecef;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(5px);
+        }
+
+        .compass:hover {
+            background: rgba(50, 50, 60, 0.95);
+            transform: translateY(-2px);
+        }
+
         /* Панель слоев */
         .layers-panel {
             position: absolute;
@@ -319,7 +341,7 @@
             border: 1px solid #495057;
             border-radius: 8px;
             padding: 10px;
-            display: none; /* Скрыта по умолчанию */
+            display: flex;
             flex-direction: column;
             gap: 5px;
             backdrop-filter: blur(5px);
@@ -515,8 +537,8 @@
         <!-- Боковая панель -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h2 class="sidebar-title">GENESIS MAP</h2>
-                <button class="expand-panel-btn" id="expand-panel-btn">
+                <h2 class="sidebar-title">GENESIS WAR MAP</h2>
+                <button class="toggle-sidebar" id="toggle-sidebar">
                     <i class="fas fa-chevron-left"></i>
                 </button>
             </div>
@@ -548,15 +570,20 @@
 
             <!-- Панель управления картой -->
             <div class="map-controls">
-                <button class="control-btn" id="zoom-in"><i class="fas fa-plus"></i></button>
-                <button class="control-btn" id="zoom-out"><i class="fas fa-minus"></i></button>
-                <button class="control-btn" id="compass"><i class="fas fa-compass"></i></button>
-                <button class="control-btn" id="fullscreen"><i class="fas fa-expand"></i></button>
-                <button class="control-btn" id="layers-toggle"><i class="fas fa-layer-group"></i></button>
+                <button class="control-btn" id="zoom-in" title="Приблизить"><i class="fas fa-plus"></i></button>
+                <button class="control-btn" id="zoom-out" title="Отдалить"><i class="fas fa-minus"></i></button>
+                <button class="control-btn" id="reset-view" title="Сбросить вид"><i class="fas fa-globe"></i></button>
+                <button class="control-btn" id="screenshot" title="Скриншот"><i class="fas fa-camera"></i></button>
+                <button class="control-btn" id="layers-toggle" title="Слои"><i class="fas fa-layer-group"></i></button>
+            </div>
+
+            <!-- Компас -->
+            <div class="compass" id="compass" title="Сбросить поворот">
+                <i class="fas fa-compass"></i>
             </div>
 
             <!-- Панель слоев -->
-            <div class="layers-panel" id="layers-panel">
+            <div class="layers-panel" id="layers-panel" style="display: none;">
                 <button class="layer-btn active" data-layer="standard"><i class="fas fa-map"></i> Стандартная</button>
                 <button class="layer-btn" data-layer="satellite"><i class="fas fa-satellite"></i> Спутник</button>
                 <button class="layer-btn" data-layer="dark"><i class="fas fa-moon"></i> Тёмная</button>
@@ -566,19 +593,19 @@
 
     <script>
         // ==================== КОНФИГУРАЦИЯ ====================
-        // ИСПРАВЛЕННЫЙ URL API
         const API_URL = 'https://genesis-map-api.onrender.com';
         const BOT_API_URL = 'https://genesis-war-bot.onrender.com';
+        const MAPTILER_API_KEY = 'FQfKZNqLkGAoNter4jro'; // Ваш ключ MapTiler
 
         // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
         let map;
-        let tileData = []; // Хранит только видимые тайлы
+        let tileData = [];
         let userMarks = {};
         let favorites = [];
         let currentUser = null;
         let currentFilter = 'all';
         let tileMarkers = {};
-        let loadingMessages = [
+        const loadingMessages = [
             "Инициализация карты древних цивилизаций...",
             "Загрузка данных о тайлах...",
             "Анализ ресурсов территории...",
@@ -595,10 +622,6 @@
             "Анализ климатических условий...",
             "Построение карты высот..."
         ];
-        let progress = 0;
-        let currentMessageIndex = 0;
-        let loaderInterval;
-        let moveEndHandler; // Для дебаунсинга
 
         // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
         function showNotification(message, duration = 3000) {
@@ -611,22 +634,11 @@
             }, duration);
         }
 
-        // Функция для дебаунсинга
-        function debounce(func, wait, immediate) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    timeout = null;
-                    if (!immediate) func.apply(this, args);
-                };
-                const callNow = immediate && !timeout;
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-                if (callNow) func.apply(this, args);
-            };
-        };
-
         // ==================== ЗАГРУЗКА И ПРОГРЕСС ====================
+        let progress = 0;
+        let currentMessageIndex = 0;
+        let loaderInterval;
+
         function updateLoader() {
             const progressBar = document.getElementById('progress-fill');
             const progressText = document.getElementById('progress-text');
@@ -661,21 +673,24 @@
             startLoader();
             await checkServers();
             await initTelegram();
-            // initMap будет вызвана после получения данных пользователя
+            await initMap();
+            await loadData();
+            drawTiles();
+            renderFavorites();
         }
 
         async function checkServers() {
             try {
                 const apiCheck = await fetch(`${API_URL}/health`, { method: 'GET' });
                 console.log('API сервер доступен:', apiCheck.ok);
-            } catch (error) {
-                console.error('Ошибка подключения к API серверу:', error);
+            } catch (apiError) {
+                console.error('Ошибка подключения к API серверу:', apiError);
             }
             try {
                 const botCheck = await fetch(`${BOT_API_URL}/health`, { method: 'GET' });
                 console.log('Бот сервер доступен:', botCheck.ok);
-            } catch (error) {
-                console.error('Ошибка подключения к бот серверу:', error);
+            } catch (botError) {
+                console.error('Ошибка подключения к бот серверу:', botError);
             }
         }
 
@@ -694,8 +709,6 @@
                 currentUser = { id: 766057421, first_name: 'Stanislav', last_name: '', username: 'Stansilav93', language_code: 'ru' };
                 console.log('Тестовый пользователь:', currentUser);
             }
-            // После получения пользователя инициализируем карту
-            await initMap();
         }
 
         async function registerUserInBot(user) {
@@ -722,19 +735,15 @@
         }
 
         // ==================== РАБОТА С КАРТОЙ ====================
-        // Функция для получения URL стиля карты
         function getMapStyle(styleName) {
-             // Замените эти URL на реальные URL ваших стилей MapLibre
-             const styles = {
-                 // Пример стандартного стиля (возможно, нужно заменить на ваш собственный или публичный)
-                 standard: 'https://demotiles.maplibre.org/style.json',
-                 // Пример спутникового стиля (требуется ключ MapTiler)
-                 satellite: 'https://api.maptiler.com/maps/hybrid/style.json?key=YOUR_MAPTILER_API_KEY_HERE',
-                 // Пример темного стиля (требуется ключ MapTiler)
-                 dark: 'https://api.maptiler.com/maps/dark-matter/style.json?key=YOUR_MAPTILER_API_KEY_HERE'
-             };
-             return styles[styleName] || styles.standard;
-         }
+            const styles = {
+                standard: 'https://demotiles.maplibre.org/style.json',
+                // ИСПОЛЬЗУЕМ ВАШ КЛЮЧ MAPTILER ДЛЯ СПУТНИКОВОГО СТИЛЯ
+                satellite: `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_API_KEY}`,
+                dark: 'https://api.maptiler.com/maps/dark-matter/style.json?key=${MAPTILER_API_KEY}'
+            };
+            return styles[styleName] || styles.standard;
+        }
 
         async function initMap() {
             try {
@@ -742,39 +751,129 @@
                  map = new maplibregl.Map({
                      container: 'map',
                      style: getMapStyle('standard'), // Начальный стиль
-                     center: [-123.10, 49.25], // Центр по умолчанию
-                     zoom: 6, // Уровень масштабирования по умолчанию
+                     center: [-123.10, 49.25], // [lng, lat]
+                     zoom: 6,
                      minZoom: 3,
                      maxZoom: 10,
                      attributionControl: false
                  });
 
-                 // Добавление стандартных элементов управления MapLibre
+                 // Добавляем элементы управления
                  map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
                  map.addControl(new maplibregl.FullscreenControl(), 'top-right');
 
                  // Обработчики событий карты
                  map.on('load', async () => {
                      console.log('Карта успешно загружена');
-                     await loadData(); // Загружаем начальные данные
-                     drawTiles(); // Отрисовываем тайлы
+                     showNotification('Карта успешно загружена');
                  });
 
-                 // Добавляем обработчик moveend с дебаунсингом
-                 moveEndHandler = debounce(() => {
-                     loadData();
-                 }, 500); // Задержка 500мс
-
-                 map.on('moveend', moveEndHandler);
-                 map.on('zoomend', moveEndHandler);
-
-                 map.on('styledata', () => {
-                     // Перерисовываем маркеры после смены стиля
+                 map.on('moveend', () => {
                      drawTiles();
                  });
 
-                 // Обработчики для UI элементов
-                 setupUIEventListeners();
+                 map.on('zoomend', () => {
+                     drawTiles();
+                 });
+
+                 map.on('resize', () => {
+                     drawTiles();
+                 });
+
+                 // Добавляем обработчики событий для кнопок управления
+                 document.getElementById('zoom-in').addEventListener('click', () => {
+                     map.zoomIn();
+                 });
+
+                 document.getElementById('zoom-out').addEventListener('click', () => {
+                     map.zoomOut();
+                 });
+
+                 document.getElementById('reset-view').addEventListener('click', () => {
+                     map.flyTo({ center: [-123.10, 49.25], zoom: 6, essential: true });
+                     // Сброс фильтров
+                     document.getElementById('search-input').value = '';
+                     document.querySelectorAll('.filter-btn').forEach(btn => {
+                         btn.classList.remove('active');
+                         if (btn.dataset.filter === 'all') btn.classList.add('active');
+                     });
+                     currentFilter = 'all';
+                     drawTiles();
+                 });
+
+                 document.getElementById('screenshot').addEventListener('click', () => {
+                     takeScreenshot();
+                 });
+
+                 document.getElementById('layers-toggle').addEventListener('click', () => {
+                     toggleLayersPanel();
+                 });
+
+                 document.getElementById('compass').addEventListener('click', () => {
+                     map.resetNorth();
+                 });
+
+                 // Добавляем обработчики событий для кнопок слоев
+                 document.querySelectorAll('.layer-btn').forEach(btn => {
+                     btn.addEventListener('click', () => {
+                         const layerName = btn.dataset.layer;
+                         changeMapStyle(layerName);
+                     });
+                 });
+
+                 // Добавляем обработчики событий для фильтров
+                 document.querySelectorAll('.filter-btn').forEach(btn => {
+                     btn.addEventListener('click', () => {
+                         const filter = btn.dataset.filter;
+                         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                         btn.classList.add('active');
+                         currentFilter = filter;
+                         drawTiles();
+                     });
+                 });
+
+                 // Добавляем обработчик события поиска
+                 document.getElementById('search-button').addEventListener('click', () => {
+                     const searchValue = document.getElementById('search-input').value.trim();
+                     if (searchValue !== '') {
+                         const tile = tileData.find(t => t.id_tile == searchValue);
+                         if (tile) {
+                             map.flyTo({ center: [tile.lng, tile.lat], zoom: 7, essential: true });
+                         } else {
+                             alert(`Тайл #${searchValue} не найден`);
+                         }
+                     }
+                 });
+
+                 // Добавляем обработчик события для переключения боковой панели
+                 document.getElementById('toggle-sidebar').addEventListener('click', () => {
+                     const sidebar = document.getElementById('sidebar');
+                     const icon = document.querySelector('#toggle-sidebar i');
+                     sidebar.classList.toggle('collapsed');
+                     if (sidebar.classList.contains('collapsed')) {
+                         icon.className = 'fas fa-chevron-right';
+                     } else {
+                         icon.className = 'fas fa-chevron-left';
+                     }
+                     // Обновляем размер карты
+                     setTimeout(() => {
+                         if (map) map.resize();
+                     }, 300);
+                 });
+
+                 // Добавляем обработчик события для избранного
+                 document.getElementById('favorites-list').addEventListener('click', (e) => {
+                     if (e.target.closest('.goto-fav')) {
+                         const tileId = e.target.closest('.goto-fav').dataset.id;
+                         const tile = tileData.find(t => t.id_tile == tileId);
+                         if (tile) {
+                             map.flyTo({ center: [tile.lng, tile.lat], zoom: 7, essential: true });
+                         }
+                     } else if (e.target.closest('.remove-fav')) {
+                         const tileId = e.target.closest('.remove-fav').dataset.id;
+                         saveMark(tileId, 'clear');
+                     }
+                 });
 
              } catch (error) {
                  console.error('Ошибка инициализации карты:', error);
@@ -782,105 +881,68 @@
              }
          }
 
-         // Исправленная функция смены стиля карты
-         function changeMapStyle(styleName) {
-             if (!map) return;
-             try {
-                 console.log(`Меняем стиль на: ${styleName}`);
-                 map.setStyle(getMapStyle(styleName));
+        function changeMapStyle(styleName) {
+            if (!map) return;
+            try {
+                console.log(`Меняем стиль на: ${styleName}`);
+                map.setStyle(getMapStyle(styleName));
 
-                 // Обновляем активность кнопок слоев
-                 document.querySelectorAll('.layer-btn').forEach(btn => {
-                     btn.classList.remove('active');
-                     if (btn.dataset.layer === styleName) {
-                         btn.classList.add('active');
-                     }
-                 });
-             } catch (error) {
-                 console.error('Ошибка смены стиля карты:', error);
-                 showNotification('Ошибка смены стиля карты');
-             }
-         }
+                // Обновляем активность кнопки слоя
+                document.querySelectorAll('.layer-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.layer === styleName) {
+                        btn.classList.add('active');
+                    }
+                });
 
-        function setupUIEventListeners() {
-            // Переключение боковой панели
-            document.getElementById('expand-panel-btn').addEventListener('click', () => {
-                document.getElementById('sidebar').classList.toggle('collapsed');
-                const icon = document.querySelector('#expand-panel-btn i');
-                if (document.getElementById('sidebar').classList.contains('collapsed')) {
-                    icon.className = 'fas fa-chevron-right';
-                } else {
-                    icon.className = 'fas fa-chevron-left';
-                }
-                // Обновляем размер карты
-                setTimeout(() => {
-                    if (map) map.resize();
-                }, 300);
-            });
-
-            // Поиск
-            document.getElementById('search-button').addEventListener('click', searchTile);
-            document.getElementById('search-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') searchTile();
-            });
-
-            // Фильтры
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentFilter = btn.dataset.filter;
+                // Перерисовываем маркеры после смены стиля
+                map.once('idle', () => {
                     drawTiles();
                 });
-            });
+            } catch (error) {
+                console.error('Ошибка смены стиля карты:', error);
+                showNotification('Ошибка смены стиля карты');
+            }
+        }
 
-            // Слои
-            document.getElementById('layers-toggle').addEventListener('click', () => {
-                const layersPanel = document.getElementById('layers-panel');
-                layersPanel.style.display = layersPanel.style.display === 'none' ? 'flex' : 'none';
-            });
-
-            document.querySelectorAll('.layer-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const layerName = btn.dataset.layer;
-                    changeMapStyle(layerName); // Используем исправленную функцию
-                });
-            });
-
-            // Управление картой
-            document.getElementById('zoom-in').addEventListener('click', () => {
-                if (map) map.zoomIn();
-            });
-
-            document.getElementById('zoom-out').addEventListener('click', () => {
-                if (map) map.zoomOut();
-            });
-
-            document.getElementById('compass').addEventListener('click', () => {
-                if (map) map.resetNorth();
-            });
-
-            document.getElementById('fullscreen').addEventListener('click', () => {
-                if (map) map.toggleFullscreen();
-            });
+        function toggleLayersPanel() {
+            const layersPanel = document.getElementById('layers-panel');
+            layersPanel.style.display = layersPanel.style.display === 'none' ? 'flex' : 'none';
         }
 
         // ==================== ЗАГРУЗКА ДАННЫХ ====================
         async function loadData() {
             if (!currentUser) {
                 console.error('Пользователь не определен');
+                tileData = getTestTileData();
+                initTileCoordinates();
                 return;
             }
 
             try {
-                // Получаем границы текущей области карты
-                const bounds = map.getBounds();
-                const zoom = map.getZoom();
+                // Регистрация пользователя в API
+                try {
+                    const response = await fetch(`${API_URL}/api/users/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            telegram_id: currentUser.id,
+                            first_name: currentUser.first_name,
+                            last_name: currentUser.last_name,
+                            username: currentUser.username,
+                            language_code: currentUser.language_code
+                        })
+                    });
 
-                // Формируем URL для запроса тайлов в границах
-                const tilesUrl = `${API_URL}/api/tiles-in-bounds?west=${bounds.getWest()}&south=${bounds.getSouth()}&east=${bounds.getEast()}&north=${bounds.getNorth()}&zoom=${zoom}`;
-
-                console.log(`Запрос тайлов в границах: ${tilesUrl}`);
+                    if (response.ok) {
+                        console.log('Пользователь успешно зарегистрирован в API');
+                        showNotification('Пользователь успешно зарегистрирован в API');
+                    } else {
+                        console.error('Ошибка регистрации в API:', await response.text());
+                    }
+                } catch (error) {
+                    console.error('Ошибка регистрации в API:', error);
+                }
 
                 // Загрузка пользовательских меток
                 try {
@@ -904,12 +966,17 @@
                     userMarks = {};
                 }
 
-                // Загрузка данных тайлов в границах
+                // Загрузка данных тайлов
                 try {
-                    const tileResponse = await fetch(tilesUrl);
+                    // ИСПОЛЬЗУЕМ НОВЫЙ ЭНДПОИНТ ДЛЯ ЗАГРУЗКИ ТАЙЛОВ В ГРАНИЦАХ
+                    const bounds = map.getBounds();
+                    const zoom = map.getZoom();
+                    const tileResponse = await fetch(`${API_URL}/api/tiles-in-bounds?west=${bounds.getWest()}&south=${bounds.getSouth()}&east=${bounds.getEast()}&north=${bounds.getNorth()}&zoom=${zoom}`);
+                    
                     if (!tileResponse.ok) {
                         console.error('Ошибка загрузки тайлов:', tileResponse.status, await tileResponse.text());
-                        tileData = []; // Очищаем данные, если сервер недоступен
+                        // Используем тестовые данные, если сервер недоступен
+                        tileData = getTestTileData();
                     } else {
                         const tilesResponse = await tileResponse.json();
                         // Предполагаем, что ответ имеет структуру { tiles: [...] }
@@ -918,19 +985,62 @@
                     }
                 } catch (error) {
                     console.error('Ошибка загрузки тайлов:', error);
-                    tileData = []; // Очищаем данные, если сервер недоступен
+                    // Используем тестовые данные, если сервер недоступен
+                    tileData = getTestTileData();
                 }
 
-                // Отрисовываем тайлы
-                drawTiles();
+                // Инициализация координат (если данные не содержат их)
+                initTileCoordinates();
+
+                renderFavorites();
 
             } catch (error) {
                 console.error('Ошибка загрузки данных:', error);
-                tileData = []; // Очищаем данные в случае ошибки
-                drawTiles(); // Перерисовываем (очищаем) маркеры
+                // Используем тестовые данные, если сервер недоступен
+                tileData = getTestTileData();
+                initTileCoordinates();
             }
         }
 
+        // ==================== РАБОТА С ДАННЫМИ ====================
+        function getTestTileData() {
+            console.log('Используем тестовые данные тайлов');
+            return [
+                { id_tile: 22313, has_owner: false },
+                { id_tile: 22314, has_owner: true },
+                { id_tile: 22315, has_owner: false },
+                { id_tile: 22513, has_owner: false },
+                { id_tile: 22514, has_owner: true },
+                { id_tile: 22515, has_owner: false }
+            ];
+        }
+
+        function initTileCoordinates() {
+             if (!tileData || tileData.length === 0) return;
+
+             // Простая логика для тестовых данных
+             tileData.forEach(tile => {
+                 // Пример: преобразование ID в координаты (заглушка)
+                 if (tile.id_tile === 22313) {
+                     tile.lng = -123.1; tile.lat = 49.25;
+                 } else if (tile.id_tile === 22314) {
+                     tile.lng = -122.1; tile.lat = 49.25;
+                 } else if (tile.id_tile === 22315) {
+                     tile.lng = -121.1; tile.lat = 49.25;
+                 } else if (tile.id_tile === 22513) {
+                     tile.lng = 123.1; tile.lat = 49.25;
+                 } else if (tile.id_tile === 22514) {
+                     tile.lng = 124.1; tile.lat = 49.25;
+                 } else if (tile.id_tile === 22515) {
+                     tile.lng = 125.1; tile.lat = 49.25;
+                 } else {
+                     // Для остальных тайлов генерируем координаты или оставляем неопределенными
+                     tile.lng = (tile.id_tile % 360) - 180; // Простая заглушка
+                     tile.lat = (tile.id_tile % 180) - 90;  // Простая заглушка
+                 }
+                 console.log(`Тайл ${tile.id_tile}: X=${tile.lng}, Y=${tile.lat}, lat=${tile.lat}, lng=${tile.lng}`);
+             });
+         }
 
         // ==================== ОТРИСОВКА ====================
         function drawTiles() {
@@ -1106,41 +1216,19 @@
                     favList.appendChild(li);
                 }
             });
-
-            // Добавляем обработчики событий для избранного
-            favList.querySelectorAll('.goto-fav').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const tileId = parseInt(btn.dataset.id);
-                    const tile = tileData.find(t => t.id_tile === tileId);
-                    if (tile && map) {
-                        map.flyTo({ center: [tile.lng, tile.lat], zoom: 7, essential: true });
-                    }
-                });
-            });
-
-            favList.querySelectorAll('.remove-fav').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    const tileId = parseInt(btn.dataset.id);
-                    await saveMark(tileId, 'clear');
-                });
-            });
         }
 
-        function searchTile() {
-            const tileId = document.getElementById('search-input').value.trim();
-            if (!tileId) return;
-
-            // Для поиска конкретного тайла, можно сделать отдельный запрос к API
-            // или, если тайл уже загружен, использовать его
-            const tile = tileData.find(t => t.id_tile == tileId);
-            if (!tile) {
-                showNotification(`Тайл #${tileId} не найден в текущей области`);
-                return;
-            }
-
-            if (map) {
-                map.flyTo({ center: [tile.lng, tile.lat], zoom: 7, essential: true });
-            }
+        function takeScreenshot() {
+            html2canvas(document.querySelector('.app-container')).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'genesis-war-map-screenshot.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                showNotification('Скриншот сохранен');
+            }).catch(err => {
+                console.error('Ошибка создания скриншота:', err);
+                showNotification('Ошибка создания скриншота');
+            });
         }
 
         // ==================== ЗАПУСК ПРИЛОЖЕНИЯ ====================
