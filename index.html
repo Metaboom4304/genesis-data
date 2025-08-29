@@ -37,8 +37,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)), 
-                  url('background.jpg') center/cover no-repeat;
+      background: linear-gradient(135deg, #0d1117 0%, #1a1a2e 50%, #16213e 100%);
       z-index: 1000;
       transition: opacity 0.5s ease;
     }
@@ -535,6 +534,35 @@
       backdrop-filter: blur(5px);
     }
     
+    /* API Source Selector */
+    .api-source-selector {
+      padding: 10px 15px;
+      border-bottom: 1px solid #2c3e50;
+      background: rgba(30, 30, 40, 0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .api-source-label {
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+    
+    .api-source-options {
+      display: flex;
+      gap: 15px;
+    }
+    
+    .api-source-options label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.9rem;
+      color: #e9ecef;
+      cursor: pointer;
+    }
+    
     /* Адаптивность */
     @media (max-width: 768px) {
       .app-container {
@@ -559,6 +587,15 @@
       .search-section {
         padding: 10px;
       }
+      
+      .api-source-selector {
+        padding: 8px 10px;
+      }
+      
+      .api-source-options {
+        flex-direction: column;
+        gap: 8px;
+      }
     }
   </style>
 </head>
@@ -582,6 +619,19 @@
         <button class="toggle-sidebar" id="toggle-sidebar">
           <i class="fas fa-chevron-left"></i>
         </button>
+      </div>
+      
+      <!-- Переключатель источника API -->
+      <div class="api-source-selector">
+        <div class="api-source-label">Источник данных:</div>
+        <div class="api-source-options">
+          <label>
+            <input type="radio" name="api-source" value="cache" checked> Кэш API
+          </label>
+          <label>
+            <input type="radio" name="api-source" value="proxy"> Прямой доступ
+          </label>
+        </div>
       </div>
       
       <div class="search-section">
@@ -680,6 +730,7 @@
     // Конфигурация
     const API_URL = 'https://genesis-map-api.onrender.com';
     const BOT_API_URL = 'https://genesis-map-api.onrender.com';
+    const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
     const CACHE_TTL = 60 * 60 * 1000; // 1 час
     
     // Глобальные переменные
@@ -715,15 +766,79 @@
     let currentMessageIndex = 0;
     let messageInterval;
     
+    // Клиентский кэш тайлов
+    const tileCache = new Map();
+    const CLIENT_CACHE_TTL = 5 * 60 * 1000; // 5 минут
+    
     // Элементы UI
     const loaderScreen = document.getElementById('loader-screen');
     const loaderText = document.getElementById('loader-text');
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
     
+    // Функция для обхода CORS
+    async function fetchWithCors(url, options = {}) {
+      try {
+        const response = await fetch(`${CORS_PROXY}${url}`, {
+          ...options,
+          headers: {
+            ...options.headers,
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        return response;
+      } catch (error) {
+        console.error('CORS proxy failed, trying direct connection:', error);
+        return fetch(url, options);
+      }
+    }
+    
+    // Функция для кэширования запросов на клиенте
+    async function cachedFetch(url) {
+      const now = Date.now();
+      const cached = tileCache.get(url);
+      
+      if (cached && (now - cached.timestamp < CLIENT_CACHE_TTL)) {
+        console.log('Используем кэшированные данные для:', url);
+        return cached.data;
+      }
+      
+      const response = await fetchWithCors(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      tileCache.set(url, {
+        data: data,
+        timestamp: now
+      });
+      
+      return data;
+    }
+    
+    // Проверка здоровья API
+    async function checkApiHealth() {
+      try {
+        const response = await fetchWithCors(`${API_URL}/health`);
+        const health = await response.json();
+        console.log('API Health:', health);
+        return health.status === 'OK';
+      } catch (error) {
+        console.error('API Health check failed:', error);
+        return false;
+      }
+    }
+    
     // Инициализация приложения
     async function initApp() {
       try {
+        const apiHealthy = await checkApiHealth();
+        if (!apiHealthy) {
+          console.warn('API недоступен, используем fallback данные');
+        }
+        
         startLoadingMessages();
         updateProgress(5, loadingMessages[0]);
         
@@ -778,10 +893,7 @@
         
         // Проверка API сервера
         try {
-          const apiCheck = await fetch(`${API_URL}/health`, { 
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-          });
+          const apiCheck = await fetchWithCors(`${API_URL}/health`);
           console.log('API сервер доступен:', apiCheck.ok);
           if (!apiCheck.ok) {
             console.error('API сервер недоступен');
@@ -792,10 +904,7 @@
         
         // Проверка бота
         try {
-          const botCheck = await fetch(`${BOT_API_URL}/health`, { 
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-          });
+          const botCheck = await fetchWithCors(`${BOT_API_URL}/health`);
           console.log('Бот сервер доступен:', botCheck.ok);
           if (!botCheck.ok) {
             console.error('Бот сервер недоступен');
@@ -874,7 +983,7 @@
     // Регистрация пользователя в боте
     async function registerUserInBot(user) {
       try {
-        const response = await fetch(`${BOT_API_URL}/register`, {
+        const response = await fetchWithCors(`${BOT_API_URL}/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -961,6 +1070,21 @@
       document.getElementById('compass').addEventListener('click', function() {
         map.resetNorthPitch();
       });
+      
+      // Переключатель источника API
+      document.querySelectorAll('input[name="api-source"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          const source = e.target.value;
+          window.API_SOURCE = source;
+          localStorage.setItem('apiSource', source);
+          loadData().then(drawTiles);
+        });
+      });
+      
+      // Восстанавливаем выбранный источник API
+      const savedSource = localStorage.getItem('apiSource') || 'cache';
+      document.querySelector(`input[name="api-source"][value="${savedSource}"]`).checked = true;
+      window.API_SOURCE = savedSource;
     }
     
     // Переключение боковой панели
@@ -1118,7 +1242,7 @@
       try {
         // Регистрация пользователя в API
         try {
-          const response = await fetch(`${API_URL}/api/users/register`, {
+          const response = await fetchWithCors(`${API_URL}/api/users/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1143,7 +1267,7 @@
         
         // Загрузка пользовательских меток
         try {
-          const userResponse = await fetch(`${API_URL}/api/marks/${currentUser.id}`);
+          const userResponse = await fetchWithCors(`${API_URL}/api/marks/${currentUser.id}`);
           if (!userResponse.ok) {
             console.error('Ошибка загрузки меток:', userResponse.status);
             userMarks = {};
@@ -1166,19 +1290,25 @@
         
         // Загрузка кеша тайлов - ОСНОВНОЕ ИЗМЕНЕНИЕ!
         try {
-          const cacheResponse = await fetch(`${API_URL}/api/tiles-cache`);
-          if (!cacheResponse.ok) {
-            throw new Error(`HTTP error! status: ${cacheResponse.status}`);
-          }
+          const apiSource = window.API_SOURCE || 'cache';
+          const apiUrl = apiSource === 'cache' 
+            ? `${API_URL}/api/tiles-cache` 
+            : `${API_URL}/api/proxy/tile-info`;
           
-          const data = await cacheResponse.json();
+          const data = await cachedFetch(apiUrl);
           console.log('Данные от API:', data);
           
-          // НОВЫЙ ФОРМАТ ДАННЫХ - tiles объект, а не массив
+          // Обрабатываем оба формата ответа
           if (data.tiles && typeof data.tiles === 'object') {
-            // Преобразуем объект в массив
-            tileData = Object.values(data.tiles);
-            console.log(`Загружено ${tileData.length} тайлов из кэша`);
+            // Преобразуем объект в массив, добавляя id_tile
+            tileData = Object.entries(data.tiles).map(([id, tileData]) => ({
+              id_tile: parseInt(id),
+              ...tileData
+            }));
+            console.log(`Загружено ${tileData.length} тайлов из ${apiSource}`);
+          } else if (Array.isArray(data)) {
+            tileData = data;
+            console.log(`Загружено ${tileData.length} тайлов из ${apiSource}`);
           } else {
             console.warn('Неверный формат данных тайлов, используем тестовые данные');
             tileData = getTestTileData();
@@ -1248,7 +1378,13 @@
       const searchValue = document.getElementById('search-input').value.trim();
       const bounds = map.getBounds();
       
+      // Ограничение количества одновременно отображаемых маркеров
+      const MAX_MARKERS = 200;
+      let visibleCount = 0;
+      
       tileData.forEach(t => {
+        if (visibleCount >= MAX_MARKERS) return;
+        
         // Пропускаем тайлы без координат
         if (!t || t.lat === undefined || t.lng === undefined) return;
         
@@ -1268,7 +1404,12 @@
         
         // Создаем маркер
         tileMarkers[t.id_tile] = createTileMarker(t, tileMarks);
+        visibleCount++;
       });
+      
+      if (visibleCount >= MAX_MARKERS) {
+        console.warn(`Достигнут лимит отображаемых маркеров: ${MAX_MARKERS}`);
+      }
     }
     
     // Создание маркера для тайла
@@ -1440,7 +1581,7 @@
       drawTiles();
     }
     
-    // Скриншот карты
+    // Скриншот карта
     function takeScreenshot() {
       const notification = document.createElement('div');
       notification.style.position = 'fixed';
@@ -1496,7 +1637,7 @@
           payload.comment = comment;
         }
         
-        const response = await fetch(`${API_URL}/api/marks`, {
+        const response = await fetchWithCors(`${API_URL}/api/marks`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -1529,7 +1670,7 @@
         
         // Отправляем уведомление в бот
         try {
-          await fetch(`${BOT_API_URL}/notify`, {
+          await fetchWithCors(`${BOT_API_URL}/notify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1586,7 +1727,7 @@
         });
       });
       
-           favList.querySelectorAll('.remove-fav').forEach(btn => {
+      favList.querySelectorAll('.remove-fav').forEach(btn => {
         btn.addEventListener('click', () => {
           const tileId = btn.dataset.id;
           saveMark(tileId, 'clear');
