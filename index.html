@@ -211,6 +211,8 @@
             padding: 15px;
             flex: 1;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .section-title {
@@ -226,6 +228,8 @@
             list-style: none;
             padding: 0;
             margin: 0;
+            flex: 1;
+            overflow-y: auto;
         }
 
         .favorite-item {
@@ -705,6 +709,9 @@
             await loadData();
             drawTiles();
             renderFavorites();
+            // Завершаем загрузку
+            progress = 100;
+            updateLoader();
         }
 
         async function initTelegram() {
@@ -713,18 +720,26 @@
                 window.Telegram.WebApp.expand();
                 currentUser = window.Telegram.WebApp.initDataUnsafe.user;
                 console.log('Пользователь из Telegram:', currentUser);
+                return true;
             } else {
                 console.error('Telegram WebApp не обнаружен');
                 showNotification('Запускайте приложение через Telegram бота');
-                // Не устанавливаем тестового пользователя
-                currentUser = null;
+                // Для тестирования без Telegram
+                currentUser = {
+                    id: 123456789,
+                    first_name: 'Test',
+                    last_name: 'User',
+                    username: 'testuser',
+                    language_code: 'ru'
+                };
+                return false;
             }
         }
 
         // ==================== РАБОТА С КАРТОЙ ====================
         function getMapStyle(styleName) {
             const styles = {
-                standard: 'https://demotiles.maplibre.org/style.json',
+                standard: `https://api.maptiler.com/maps/streets/style.json?key=${MAPTILER_API_KEY}`,
                 satellite: `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_API_KEY}`,
                 dark: `https://api.maptiler.com/maps/dark-matter/style.json?key=${MAPTILER_API_KEY}`
             };
@@ -732,138 +747,143 @@
         }
 
         async function initMap() {
-            try {
-                 // Инициализация карты MapLibre
-                 map = new maplibregl.Map({
-                     container: 'map',
-                     style: getMapStyle('standard'),
-                     center: [30, 50],
-                     zoom: 4,
-                     minZoom: 1,
-                     maxZoom: 18,
-                     attributionControl: false
-                 });
+            return new Promise((resolve, reject) => {
+                try {
+                    // Инициализация карты MapLibre
+                    map = new maplibregl.Map({
+                        container: 'map',
+                        style: getMapStyle('standard'),
+                        center: [30, 50],
+                        zoom: 4,
+                        minZoom: 1,
+                        maxZoom: 18,
+                        attributionControl: false
+                    });
 
-                 // Убираем стандартные элементы управления
-                 map.removeControl(map.zoomControl);
-                 map.removeControl(map.rotationControl);
+                    // Обработчики событий карты
+                    map.on('load', () => {
+                        console.log('Карта успешно загружена');
+                        showNotification('Карта успешно загружена');
+                        resolve();
+                    });
 
-                 // Обработчики событий карты
-                 map.on('load', async () => {
-                     console.log('Карта успешно загружена');
-                     showNotification('Карта успешно загружена');
-                 });
+                    map.on('error', (error) => {
+                        console.error('Ошибка загрузки карты:', error);
+                        reject(error);
+                    });
 
-                 map.on('moveend', () => {
-                     drawTiles();
-                 });
+                    map.on('moveend', () => {
+                        drawTiles();
+                    });
 
-                 map.on('zoomend', () => {
-                     drawTiles();
-                 });
+                    map.on('zoomend', () => {
+                        drawTiles();
+                    });
 
-                 map.on('resize', () => {
-                     drawTiles();
-                 });
+                    map.on('resize', () => {
+                        drawTiles();
+                    });
 
-                 // Добавляем обработчики событий для кнопок управления
-                 document.getElementById('zoom-in').addEventListener('click', () => {
-                     map.zoomIn();
-                 });
+                    // Добавляем обработчики событий для кнопок управления
+                    document.getElementById('zoom-in').addEventListener('click', () => {
+                        map.zoomIn();
+                    });
 
-                 document.getElementById('zoom-out').addEventListener('click', () => {
-                     map.zoomOut();
-                 });
+                    document.getElementById('zoom-out').addEventListener('click', () => {
+                        map.zoomOut();
+                    });
 
-                 document.getElementById('reset-view').addEventListener('click', () => {
-                     map.flyTo({ center: [30, 50], zoom: 4, essential: true });
-                     document.getElementById('search-input').value = '';
-                     document.querySelectorAll('.filter-btn').forEach(btn => {
-                         btn.classList.remove('active');
-                         if (btn.dataset.filter === 'all') btn.classList.add('active');
-                     });
-                     currentFilter = 'all';
-                     drawTiles();
-                 });
+                    document.getElementById('reset-view').addEventListener('click', () => {
+                        map.flyTo({ center: [30, 50], zoom: 4, essential: true });
+                        document.getElementById('search-input').value = '';
+                        document.querySelectorAll('.filter-btn').forEach(btn => {
+                            btn.classList.remove('active');
+                            if (btn.dataset.filter === 'all') btn.classList.add('active');
+                        });
+                        currentFilter = 'all';
+                        drawTiles();
+                    });
 
-                 document.getElementById('screenshot').addEventListener('click', () => {
-                     takeScreenshot();
-                 });
+                    document.getElementById('screenshot').addEventListener('click', () => {
+                        takeScreenshot();
+                    });
 
-                 document.getElementById('layers-toggle').addEventListener('click', () => {
-                     toggleLayersPanel();
-                 });
+                    document.getElementById('layers-toggle').addEventListener('click', () => {
+                        toggleLayersPanel();
+                    });
 
-                 document.getElementById('compass').addEventListener('click', () => {
-                     map.resetNorth();
-                 });
+                    document.getElementById('compass').addEventListener('click', () => {
+                        map.resetNorth();
+                    });
 
-                 // Добавляем обработчики событий для кнопок слоев
-                 document.querySelectorAll('.layer-btn').forEach(btn => {
-                     btn.addEventListener('click', () => {
-                         const layerName = btn.dataset.layer;
-                         changeMapStyle(layerName);
-                     });
-                 });
+                    // Добавляем обработчики событий для кнопок слоев
+                    document.querySelectorAll('.layer-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const layerName = btn.dataset.layer;
+                            changeMapStyle(layerName);
+                        });
+                    });
 
-                 // Добавляем обработчики событий для фильтров
-                 document.querySelectorAll('.filter-btn').forEach(btn => {
-                     btn.addEventListener('click', () => {
-                         const filter = btn.dataset.filter;
-                         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                         btn.classList.add('active');
-                         currentFilter = filter;
-                         drawTiles();
-                     });
-                 });
+                    // Добавляем обработчики событий для фильтров
+                    document.querySelectorAll('.filter-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const filter = btn.dataset.filter;
+                            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                            currentFilter = filter;
+                            drawTiles();
+                        });
+                    });
 
-                 // Добавляем обработчик события поиска
-                 document.getElementById('search-button').addEventListener('click', () => {
-                     const searchValue = document.getElementById('search-input').value.trim();
-                     if (searchValue !== '') {
-                         const tile = tileData.find(t => t.id_tile == searchValue);
-                         if (tile) {
-                             map.flyTo({ center: [tile.lng, tile.lat], zoom: 7, essential: true });
-                         } else {
-                             showNotification(`Тайл #${searchValue} не найден`);
-                         }
-                     }
-                 });
+                    // Добавляем обработчик события поиска
+                    document.getElementById('search-button').addEventListener('click', () => {
+                        const searchValue = document.getElementById('search-input').value.trim();
+                        if (searchValue !== '') {
+                            const tile = tileData.find(t => t.id_tile == searchValue);
+                            if (tile) {
+                                map.flyTo({ center: [tile.lng, tile.lat], zoom: 7, essential: true });
+                            } else {
+                                showNotification(`Тайл #${searchValue} не найден`);
+                            }
+                        }
+                    });
 
-                 // Добавляем обработчик события для переключения боковой панели
-                 document.getElementById('toggle-sidebar').addEventListener('click', () => {
-                     const sidebar = document.getElementById('sidebar');
-                     const icon = document.querySelector('#toggle-sidebar i');
-                     sidebar.classList.toggle('collapsed');
-                     if (sidebar.classList.contains('collapsed')) {
-                         icon.className = 'fas fa-chevron-right';
-                     } else {
-                         icon.className = 'fas fa-chevron-left';
-                     }
-                     setTimeout(() => {
-                         if (map) map.resize();
-                     }, 300);
-                 });
+                    // Добавляем обработчик события для переключения боковой панели
+                    document.getElementById('toggle-sidebar').addEventListener('click', () => {
+                        const sidebar = document.getElementById('sidebar');
+                        const icon = document.querySelector('#toggle-sidebar i');
+                        sidebar.classList.toggle('collapsed');
+                        if (sidebar.classList.contains('collapsed')) {
+                            icon.className = 'fas fa-chevron-right';
+                        } else {
+                            icon.className = 'fas fa-chevron-left';
+                        }
+                        setTimeout(() => {
+                            if (map) map.resize();
+                        }, 300);
+                    });
 
-                 // Добавляем обработчик события для избранного
-                 document.getElementById('favorites-list').addEventListener('click', (e) => {
-                     if (e.target.closest('.goto-fav')) {
-                         const tileId = e.target.closest('.goto-fav').dataset.id;
-                         const tile = tileData.find(t => t.id_tile == tileId);
-                         if (tile) {
-                             map.flyTo({ center: [tile.lng, tile.lat], zoom: 7, essential: true });
-                         }
-                     } else if (e.target.closest('.remove-fav')) {
-                         const tileId = e.target.closest('.remove-fav').dataset.id;
-                         saveMark(tileId, 'clear');
-                     }
-                 });
+                    // Добавляем обработчик события для избранного
+                    document.getElementById('favorites-list').addEventListener('click', (e) => {
+                        if (e.target.closest('.goto-fav')) {
+                            const tileId = e.target.closest('.goto-fav').dataset.id;
+                            const tile = tileData.find(t => t.id_tile == tileId);
+                            if (tile) {
+                                map.flyTo({ center: [tile.lng, tile.lat], zoom: 7, essential: true });
+                            }
+                        } else if (e.target.closest('.remove-fav')) {
+                            const tileId = e.target.closest('.remove-fav').dataset.id;
+                            saveMark(tileId, 'clear');
+                        }
+                    });
 
-             } catch (error) {
-                 console.error('Ошибка инициализации карты:', error);
-                 showNotification('Ошибка инициализации карты');
-             }
-         }
+                } catch (error) {
+                    console.error('Ошибка инициализации карты:', error);
+                    showNotification('Ошибка инициализации карты');
+                    reject(error);
+                }
+            });
+        }
 
         function changeMapStyle(styleName) {
             if (!map) return;
@@ -1020,7 +1040,7 @@
 
             const stroke = status === 'ally' ? '#2E7D32' :
                            status === 'enemy' ? '#D32F2F' :
-                           status === 'favorite' ? '#FFA000' :
+                           status === 'favorite' : '#FFA000' :
                            'rgba(255, 255, 255, 0.5)';
 
             const element = document.createElement('div');
