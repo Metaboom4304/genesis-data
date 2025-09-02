@@ -537,13 +537,13 @@
   <script>
     // Конфигурация приложения
     const CONFIG = {
-      API_URL: 'https://genesis-data.onrender.com', // Обновлено
-      MAP_STYLE: 'https://demotiles.maplibre.org/style.json', // Стандартный стиль MapLibre
+      API_URL: 'https://genesis-map-api.onrender.com', // Исправлено
+      MAP_STYLE: 'https://demotiles.maplibre.org/style.json', // Стиль MapLibre
       INITIAL_VIEW: {
         center: [49.25, -123.10],
         zoom: 6
       },
-      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php', // Обновлено без пробела
+      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php', // Исправлено (без пробелов)
       CACHE_TTL: 30 * 60 * 1000 // 30 минут
     };
     // Глобальные переменные
@@ -553,8 +553,10 @@
     let userMarks = {};
     let favorites = [];
     let visibleTiles = new Set();
+    let isInitialLoad = true; // Флаг для отслеживания первой загрузки
     // Инициализация MapLibre
     function initMaplibre() {
+      // maplibregl.accessToken не нужен для MapLibre
       map = new maplibregl.Map({
         container: 'map',
         style: CONFIG.MAP_STYLE,
@@ -589,6 +591,13 @@
         }
       });
       renderTiles();
+      // При первой загрузке не запрашиваем данные снова, они уже загружены
+      if (isInitialLoad) {
+          isInitialLoad = false;
+          return;
+      }
+      // После первой загрузки, при перемещении карты запрашиваем новые данные
+      loadData(); 
     }
     // Визуализация тайлов
     function renderTiles() {
@@ -747,7 +756,7 @@
     // Синхронизация пользователя с API
     async function syncUser(user) {
       try {
-        const response = await fetch(`${CONFIG.API_URL}/api/users/register`, {
+        const response = await fetch(`${CONFIG.API_URL}/api/users/register`, { // Исправлен endpoint
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -761,6 +770,9 @@
         });
         if (response.ok) {
           log('💾 Пользователь синхронизирован с API');
+        } else {
+            const errorText = await response.text();
+            log(`⚠️ Ошибка синхронизации пользователя: ${response.status} ${errorText}`, true);
         }
       } catch (error) {
         log(`⚠️ Ошибка синхронизации пользователя: ${error.message}`, true);
@@ -768,6 +780,7 @@
     }
     // Загрузка данных
     async function loadData() {
+      if (!currentUser) return; // Не загружаем, если нет пользователя
       showLoader(true);
       log('🔄 Загрузка данных...');
       try {
@@ -793,9 +806,18 @@
       if (!currentUser) return;
       try {
         const response = await fetch(`${CONFIG.API_URL}/api/marks/${currentUser.id}`);
-        if (!response.ok) throw new Error('Ошибка загрузки меток');
+        if (!response.ok) {
+            if (response.status === 404) {
+                 log(`📌 У пользователя ${currentUser.id} пока нет меток.`);
+                 userMarks = {};
+                 favorites = [];
+                 return;
+            }
+            throw new Error(`Ошибка HTTP: ${response.status}`);
+        }
         const marks = await response.json();
         userMarks = {};
+        favorites = [];
         marks.forEach(mark => {
           if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
           userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
@@ -811,6 +833,7 @@
         const localMarks = localStorage.getItem(`user_marks_${currentUser.id}`);
         if (localMarks) {
           userMarks = JSON.parse(localMarks);
+          favorites = Object.keys(userMarks).filter(id => userMarks[id].favorite).map(Number);
           log('📌 Использованы локальные метки из хранилища');
         }
       }
@@ -818,6 +841,7 @@
     // Загрузка данных тайлов
     async function loadTileData() {
       try {
+        log('⏬ Загрузка данных с API по границам...');
         // Запрос тайлов по текущим границам карты
         const bounds = map.getBounds();
         const west = bounds.getWest();
@@ -833,7 +857,8 @@
         });
         const response = await fetch(`${CONFIG.API_URL}/api/tiles/bounds?${query}`);
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const errorText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
         const result = await response.json();
         if (result.tiles && Array.isArray(result.tiles)) {
@@ -846,75 +871,36 @@
           log(`✅ Загружено ${tileData.length} тайлов`);
           document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
         } else {
-          throw new Error('Неверный формат данных тайлов');
+          throw new Error('Неверный формат данных тайлов от API');
         }
       } catch (error) {
         log(`⚠️ Ошибка загрузки тайлов: ${error.message}`, true);
-        // Если API недоступен, попробуем загрузить напрямую
-        try {
-          const externalResponse = await fetch(CONFIG.TILE_SERVER);
-          if (!externalResponse.ok) {
-            throw new Error(`HTTP ${externalResponse.status}: ${externalResponse.statusText}`);
-          }
-          const tiles = await externalResponse.json();
-          tileData = Object.values(tiles).map(tile => ({
-            id: tile.id,
-            lng: tile.lng,
-            lat: tile.lat,
-            has_owner: tile.has_owner || 'false'
-          }));
-          log(`✅ Загружено ${tileData.length} тайлов напрямую`);
-          document.getElementById('cache-status').textContent = 'Кеш: ⚠️ Напрямую';
-        } catch (externalError) {
-          log(`⚠️ Ошибка загрузки тайлов напрямую: ${externalError.message}`, true);
-          // Если ничего не работает, создаем демо-данные
-          createDemoData();
-        }
+        document.getElementById('cache-status').textContent = 'Кеш: 🔴 Ошибка';
+        // Не создаем демо-данные, просто сообщаем об ошибке
       }
-    }
-    // Создание демо-данных
-    function createDemoData() {
-      log('🔄 Создание демо-данных...');
-      const refId = 22313;
-      const refLat = 49.25;
-      const refLng = -123.10;
-      const refX = refId % 256;
-      const refY = Math.floor(refId / 256);
-      const degLat = 170/256;
-      const degLng = 360/256;
-      tileData = [];
-      for (let i = 0; i < 500; i++) {
-        const x = i % 256;
-        const y = Math.floor(i / 256);
-        const lat = refLat - (y - refY) * degLat;
-        const lng = refLng + (x - refX) * degLng;
-        tileData.push({
-          id: i,
-          id_tile: i,
-          lat: lat,
-          lng: lng,
-          has_owner: Math.random() > 0.7 ? 'true' : 'false'
-        });
-      }
-      log(`✅ Создано ${tileData.length} демо-тайлов`);
-      document.getElementById('cache-status').textContent = 'Кеш: ⚠️ Демо-данные';
     }
     // Сохранение метки
     async function saveMark(tileId, markType, comment = null) {
+      if (!currentUser) {
+          showToast('Ошибка: Пользователь не авторизован', 'error');
+          return;
+      }
       try {
-        if (currentUser && currentUser.id !== 'test-user') {
-          const response = await fetch(`${CONFIG.API_URL}/api/marks`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              user_id: currentUser.id,
-              tile_id: tileId,
-              mark_type: markType,
-              comment: comment
-            })
-          });
-          if (!response.ok) throw new Error('Ошибка сохранения на сервере');
+        const response = await fetch(`${CONFIG.API_URL}/api/marks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: currentUser.id,
+            tile_id: tileId,
+            mark_type: markType,
+            comment: comment
+          })
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Ошибка HTTP: ${response.status} - ${errorText}`);
         }
+        const result = await response.json();
         // Обновляем локальное состояние
         if (!userMarks[tileId]) userMarks[tileId] = {};
         if (markType === 'clear') {
@@ -927,9 +913,7 @@
           }
         }
         // Сохраняем в локальное хранилище
-        if (currentUser) {
-          localStorage.setItem(`user_marks_${currentUser.id}`, JSON.stringify(userMarks));
-        }
+        localStorage.setItem(`user_marks_${currentUser.id}`, JSON.stringify(userMarks));
         // Обновляем UI
         updateVisibleTiles();
         renderFavorites();
@@ -944,22 +928,30 @@
     function renderFavorites() {
       const favList = document.getElementById('favorites-list');
       if (!favList) return;
-      favList.innerHTML = favorites.map(id => {
+      favList.innerHTML = '';
+      if (favorites.length === 0) {
+          favList.innerHTML = '<div class="favorite-item">Нет избранных тайлов</div>';
+          return;
+      }
+      favorites.forEach(id => {
         const tile = tileData.find(t => t.id === id);
-        return `
-          <div class="favorite-item">
-            <span>Тайл #${id}</span>
-            <div class="favorite-actions">
-              <button class="favorite-btn" data-id="${id}" data-action="goto">
-                <i class="material-icons">navigation</i>
-              </button>
-              <button class="favorite-btn" data-id="${id}" data-action="remove">
-                <i class="material-icons">close</i>
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('');
+        if (tile) { // Показываем только если тайл видим
+            const item = document.createElement('div');
+            item.className = 'favorite-item';
+            item.innerHTML = `
+              <span>Тайл #${id}</span>
+              <div class="favorite-actions">
+                <button class="favorite-btn" data-id="${id}" data-action="goto">
+                  <i class="material-icons">navigation</i>
+                </button>
+                <button class="favorite-btn" data-id="${id}" data-action="remove">
+                  <i class="material-icons">close</i>
+                </button>
+              </div>
+            `;
+            favList.appendChild(item);
+        }
+      });
       // Добавляем обработчики событий
       document.querySelectorAll('.favorite-btn[data-action="goto"]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1016,6 +1008,7 @@
         document.getElementById('login-container').style.display = 'none';
         currentUser = { id: 'test-user', first_name: 'Тестовый пользователь' };
         log('👤 Используется тестовый пользователь');
+        loadData(); // Загружаем данные после "входа"
       });
       // Поиск
       document.getElementById('search').addEventListener('input', (e) => {
@@ -1048,12 +1041,15 @@
       });
       // Снимок
       document.getElementById('screenshot-btn').addEventListener('click', () => {
-        html2canvas(document.querySelector('#app')).then(canvas => {
-          const link = document.createElement('a');
-          link.href = canvas.toDataURL('image/png');
-          link.download = `genesis-map-${new Date().toISOString().slice(0, 19)}.png`;
-          link.click();
-        });
+        // html2canvas не подключен, отключаем или подключаем
+        showToast('Функция скриншота временно недоступна', 'warning');
+        // Если нужно, подключите html2canvas:
+        // html2canvas(document.querySelector('#app')).then(canvas => {
+        //   const link = document.createElement('a');
+        //   link.href = canvas.toDataURL('image/png');
+        //   link.download = `genesis-map-${new Date().toISOString().slice(0, 19)}.png`;
+        //   link.click();
+        // });
       });
       // Сворачивание панели
       document.getElementById('toggle-panel').addEventListener('click', () => {
@@ -1090,17 +1086,15 @@
         const debug = document.getElementById('debug');
         debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
       });
-      // Тема
+      // Тема (оставлена как есть)
       document.getElementById('theme-toggle').addEventListener('click', () => {
         const isDark = document.body.classList.contains('dark-theme');
         document.body.classList.toggle('dark-theme', !isDark);
         document.body.classList.toggle('light-theme', isDark);
         const icon = document.querySelector('#theme-toggle i');
         icon.textContent = isDark ? 'dark_mode' : 'light_mode';
-        // Сохраняем настройки темы
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
       });
-      // Загрузка темы из localStorage
       const savedTheme = localStorage.getItem('theme') || 'dark';
       document.body.classList.add(savedTheme + '-theme');
       const themeIcon = document.querySelector('#theme-toggle i');
