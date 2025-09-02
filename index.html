@@ -5,8 +5,12 @@
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <!-- Mapbox GL JS -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   
   <style>
     * {
@@ -15,240 +19,382 @@
       padding: 0;
     }
     
-    html, body {
-      height: 100%;
-      background: #000;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      overflow: hidden;
-      color: #fff;
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --dark: #1f2937;
+      --light: #f9fafb;
+      --gray: #6b7280;
+      --background: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.8);
+      --card-border: rgba(255, 255, 255, 0.1);
     }
     
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--background);
+      color: var(--light);
+      overflow: hidden;
+      height: 100vh;
+    }
+    
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+    }
+    
+    /* Header Styles */
+    .header {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--card-border);
+      z-index: 10;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo-icon {
+      font-size: 24px;
+      color: var(--primary);
+    }
+    
+    .logo-text {
+      font-weight: 700;
+      font-size: 18px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .header-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    /* Map Container */
+    #map {
+      flex: 1;
+      width: 100%;
+    }
+    
+    /* Control Panel */
+    .control-panel {
+      position: absolute;
+      top: 80px;
+      left: 20px;
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 16px;
+      width: 320px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--card-border);
+      z-index: 9;
+      transition: all 0.3s ease;
+    }
+    
+    .panel-collapsed {
+      height: 50px;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    .panel-title {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    
+    .toggle-panel {
+      background: none;
+      border: none;
+      color: var(--gray);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    
+    .toggle-panel:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Search */
+    .search-container {
+      position: relative;
+      margin-bottom: 16px;
+    }
+    
+    .search-input {
+      width: 100%;
+      padding: 10px 40px 10px 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--light);
+      font-size: 14px;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    }
+    
+    .search-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--gray);
+    }
+    
+    /* Filter Section */
+    .filter-section {
+      margin-bottom: 16px;
+    }
+    
+    .filter-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--gray);
+    }
+    
+    .filter-select {
+      width: 100%;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--light);
+      font-size: 14px;
+    }
+    
+    /* Action Buttons */
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .btn {
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+    
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--light);
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Favorites */
+    .favorites-section {
+      margin-top: 16px;
+    }
+    
+    .favorites-title {
+      font-size: 14px;
+      color: var(--gray);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .favorites-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .favorite-item {
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+    
+    .favorite-actions {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .favorite-btn {
+      background: none;
+      border: none;
+      color: var(--gray);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    
+    .favorite-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--light);
+    }
+    
+    /* Map Controls */
+    .map-controls {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9;
+    }
+    
+    .control-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--card-border);
+      color: var(--light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Login Screen */
     #login-container {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
+      background: var(--background);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.9);
       z-index: 1000;
-      text-align: center;
       padding: 20px;
     }
     
-    #login-container h1 {
+    .login-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+    }
+    
+    .login-title {
+      font-size: 24px;
+      font-weight: 700;
       margin-bottom: 20px;
-      font-size: 2.2rem;
-      color: #4dabf7;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     
-    #login-button {
-      margin-top: 30px;
-      padding: 15px 30px;
-      font-size: 1.2rem;
-      background: linear-gradient(135deg, #1971c2, #1c7ed6);
+    .login-subtitle {
+      color: var(--gray);
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+    
+    .login-btn {
+      padding: 14px 28px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       color: white;
+      font-weight: 600;
+      font-size: 16px;
       cursor: pointer;
-      font-weight: bold;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(25, 113, 194, 0.4);
-    }
-    
-    #login-button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(25, 113, 194, 0.6);
-    }
-    
-    #login-button:active {
-      transform: translateY(1px);
-    }
-    
-    #panel {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: rgba(20, 20, 30, 0.9);
-      color: #fff;
-      display: flex;
-      flex-wrap: wrap;
+      transition: all 0.3s;
+      display: inline-flex;
       align-items: center;
-      padding: 12px;
-      gap: 15px;
-      z-index: 900;
-      backdrop-filter: blur(5px);
-      border-bottom: 1px solid #2c3e50;
+      gap: 10px;
     }
     
-    #map-title {
-      font-size: 1.4rem;
-      font-weight: bold;
-      color: #74c0fc;
-      margin-right: 20px;
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
     }
     
-    .search-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-      background: rgba(40, 40, 50, 0.8);
-      border-radius: 6px;
-      padding: 5px;
-    }
-    
-    #search {
-      width: 150px;
-      padding: 8px 30px 8px 12px;
-      background: transparent;
-      border: 1px solid #495057;
-      border-radius: 4px;
-      color: #e9ecef;
-      font-size: 1rem;
-    }
-    
-    #search:focus {
-      outline: none;
-      border-color: #4dabf7;
-      box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.3);
-    }
-    
-    #search-clear {
-      position: absolute;
-      right: 10px;
-      cursor: pointer;
-      color: #adb5bd;
-      font-size: 20px;
-      transition: color 0.2s;
-    }
-    
-    #search-clear:hover {
-      color: #ff6b6b;
-    }
-    
-    #goto-btn, #reset, #screenshot-btn {
-      padding: 8px 15px;
-      background: #3b5bdb;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.95rem;
-      transition: background 0.2s;
-    }
-    
-    #goto-btn:hover, #reset:hover, #screenshot-btn:hover {
-      background: #364fc7;
-    }
-    
-    #status-filter {
-      padding: 8px;
-      background: #343a40;
-      color: #e9ecef;
-      border: 1px solid #495057;
-      border-radius: 4px;
-      min-width: 150px;
-    }
-    
-    #favorites-container {
-      background: rgba(30, 30, 40, 0.8);
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 10px;
-      flex: 1 0 100%;
-    }
-    
-    #favorites-container h4 {
-      margin-bottom: 10px;
-      color: #ffd43b;
-    }
-    
-    #favorites-list {
-      list-style: none;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    
-    #favorites-list li {
-      padding: 8px;
-      background: rgba(50, 50, 60, 0.6);
-      margin-bottom: 6px;
-      border-radius: 4px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    #favorites-list button {
-      padding: 4px 8px;
-      background: #495057;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      cursor: pointer;
-      margin-left: 5px;
-    }
-    
-    #favorites-list button:hover {
-      background: #5c636a;
-    }
-    
-    #map {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 500;
-    }
-    
-    #toggle-panel {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 910;
-      background: #343a40;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 8px 12px;
-      cursor: pointer;
-    }
-    
-    #layer-select-small {
-      position: absolute;
-      top: 50px;
-      right: 10px;
-      z-index: 910;
-      background: #343a40;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 6px;
-    }
-    
+    /* Debug Panel */
     #debug {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(0, 20, 10, 0.85);
-      color: #20c997;
+      background: rgba(15, 23, 42, 0.95);
+      color: #10b981;
       font-size: 12px;
       padding: 12px;
-      z-index: 9999;
+      z-index: 1001;
       max-height: 40vh;
       overflow: auto;
-      font-family: 'Courier New', monospace;
-      border-top: 1px solid #20c997;
+      font-family: 'Fira Code', monospace;
+      border-top: 1px solid var(--card-border);
+      display: none;
     }
     
     .debug-section {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     
     #debug-log {
@@ -256,239 +402,477 @@
       overflow: auto;
       margin-top: 10px;
       padding-top: 10px;
-      border-top: 1px dashed #20c997;
+      border-top: 1px dashed var(--card-border);
     }
     
-    .tile-label {
-      background: rgba(0, 0, 0, 0.7);
-      padding: 3px 6px;
-      border-radius: 3px;
-      font-size: 10px;
-      font-weight: bold;
-      color: white;
-      text-shadow: 0 1px 1px black;
-    }
-    
+    /* Loader */
     .loader {
       display: none;
-      position: fixed;
+      position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      z-index: 2000;
-      background: rgba(0, 0, 0, 0.8);
+      z-index: 1002;
+      background: var(--card-bg);
       padding: 20px;
-      border-radius: 10px;
+      border-radius: 12px;
       text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
     }
     
     .loader-spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid rgba(255, 255, 255, 0.3);
-      border-top: 5px solid #4dabf7;
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top: 3px solid var(--primary);
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin: 0 auto;
+      margin: 0 auto 15px;
     }
     
     .loader-text {
-      margin-top: 15px;
-      text-align: center;
-      font-size: 1.1rem;
-      color: white;
+      color: var(--light);
+      font-size: 14px;
     }
     
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-
-    .collapsed {
-      max-height: 50px !important;
-      overflow: hidden;
+    
+    /* Toast Notifications */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 16px;
+      background: var(--card-bg);
+      color: var(--light);
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      border-left: 4px solid var(--primary);
+      z-index: 1003;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+    
+    .toast.show {
+      transform: translateX(0);
+    }
+    
+    .toast-error {
+      border-left-color: var(--danger);
+    }
+    
+    .toast-success {
+      border-left-color: var(--secondary);
+    }
+    
+    .toast-warning {
+      border-left-color: var(--warning);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .control-panel {
+        width: calc(100% - 40px);
+        left: 20px;
+        right: 20px;
+      }
+      
+      .header {
+        padding: 12px 16px;
+      }
+      
+      .logo-text {
+        font-size: 16px;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="login-container">
-    <h1>Добро пожаловать в GENESIS WAR MAP</h1>
-    <button id="login-button">🔐 Войти через Telegram</button>
-  </div>
-
-  <div id="panel">
-    <strong id="map-title">🧭 GENESIS WAR MAP</strong>
-    
-    <div class="search-wrapper">
-      <input type="text" id="search" placeholder="Тайл-ID" />
-      <span id="search-clear">×</span>
-      <button id="goto-btn">➡️ Перейти</button>
+  <div id="app">
+    <!-- Login Screen -->
+    <div id="login-container">
+      <div class="login-card">
+        <h1 class="login-title">GENESIS WAR MAP</h1>
+        <p class="login-subtitle">Стратегическая карта для тактического планирования и координации</p>
+        <button id="login-button" class="login-btn">
+          <i class="material-icons">lock</i>
+          Войти через Telegram
+        </button>
+      </div>
     </div>
-    
-    <label>
-      🎯 Метка:
-      <select id="status-filter">
-        <option value="">— Все —</option>
-        <option value="ally">🟩 Союзник</option>
-        <option value="enemy">🟥 Враг</option>
-        <option value="favorite">⭐️ Избранное</option>
-        <option value="clear">⚪️ Без метки</option>
-      </select>
-    </label>
-    
-    <button id="reset">♻️ Сбросить</button>
-    <button id="screenshot-btn">📸 Снимок</button>
-    
-    <div id="favorites-container">
-      <h4>⭐ Избранное</h4>
-      <ul id="favorites-list"></ul>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <i class="material-icons logo-icon">public</i>
+        <span class="logo-text">GENESIS WAR MAP</span>
+      </div>
+      <div class="header-controls">
+        <button class="control-btn" id="debug-toggle">
+          <i class="material-icons">bug_report</i>
+        </button>
+        <button class="control-btn" id="theme-toggle">
+          <i class="material-icons">dark_mode</i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Control Panel -->
+    <div class="control-panel" id="control-panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Управление картой</h3>
+        <button class="toggle-panel" id="toggle-panel">
+          <i class="material-icons">keyboard_arrow_up</i>
+        </button>
+      </div>
+      
+      <div class="search-container">
+        <input type="text" class="search-input" id="search" placeholder="Поиск по ID тайла..." />
+        <i class="material-icons search-icon">search</i>
+      </div>
+      
+      <div class="filter-section">
+        <label class="filter-label">Фильтр по меткам</label>
+        <select class="filter-select" id="status-filter">
+          <option value="">Все тайлы</option>
+          <option value="ally">🟩 Союзники</option>
+          <option value="enemy">🟥 Враги</option>
+          <option value="favorite">⭐ Избранное</option>
+          <option value="clear">⚪ Без метки</option>
+        </select>
+      </div>
+      
+      <div class="action-buttons">
+        <button class="btn btn-secondary" id="reset">
+          <i class="material-icons">refresh</i>
+          Сбросить
+        </button>
+        <button class="btn btn-primary" id="screenshot-btn">
+          <i class="material-icons">photo_camera</i>
+          Снимок
+        </button>
+      </div>
+      
+      <div class="favorites-section">
+        <div class="favorites-title">
+          <i class="material-icons">star</i>
+          Избранные тайлы
+        </div>
+        <div class="favorites-list" id="favorites-list">
+          <!-- Favorites will be populated here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Map Controls -->
+    <div class="map-controls">
+      <button class="control-btn" id="zoom-in">
+        <i class="material-icons">add</i>
+      </button>
+      <button class="control-btn" id="zoom-out">
+        <i class="material-icons">remove</i>
+      </button>
+      <button class="control-btn" id="locate-me">
+        <i class="material-icons">my_location</i>
+      </button>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader" id="loader">
+      <div class="loader-spinner"></div>
+      <div class="loader-text">Загрузка данных...</div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Debug Panel -->
+    <div id="debug">
+      <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
+      <div class="debug-section" id="user-status">Пользователь: ⏳</div>
+      <div class="debug-section" id="map-status">Карта: ⏳</div>
+      <div class="debug-section" id="api-status">API: ⏳</div>
+      <div class="debug-section" id="cache-status">Кеш: ⏳</div>
+      <div class="debug-section" id="error-log">Ошибки: ⏳</div>
+      <div id="debug-log"></div>
     </div>
   </div>
 
-  <div id="map"></div>
-  
-  <button id="toggle-panel">🔽</button>
-  <select id="layer-select-small">
-    <option value="neutral">N</option>
-    <option value="world">W</option>
-    <option value="satellite">S</option>
-  </select>
-  
-  <div class="loader" id="loader">
-    <div class="loader-spinner"></div>
-    <div class="loader-text">Загрузка данных...</div>
-  </div>
-
-  <div id="debug">
-    <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
-    <div class="debug-section" id="user-status">Пользователь: ⏳</div>
-    <div class="debug-section" id="map-status">Карта: ⏳</div>
-    <div class="debug-section" id="api-status">API: ⏳</div>
-    <div class="debug-section" id="cache-status">Кеш: ⏳</div>
-    <div class="debug-section" id="error-log">Ошибки: ⏳</div>
-    <div id="debug-log"></div>
-  </div>
-
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  
   <script>
-    // Конфигурация
-    const API_URL = 'https://genesis-map-api.onrender.com'; // ЗАМЕНИТЕ на ваш реальный URL сервера
-    const degLat = 170/256, degLng = 360/256;
-    const CACHE_TTL = 30 * 60 * 1000; // 30 минут
+    // Конфигурация приложения
+    const CONFIG = {
+      API_URL: 'https://your-api-url.onrender.com', // Замените на ваш URL
+      MAPBOX_TOKEN: 'pk.your-mapbox-token', // Замените на ваш Mapbox токен
+      MAP_STYLE: 'mapbox://styles/mapbox/dark-v11',
+      INITIAL_VIEW: {
+        center: [49.25, -123.10],
+        zoom: 6
+      },
+      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php',
+      CACHE_TTL: 30 * 60 * 1000 // 30 минут
+    };
 
     // Глобальные переменные
-    let map, gridLayer, tileLayer;
-    let tileData = [];
-    let tileMarkers = {};
+    let map;
     let currentUser = null;
+    let tileData = [];
     let userMarks = {};
     let favorites = [];
+    let visibleTiles = new Set();
 
-    // Элементы UI
-    const loader = document.getElementById('loader');
-    const debugLog = document.getElementById('debug-log');
-
-    // Логирование в отладочную панель
-    function log(message, isError) {
-      const now = new Date();
-      const timestamp = '[' + now.toLocaleTimeString() + ']';
-      const logEntry = document.createElement('div');
+    // Инициализация Mapbox
+    function initMapbox() {
+      mapboxgl.accessToken = CONFIG.MAPBOX_TOKEN;
       
-      logEntry.textContent = timestamp + ' ' + message;
-      if (isError) {
-        logEntry.style.color = '#ff6b6b';
-      }
+      map = new mapboxgl.Map({
+        container: 'map',
+        style: CONFIG.MAP_STYLE,
+        center: CONFIG.INITIAL_VIEW.center,
+        zoom: CONFIG.INITIAL_VIEW.zoom,
+        attributionControl: false
+      });
       
-      debugLog.appendChild(logEntry);
-      debugLog.scrollTop = debugLog.scrollHeight;
+      // Добавляем элементы управления
+      map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+      map.addControl(new mapboxgl.AttributionControl({
+        compact: true
+      }));
       
-      if (isError) {
-        console.error(message);
-        document.getElementById('error-log').textContent = 'Ошибки: 🔴 ' + message.substring(0, 50) + '...';
-      } else {
-        console.log(message);
-      }
+      // Обработчики событий карты
+      map.on('load', () => {
+        log('🗺️ Карта Mapbox загружена');
+        document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
+        
+        // Загружаем данные после инициализации карты
+        loadData();
+      });
+      
+      map.on('moveend', updateVisibleTiles);
+      map.on('zoomend', updateVisibleTiles);
     }
 
-    // Показать/скрыть лоадер
-    function showLoader(visible) {
-      loader.style.display = visible ? 'block' : 'none';
+    // Обновление видимых тайлов
+    function updateVisibleTiles() {
+      if (!map || !tileData.length) return;
+      
+      const bounds = map.getBounds();
+      visibleTiles.clear();
+      
+      // Фильтруем тайлы в пределах видимой области
+      tileData.forEach(tile => {
+        if (bounds.contains([tile.lng, tile.lat])) {
+          visibleTiles.add(tile.id);
+        }
+      });
+      
+      renderTiles();
     }
 
-    // Проверка Telegram WebApp
-    function initTelegram() {
-      const tg = window.Telegram ? window.Telegram.WebApp : null;
+    // Визуализация тайлов
+    function renderTiles() {
+      // Удаляем существующие слои если есть
+      if (map.getLayer('tiles-layer')) {
+        map.removeLayer('tiles-layer');
+      }
+      if (map.getSource('tiles-source')) {
+        map.removeSource('tiles-source');
+      }
+      
+      // Создаем GeoJSON для видимых тайлов
+      const features = tileData
+        .filter(tile => visibleTiles.has(tile.id))
+        .map(tile => {
+          const status = getUserMarkStatus(tile.id);
+          const isFavorite = favorites.includes(tile.id);
+          
+          return {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [tile.lng, tile.lat]
+            },
+            properties: {
+              id: tile.id,
+              status: status,
+              isFavorite: isFavorite,
+              owned: tile.has_owner === 'true'
+            }
+          };
+        });
+      
+      // Добавляем источник данных
+      map.addSource('tiles-source', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: features
+        }
+      });
+      
+      // Добавляем слой для отображения
+      map.addLayer({
+        id: 'tiles-layer',
+        type: 'circle',
+        source: 'tiles-source',
+        paint: {
+          'circle-radius': [
+            'interpolate', ['linear'], ['zoom'],
+            3, 3,
+            10, 8
+          ],
+          'circle-color': [
+            'case',
+            ['==', ['get', 'status'], 'ally'], '#10b981',
+            ['==', ['get', 'status'], 'enemy'], '#ef4444',
+            ['==', ['get', 'status'], 'favorite'], '#f59e0b',
+            ['==', ['get', 'owned'], true], '#3b82f6',
+            '#6b7280'
+          ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': [
+            'case',
+            ['==', ['get', 'status'], 'ally'], '#059669',
+            ['==', ['get', 'status'], 'enemy'], '#dc2626',
+            ['==', ['get', 'status'], 'favorite'], '#d97706',
+            ['==', ['get', 'owned'], true], '#1d4ed8',
+            '#4b5563'
+          ]
+        }
+      });
+      
+      // Добавляем всплывающие подсказки
+      map.on('click', 'tiles-layer', (e) => {
+        if (e.features.length > 0) {
+          const tileId = e.features[0].properties.id;
+          showTilePopup(tileId, e.lngLat);
+        }
+      });
+      
+      // Изменение курсора при наведении
+      map.on('mouseenter', 'tiles-layer', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      
+      map.on('mouseleave', 'tiles-layer', () => {
+        map.getCanvas().style.cursor = '';
+      });
+    }
+
+    // Показ всплывающего окна тайла
+    function showTilePopup(tileId, lngLat) {
+      const tile = tileData.find(t => t.id === tileId);
+      if (!tile) return;
+      
+      const status = getUserMarkStatus(tileId);
+      const isFavorite = favorites.includes(tileId);
+      
+      const popupContent = `
+        <div class="popup-content">
+          <h3>Тайл #${tileId}</h3>
+          <p>Статус: ${tile.has_owner === 'true' ? 'Занят' : 'Свободен'}</p>
+          <p>Метка: ${status || '—'}</p>
+          <div class="popup-actions">
+            <button class="mark-btn" data-id="${tileId}" data-type="ally">🟩 Союзник</button>
+            <button class="mark-btn" data-id="${tileId}" data-type="enemy">🟥 Враг</button>
+            <button class="mark-btn" data-id="${tileId}" data-type="favorite">⭐ Избранное</button>
+            <button class="mark-btn" data-id="${tileId}" data-type="clear">⚪ Сброс</button>
+          </div>
+        </div>
+      `;
+      
+      const popup = new mapboxgl.Popup()
+        .setLngLat(lngLat)
+        .setHTML(popupContent)
+        .addTo(map);
+      
+      // Добавляем обработчики событий после отображения popup
+      setTimeout(() => {
+        document.querySelectorAll('.mark-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            const type = btn.dataset.type;
+            saveMark(id, type);
+            popup.remove();
+          });
+        });
+      }, 100);
+    }
+
+    // Получение статуса метки пользователя
+    function getUserMarkStatus(tileId) {
+      const marks = userMarks[tileId] || {};
+      if (marks.ally) return 'ally';
+      if (marks.enemy) return 'enemy';
+      if (marks.favorite) return 'favorite';
+      return '';
+    }
+
+    // Инициализация приложения
+    function initApp() {
+      initMapbox();
+      initEventListeners();
+      checkTelegramAuth();
+    }
+
+    // Проверка аутентификации Telegram
+    function checkTelegramAuth() {
+      const tg = window.Telegram?.WebApp;
       
       if (tg) {
         tg.ready();
-        log('🤖 Telegram WebApp готов');
-        document.getElementById('tg-status').textContent = 'Telegram WebApp: ✅';
+        tg.expand();
         
-        return tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+          currentUser = user;
+          document.getElementById('login-container').style.display = 'none';
+          document.getElementById('user-status').textContent = `Пользователь: ✅ ${user.first_name}`;
+          log(`👤 Пользователь: ${user.first_name} (${user.id})`);
+          
+          // Синхронизируем пользователя с API
+          syncUser(user);
+        }
+      } else {
+        log('Telegram WebApp не обнаружен, работаем в автономном режиме');
+        document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
+        
+        // Для разработки - показываем карту без аутентификации
+        document.getElementById('login-container').style.display = 'none';
+        currentUser = { id: 'test-user', first_name: 'Тестовый пользователь' };
       }
-      
-      log('Telegram WebApp не обнаружен, работаем в автономном режиме');
-      document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
-      return null;
     }
 
-    // Инициализация карты
-    function initMap(user) {
+    // Синхронизация пользователя с API
+    async function syncUser(user) {
       try {
-        currentUser = user || { id: 'test-user', first_name: 'Тестовый пользователь' };
-        document.getElementById('login-container').style.display = 'none';
-        document.body.classList.add('logged-in');
-        
-        log('👤 Пользователь: ' + currentUser.first_name + ' (' + currentUser.id + ')');
-        document.getElementById('user-status').textContent = 'Пользователь: ✅ ' + currentUser.first_name;
-        
-        // Создаем карту
-        map = L.map('map', {
-          center: [49.25, -123.10],
-          zoom: 6,
-          minZoom: 3,
-          maxZoom: 10,
-          attributionControl: false,
-          zoomControl: false
+        const response = await fetch(`${CONFIG.API_URL}/api/users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            telegram_id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name || '',
+            username: user.username || ''
+          })
         });
         
-        L.control.zoom({ position: 'bottomleft' }).addTo(map);
-        log('🗺️ Карта создана');
-        document.getElementById('map-status').textContent = 'Карта: ✅ Инициализирована';
-        
-        // Базовые слои
-        const layers = {
-          neutral: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'),
-          world: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
-          satellite: L.tileLayer(
-            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            { attribution: 'Esri' }
-          )
-        };
-        
-        layers.neutral.addTo(map);
-        
-        document.getElementById('layer-select-small').addEventListener('change', function(e) {
-          Object.values(layers).forEach(function(l) { map.removeLayer(l); });
-          layers[e.target.value].addTo(map);
-        });
-        
-        // Группы слоев
-        gridLayer = L.layerGroup().addTo(map);
-        tileLayer = L.layerGroup().addTo(map);
-        
-        // Загрузка данных
-        loadData();
-        
-        // Инициализация событий
-        initEventListeners();
-        
+        if (response.ok) {
+          log('💾 Пользователь синхронизирован с API');
+        }
       } catch (error) {
-        log('⚠️ Ошибка инициализации карты: ' + error.message, true);
-        alert('Критическая ошибка при инициализации карты');
+        log(`⚠️ Ошибка синхронизации пользователя: ${error.message}`, true);
       }
     }
 
@@ -498,13 +882,40 @@
       log('🔄 Загрузка данных...');
       
       try {
-        // Загрузка пользовательских данных
-        const userResponse = await fetch(API_URL + '/api/marks/' + currentUser.id);
-        if (!userResponse.ok) throw new Error('Ошибка загрузки меток');
+        // Загрузка пользовательских меток
+        await loadUserMarks();
         
-        const marks = await userResponse.json();
+        // Загрузка данных тайлов
+        await loadTileData();
+        
+        // Обновление видимой области
+        updateVisibleTiles();
+        
+        document.getElementById('api-status').textContent = 'API: ✅ Работает';
+        log('✅ Все данные успешно загружены');
+        showToast('Данные успешно загружены', 'success');
+        
+      } catch (error) {
+        log(`⚠️ Ошибка загрузки данных: ${error.message}`, true);
+        document.getElementById('api-status').textContent = 'API: 🔴 Ошибка';
+        showToast('Ошибка загрузки данных', 'error');
+      } finally {
+        showLoader(false);
+      }
+    }
+
+    // Загрузка пользовательских меток
+    async function loadUserMarks() {
+      if (!currentUser) return;
+      
+      try {
+        const response = await fetch(`${CONFIG.API_URL}/api/marks/${currentUser.id}`);
+        if (!response.ok) throw new Error('Ошибка загрузки меток');
+        
+        const marks = await response.json();
         userMarks = {};
-        marks.forEach(function(mark) {
+        
+        marks.forEach(mark => {
           if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
           userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
           
@@ -513,79 +924,94 @@
           }
         });
         
-        log('📌 Загружено ' + marks.length + ' пользовательских меток');
+        log(`📌 Загружено ${marks.length} пользовательских меток`);
+        renderFavorites();
         
-        // Загрузка кеша тайлов
-        const cacheResponse = await fetch(API_URL + '/api/tiles-cache');
-        if (!cacheResponse.ok) throw new Error('Ошибка загрузки кеша');
+      } catch (error) {
+        log(`⚠️ Ошибка загрузки меток: ${error.message}`, true);
+        // Используем локальное хранилище как запасной вариант
+        const localMarks = localStorage.getItem(`user_marks_${currentUser.id}`);
+        if (localMarks) {
+          userMarks = JSON.parse(localMarks);
+          log('📌 Использованы локальные метки из хранилища');
+        }
+      }
+    }
+
+    // Загрузка данных тайлов
+    async function loadTileData() {
+      try {
+        // Сначала пробуем загрузить из кеша API
+        const cacheResponse = await fetch(`${CONFIG.API_URL}/api/tiles-cache`);
         
-        const cache = await cacheResponse.json();
-        if (cache && cache.data) {
-          const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
-          if (cacheAge < CACHE_TTL) {
-            tileData = Object.values(cache.data);
-            log('✅ Использован кеш тайлов (' + tileData.length + ' записей)');
-            document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
+        if (cacheResponse.ok) {
+          const cache = await cacheResponse.json();
+          if (cache && cache.data) {
+            const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
+            if (cacheAge < CONFIG.CACHE_TTL) {
+              tileData = Object.values(cache.data);
+              log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
+              document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
+              return;
+            }
           }
         }
         
-        // Если кеш устарел или отсутствует
-        if (!tileData.length) {
-          log('⏬ Загрузка данных с основного сервера...');
-          const tileResponse = await fetch(API_URL + '/api/proxy/tile-info');
-          if (!tileResponse.ok) throw new Error('Ошибка загрузки тайлов');
-          
-          const tiles = await tileResponse.json();
-          tileData = Object.values(tiles);
-          
-          // Сохраняем в кеш
-          await fetch(API_URL + '/api/tiles-cache', {
+        // Если кеш устарел или недоступен, загружаем напрямую
+        log('⏬ Загрузка данных с основного сервера...');
+        const tileResponse = await fetch(CONFIG.TILE_SERVER);
+        
+        if (!tileResponse.ok) {
+          throw new Error(`Ошибка HTTP: ${tileResponse.status}`);
+        }
+        
+        const tiles = await tileResponse.json();
+        tileData = Object.values(tiles);
+        
+        // Сохраняем в кеш API
+        try {
+          await fetch(`${CONFIG.API_URL}/api/tiles-cache`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ data: tiles })
           });
-          
-          log('💾 Сохранен новый кеш (' + tileData.length + ' тайлов)');
-          document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
+          log('💾 Кеш обновлен на сервере');
+        } catch (cacheError) {
+          log('⚠️ Не удалось обновить кеш на сервере', true);
         }
         
-        // Инициализация координат
-        initTileCoordinates();
-        
-        // Первичная отрисовка
-        drawGrid();
-        drawTiles();
-        renderFavorites();
-        
-        document.getElementById('api-status').textContent = 'API: ✅ Работает';
-        log('✅ Все данные успешно загружены');
+        log(`✅ Загружено ${tileData.length} тайлов`);
+        document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
         
       } catch (error) {
-        log('⚠️ Ошибка загрузки данных: ' + error.message, true);
-        document.getElementById('api-status').textContent = 'API: 🔴 Ошибка';
-        
-        // Запасной вариант - создаем базовые данные
-        createFallbackData();
-      } finally {
-        showLoader(false);
+        log(`⚠️ Ошибка загрузки тайлов: ${error.message}`, true);
+        // Создаем демо-данные для отображения
+        createDemoData();
       }
     }
 
-    // Создание запасных данных при недоступности API
-    function createFallbackData() {
-      log('🔄 Создание базовых данных...');
+    // Создание демо-данных
+    function createDemoData() {
+      log('🔄 Создание демо-данных...');
       
-      // Создаем базовые тайлы
-      const refId = 22313, refLat = 49.25, refLng = -123.10;
-      const refX = refId % 256, refY = Math.floor(refId / 256);
+      const refId = 22313;
+      const refLat = 49.25;
+      const refLng = -123.10;
+      const refX = refId % 256;
+      const refY = Math.floor(refId / 256);
+      const degLat = 170/256;
+      const degLng = 360/256;
       
-      for (let i = 0; i < 1000; i++) {
+      tileData = [];
+      
+      for (let i = 0; i < 500; i++) {
         const x = i % 256;
         const y = Math.floor(i / 256);
         const lat = refLat - (y - refY) * degLat;
         const lng = refLng + (x - refX) * degLng;
         
         tileData.push({
+          id: i,
           id_tile: i,
           lat: lat,
           lng: lng,
@@ -593,191 +1019,34 @@
         });
       }
       
-      log('✅ Создано ' + tileData.length + ' базовых тайлов');
-      drawGrid();
-      drawTiles();
-    }
-
-    // Инициализация координат тайлов
-    function initTileCoordinates() {
-      const refId = 22313, refLat = 49.25, refLng = -123.10;
-      const refX = refId % 256, refY = Math.floor(refId / 256);
-      
-      tileData.forEach(function(t) {
-        const x = t.id_tile % 256;
-        const y = Math.floor(t.id_tile / 256);
-        t.lat = refLat - (y - refY) * degLat;
-        t.lng = refLng + (x - refX) * degLng;
-      });
-    }
-
-    // Отрисовка сетки
-    function drawGrid() {
-      gridLayer.clearLayers();
-      const bounds = map.getBounds();
-      
-      tileData.forEach(function(t) {
-        if (!bounds.contains([t.lat, t.lng])) return;
-        
-        const tileBounds = L.latLngBounds(
-          [t.lat - degLat/2, t.lng - degLng/2],
-          [t.lat + degLat/2, t.lng + degLng/2]
-        );
-        
-        L.rectangle(tileBounds, {
-          stroke: true,
-          weight: 0.6,
-          color: '#555',
-          fill: false
-        }).addTo(gridLayer);
-      });
-    }
-
-    // Отрисовка тайлов
-    function drawTiles() {
-      tileLayer.clearLayers();
-      Object.values(tileMarkers).forEach(function(marker) { tileLayer.removeLayer(marker); });
-      tileMarkers = {};
-      
-      const filter = document.getElementById('status-filter').value;
-      const searchValue = document.getElementById('search').value.trim();
-      const bounds = map.getBounds();
-      
-      tileData.forEach(function(t) {
-        // Фильтрация
-        const tileMarks = userMarks[t.id_tile] || {};
-        const status = 
-          tileMarks.ally ? 'ally' :
-          tileMarks.enemy ? 'enemy' :
-          tileMarks.favorite ? 'favorite' : '';
-        
-        if (filter === 'ally' && !tileMarks.ally) return;
-        if (filter === 'enemy' && !tileMarks.enemy) return;
-        if (filter === 'favorite' && !tileMarks.favorite) return;
-        if (filter === 'clear' && status) return;
-        if (searchValue && String(t.id_tile) !== searchValue) return;
-        if (!bounds.contains([t.lat, t.lng])) return;
-        
-        // Создание маркера
-        tileMarkers[t.id_tile] = createTileMarker(t, tileMarks);
-        tileLayer.addLayer(tileMarkers[t.id_tile]);
-      });
-    }
-
-    // Создание маркера для тайла
-    function createTileMarker(t, marks) {
-      const tileBounds = L.latLngBounds(
-        [t.lat - degLat/2, t.lng - degLng/2],
-        [t.lat + degLat/2, t.lng + degLng/2]
-      );
-      
-      const status = 
-        marks.ally ? 'ally' :
-        marks.enemy ? 'enemy' :
-        marks.favorite ? 'favorite' : '';
-      
-      const isFav = favorites.includes(t.id_tile);
-      const comment = marks.comment || '';
-      const owned = t.has_owner === 'true';
-      
-      // Стилизация
-      const fill = status === 'ally' ? '#40c057' :
-                  status === 'enemy' ? '#fa5252' :
-                  status === 'favorite' ? '#fab005' :
-                  owned ? '#4dabf7' : '#495057';
-                  
-      const stroke = status === 'ally' ? '#2f9e44' :
-                    status === 'enemy' ? '#e03131' :
-                    status === 'favorite' ? '#f59f00' : '#343a40';
-      
-      const rect = L.rectangle(tileBounds, {
-        stroke: true,
-        weight: 1.5,
-        color: stroke,
-        dashArray: status ? '5' : null,
-        fillColor: fill,
-        fillOpacity: 0.4
-      });
-      
-      // Добавление подписи
-      if (map.getZoom() >= 5) {
-        rect.bindTooltip('#' + t.id_tile, {
-          permanent: true,
-          direction: 'center',
-          className: 'tile-label'
-        });
-      }
-      
-      // Всплывающее окно
-      const popupContent = `
-        <div style="min-width: 250px">
-          <h3 style="margin-bottom: 12px; color: #4dabf7;">Тайл #${t.id_tile}</h3>
-          <p><strong>Статус:</strong> ${owned ? 'Занят' : 'Свободен'}</p>
-          <p><strong>Метка:</strong> ${status || '—'}</p>
-          <p><strong>Комментарий:</strong> ${comment || '—'}</p>
-          
-          <div style="margin: 15px 0; display: flex; gap: 5px; flex-wrap: wrap;">
-            <button class="mark-btn" data-id="${t.id_tile}" data-type="ally">🟩 Союзник</button>
-            <button class="mark-btn" data-id="${t.id_tile}" data-type="enemy">🟥 Враг</button>
-            <button class="mark-btn" data-id="${t.id_tile}" data-type="favorite">⭐ Избранное</button>
-            <button class="mark-btn" data-id="${t.id_tile}" data-type="clear">⚪ Сброс</button>
-          </div>
-          
-          <textarea id="comment-${t.id_tile}" placeholder="Ваш комментарий..." 
-            style="width: 100%; min-height: 80px; padding: 8px; margin-bottom: 10px;">${comment}</textarea>
-          
-          <button class="save-comment" data-id="${t.id_tile}">💾 Сохранить комментарий</button>
-        </div>
-      `;
-      
-      rect.bindPopup(popupContent);
-      return rect;
-    }
-
-    // Отрисовка избранного
-    function renderFavorites() {
-      const favList = document.getElementById('favorites-list');
-      if (!favList) return;
-      
-      favList.innerHTML = favorites.map(function(id) {
-        const tile = tileData.find(function(t) { return t.id_tile === id; });
-        return `
-          <li data-id="${id}">
-            Тайл #${id}
-            <div>
-              <button class="goto-fav" data-id="${id}">➡️</button>
-              <button class="remove-fav" data-id="${id}">✕</button>
-            </div>
-          </li>
-        `;
-      }).join('');
+      log(`✅ Создано ${tileData.length} демо-тайлов`);
+      document.getElementById('cache-status').textContent = 'Кеш: ⚠️ Демо-данные';
     }
 
     // Сохранение метки
-    async function saveMark(tileId, markType, comment) {
+    async function saveMark(tileId, markType, comment = null) {
       try {
-        const response = await fetch(API_URL + '/api/marks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: currentUser.id,
-            tile_id: tileId,
-            mark_type: markType,
-            comment: comment || null
-          })
-        });
+        if (currentUser && currentUser.id !== 'test-user') {
+          const response = await fetch(`${CONFIG.API_URL}/api/marks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: currentUser.id,
+              tile_id: tileId,
+              mark_type: markType,
+              comment: comment
+            })
+          });
+          
+          if (!response.ok) throw new Error('Ошибка сохранения на сервере');
+        }
         
-        if (!response.ok) throw new Error('Ошибка сохранения');
-        
-        const result = await response.json();
-        log('💾 Метка сохранена: ' + tileId + ' (' + markType + ')');
-        
-        // Обновление локального состояния
+        // Обновляем локальное состояние
         if (!userMarks[tileId]) userMarks[tileId] = {};
         
         if (markType === 'clear') {
           delete userMarks[tileId];
-          favorites = favorites.filter(function(favId) { return favId !== tileId; });
+          favorites = favorites.filter(favId => favId !== tileId);
         } else {
           userMarks[tileId][markType] = comment || true;
           if (markType === 'favorite' && !favorites.includes(tileId)) {
@@ -785,152 +1054,215 @@
           }
         }
         
-        // Обновление UI
-        updateTile(tileId);
+        // Сохраняем в локальное хранилище
+        if (currentUser) {
+          localStorage.setItem(`user_marks_${currentUser.id}`, JSON.stringify(userMarks));
+        }
+        
+        // Обновляем UI
+        updateVisibleTiles();
         renderFavorites();
         
-        return result;
+        log(`💾 Метка сохранена: ${tileId} (${markType})`);
+        showToast('Метка сохранена', 'success');
+        
       } catch (error) {
-        log('⚠️ Ошибка сохранения метки: ' + error.message, true);
+        log(`⚠️ Ошибка сохранения метки: ${error.message}`, true);
+        showToast('Ошибка сохранения метки', 'error');
       }
     }
 
-    // Обновление тайла
-    function updateTile(id) {
-      if (tileMarkers[id]) {
-        tileLayer.removeLayer(tileMarkers[id]);
-        const tile = tileData.find(function(t) { return t.id_tile === id; });
-        if (tile) {
-          tileMarkers[id] = createTileMarker(tile, userMarks[id] || {});
-          tileLayer.addLayer(tileMarkers[id]);
-        }
+    // Отрисовка избранного
+    function renderFavorites() {
+      const favList = document.getElementById('favorites-list');
+      if (!favList) return;
+      
+      favList.innerHTML = favorites.map(id => {
+        const tile = tileData.find(t => t.id === id);
+        return `
+          <div class="favorite-item">
+            <span>Тайл #${id}</span>
+            <div class="favorite-actions">
+              <button class="favorite-btn" data-id="${id}" data-action="goto">
+                <i class="material-icons">navigation</i>
+              </button>
+              <button class="favorite-btn" data-id="${id}" data-action="remove">
+                <i class="material-icons">close</i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      // Добавляем обработчики событий
+      document.querySelectorAll('.favorite-btn[data-action="goto"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tileId = parseInt(btn.dataset.id);
+          const tile = tileData.find(t => t.id === tileId);
+          if (tile) {
+            map.flyTo({
+              center: [tile.lng, tile.lat],
+              zoom: 9,
+              essential: true
+            });
+          }
+        });
+      });
+      
+      document.querySelectorAll('.favorite-btn[data-action="remove"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tileId = parseInt(btn.dataset.id);
+          saveMark(tileId, 'clear');
+        });
+      });
+    }
+
+    // Показ уведомления
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type ? 'toast-' + type : ''}`;
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Показать/скрыть лоадер
+    function showLoader(visible) {
+      document.getElementById('loader').style.display = visible ? 'block' : 'none';
+    }
+
+    // Логирование
+    function log(message, isError = false) {
+      const now = new Date();
+      const timestamp = `[${now.toLocaleTimeString()}]`;
+      const debugLog = document.getElementById('debug-log');
+      
+      const logEntry = document.createElement('div');
+      logEntry.textContent = `${timestamp} ${message}`;
+      if (isError) {
+        logEntry.style.color = '#ef4444';
       }
+      
+      debugLog.appendChild(logEntry);
+      debugLog.scrollTop = debugLog.scrollHeight;
+      
+      console[isError ? 'error' : 'log'](message);
     }
 
     // Инициализация обработчиков событий
     function initEventListeners() {
-      // Очистка поиска
-      document.getElementById('search-clear').addEventListener('click', function() {
-        document.getElementById('search').value = '';
-        drawTiles();
+      // Кнопка входа
+      document.getElementById('login-button').addEventListener('click', () => {
+        document.getElementById('login-container').style.display = 'none';
+        currentUser = { id: 'test-user', first_name: 'Тестовый пользователь' };
+        log('👤 Используется тестовый пользователь');
       });
       
-      // Переход к тайлу
-      document.getElementById('goto-btn').addEventListener('click', function() {
-        const tileId = document.getElementById('search').value.trim();
-        if (!tileId) return;
-        
-        const tile = tileData.find(function(t) { return t.id_tile == tileId; });
-        if (!tile) {
-          log('Тайл #' + tileId + ' не найден', true);
-          return;
+      // Поиск
+      document.getElementById('search').addEventListener('input', (e) => {
+        const value = e.target.value.trim();
+        if (value) {
+          const tileId = parseInt(value);
+          const tile = tileData.find(t => t.id === tileId);
+          if (tile) {
+            map.flyTo({
+              center: [tile.lng, tile.lat],
+              zoom: 9,
+              essential: true
+            });
+          }
         }
-        
-        map.flyTo([tile.lat, tile.lng], 7, {
-          animate: true,
-          duration: 1
+      });
+      
+      // Фильтр
+      document.getElementById('status-filter').addEventListener('change', () => {
+        updateVisibleTiles();
+      });
+      
+      // Сброс
+      document.getElementById('reset').addEventListener('click', () => {
+        document.getElementById('search').value = '';
+        document.getElementById('status-filter').value = '';
+        map.flyTo({
+          center: CONFIG.INITIAL_VIEW.center,
+          zoom: CONFIG.INITIAL_VIEW.zoom,
+          essential: true
         });
       });
       
-      // Поиск при вводе
-      document.getElementById('search').addEventListener('input', function() {
-        drawTiles();
-      });
-      
-      // Сброс фильтров
-      document.getElementById('reset').addEventListener('click', function() {
-        document.getElementById('search').value = '';
-        document.getElementById('status-filter').value = '';
-        drawGrid();
-        drawTiles();
-      });
-      
-      // Изменение фильтра
-      document.getElementById('status-filter').addEventListener('change', function() {
-        drawGrid();
-        drawTiles();
-      });
-      
-      // Снимок экрана
-      document.getElementById('screenshot-btn').addEventListener('click', function() {
-        html2canvas(document.getElementById('map')).then(function(canvas) {
+      // Снимок
+      document.getElementById('screenshot-btn').addEventListener('click', () => {
+        html2canvas(document.querySelector('#app')).then(canvas => {
           const link = document.createElement('a');
           link.href = canvas.toDataURL('image/png');
-          link.download = 'map-' + new Date().toISOString().slice(0, 19) + '.png';
+          link.download = `genesis-map-${new Date().toISOString().slice(0, 19)}.png`;
           link.click();
         });
       });
       
       // Сворачивание панели
-      document.getElementById('toggle-panel').addEventListener('click', function() {
-        const panel = document.getElementById('panel');
-        panel.classList.toggle('collapsed');
-        this.textContent = panel.classList.contains('collapsed') ? '🔼' : '🔽';
+      document.getElementById('toggle-panel').addEventListener('click', () => {
+        const panel = document.getElementById('control-panel');
+        panel.classList.toggle('panel-collapsed');
+        
+        const icon = document.querySelector('#toggle-panel i');
+        icon.textContent = panel.classList.contains('panel-collapsed') ? 
+          'keyboard_arrow_down' : 'keyboard_arrow_up';
       });
       
-      // Делегирование событий для попапов
-      map.on('popupopen', function(e) {
-        const popup = e.popup;
-        popup.getElement().addEventListener('click', function(event) {
-          if (event.target.classList.contains('mark-btn')) {
-            const tileId = parseInt(event.target.dataset.id);
-            const markType = event.target.dataset.type;
-            saveMark(tileId, markType);
+      // Управление картой
+      document.getElementById('zoom-in').addEventListener('click', () => {
+        map.zoomIn();
+      });
+      
+      document.getElementById('zoom-out').addEventListener('click', () => {
+        map.zoomOut();
+      });
+      
+      document.getElementById('locate-me').addEventListener('click', () => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            map.flyTo({
+              center: [pos.coords.longitude, pos.coords.latitude],
+              zoom: 12,
+              essential: true
+            });
+          },
+          (err) => {
+            log('⚠️ Ошибка геолокации: ' + err.message, true);
+            showToast('Не удалось определить местоположение', 'error');
           }
-          
-          if (event.target.classList.contains('save-comment')) {
-            const tileId = parseInt(event.target.dataset.id);
-            const comment = document.getElementById('comment-' + tileId).value;
-            saveMark(tileId, 'comment', comment);
-          }
-        });
+        );
       });
       
-      // Делегирование событий для избранного
-      document.getElementById('favorites-list').addEventListener('click', function(event) {
-        if (!event.target.classList.contains('goto-fav') && 
-            !event.target.classList.contains('remove-fav')) return;
-            
-        const tileId = parseInt(event.target.dataset.id);
-        
-        if (event.target.classList.contains('goto-fav')) {
-          const tile = tileData.find(function(t) { return t.id_tile === tileId; });
-          if (tile) {
-            map.flyTo([tile.lat, tile.lng], 7, { animate: true, duration: 1 });
-          }
-        } else if (event.target.classList.contains('remove-fav')) {
-          saveMark(tileId, 'clear');
-        }
+      // Отладка
+      document.getElementById('debug-toggle').addEventListener('click', () => {
+        const debug = document.getElementById('debug');
+        debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
       });
       
-      // Обновление при перемещении карты
-      map.on('moveend', function() {
-        drawGrid();
-        drawTiles();
+      // Тема
+      document.getElementById('theme-toggle').addEventListener('click', () => {
+        const isDark = document.body.classList.contains('dark-theme');
+        document.body.classList.toggle('dark-theme', !isDark);
+        document.body.classList.toggle('light-theme', isDark);
+        
+        const icon = document.querySelector('#theme-toggle i');
+        icon.textContent = isDark ? 'dark_mode' : 'light_mode';
+        
+        // Сохраняем настройки темы
+        localStorage.setItem('theme', isDark ? 'light' : 'dark');
       });
       
-      // Обновление при изменении зума
-      map.on('zoomend', function() {
-        drawTiles();
-      });
-    }
-
-    // Инициализация приложения
-    function initApp() {
-      try {
-        // Инициализация Telegram
-        const user = initTelegram();
-        
-        // Инициализация карты
-        initMap(user);
-        
-        // Логирование успешного запуска
-        log('✅ Приложение успешно запущено');
-        
-      } catch (error) {
-        log('⚠️ Критическая ошибка инициализации: ' + error.message, true);
-        alert('Произошла критическая ошибка при запуске приложения');
-      }
+      // Загрузка темы из localStorage
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.body.classList.add(savedTheme + '-theme');
+      
+      const themeIcon = document.querySelector('#theme-toggle i');
+      themeIcon.textContent = savedTheme === 'dark' ? 'light_mode' : 'dark_mode';
     }
 
     // Запуск приложения
