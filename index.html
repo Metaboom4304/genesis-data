@@ -4,21 +4,17 @@
   <meta charset="UTF-8" />
   <title>GENESIS WAR MAP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <!-- Mapbox GL JS -->
-  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-  
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
   <!-- Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    
     :root {
       --primary: #6366f1;
       --primary-dark: #4f46e5;
@@ -32,7 +28,6 @@
       --card-bg: rgba(30, 41, 59, 0.8);
       --card-border: rgba(255, 255, 255, 0.1);
     }
-    
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--background);
@@ -40,14 +35,12 @@
       overflow: hidden;
       height: 100vh;
     }
-    
     #app {
       display: flex;
       flex-direction: column;
       height: 100vh;
       position: relative;
     }
-    
     /* Header Styles */
     .header {
       background: var(--card-bg);
@@ -59,18 +52,15 @@
       border-bottom: 1px solid var(--card-border);
       z-index: 10;
     }
-    
     .logo {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    
     .logo-icon {
       font-size: 24px;
       color: var(--primary);
     }
-    
     .logo-text {
       font-weight: 700;
       font-size: 18px;
@@ -78,19 +68,16 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    
     .header-controls {
       display: flex;
       gap: 12px;
       align-items: center;
     }
-    
     /* Map Container */
     #map {
       flex: 1;
       width: 100%;
     }
-    
     /* Control Panel */
     .control-panel {
       position: absolute;
@@ -106,24 +93,20 @@
       z-index: 9;
       transition: all 0.3s ease;
     }
-    
     .panel-collapsed {
       height: 50px;
       overflow: hidden;
     }
-    
     .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
     }
-    
     .panel-title {
       font-weight: 600;
       font-size: 16px;
     }
-    
     .toggle-panel {
       background: none;
       border: none;
@@ -133,17 +116,14 @@
       border-radius: 4px;
       transition: all 0.2s;
     }
-    
     .toggle-panel:hover {
       background: rgba(255, 255, 255, 0.1);
     }
-    
     /* Search */
     .search-container {
       position: relative;
       margin-bottom: 16px;
     }
-    
     .search-input {
       width: 100%;
       padding: 10px 40px 10px 12px;
@@ -153,13 +133,11 @@
       color: var(--light);
       font-size: 14px;
     }
-    
     .search-input:focus {
       outline: none;
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
     }
-    
     .search-icon {
       position: absolute;
       right: 12px;
@@ -167,19 +145,16 @@
       transform: translateY(-50%);
       color: var(--gray);
     }
-    
     /* Filter Section */
     .filter-section {
       margin-bottom: 16px;
     }
-    
     .filter-label {
       display: block;
       margin-bottom: 8px;
       font-size: 14px;
       color: var(--gray);
     }
-    
     .filter-select {
       width: 100%;
       padding: 10px;
@@ -189,7 +164,6 @@
       color: var(--light);
       font-size: 14px;
     }
-    
     /* Action Buttons */
     .action-buttons {
       display: grid;
@@ -197,7 +171,6 @@
       gap: 8px;
       margin-bottom: 16px;
     }
-    
     .btn {
       padding: 10px;
       border: none;
@@ -211,30 +184,24 @@
       justify-content: center;
       gap: 6px;
     }
-    
     .btn-primary {
       background: var(--primary);
       color: white;
     }
-    
     .btn-primary:hover {
       background: var(--primary-dark);
     }
-    
     .btn-secondary {
       background: rgba(255, 255, 255, 0.1);
       color: var(--light);
     }
-    
     .btn-secondary:hover {
       background: rgba(255, 255, 255, 0.2);
     }
-    
     /* Favorites */
     .favorites-section {
       margin-top: 16px;
     }
-    
     .favorites-title {
       font-size: 14px;
       color: var(--gray);
@@ -243,12 +210,10 @@
       align-items: center;
       gap: 6px;
     }
-    
     .favorites-list {
       max-height: 200px;
       overflow-y: auto;
     }
-    
     .favorite-item {
       padding: 10px;
       background: rgba(255, 255, 255, 0.05);
@@ -259,12 +224,10 @@
       align-items: center;
       font-size: 14px;
     }
-    
     .favorite-actions {
       display: flex;
       gap: 6px;
     }
-    
     .favorite-btn {
       background: none;
       border: none;
@@ -274,12 +237,10 @@
       border-radius: 4px;
       transition: all 0.2s;
     }
-    
     .favorite-btn:hover {
       background: rgba(255, 255, 255, 0.1);
       color: var(--light);
     }
-    
     /* Map Controls */
     .map-controls {
       position: absolute;
@@ -290,7 +251,6 @@
       gap: 10px;
       z-index: 9;
     }
-    
     .control-btn {
       width: 40px;
       height: 40px;
@@ -305,11 +265,9 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    
     .control-btn:hover {
       background: rgba(255, 255, 255, 0.1);
     }
-    
     /* Login Screen */
     #login-container {
       position: absolute;
@@ -325,7 +283,6 @@
       z-index: 1000;
       padding: 20px;
     }
-    
     .login-card {
       background: var(--card-bg);
       border-radius: 16px;
@@ -336,7 +293,6 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
       border: 1px solid var(--card-border);
     }
-    
     .login-title {
       font-size: 24px;
       font-weight: 700;
@@ -345,13 +301,11 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    
     .login-subtitle {
       color: var(--gray);
       margin-bottom: 30px;
       font-size: 16px;
     }
-    
     .login-btn {
       padding: 14px 28px;
       background: linear-gradient(135deg, var(--primary), var(--primary-dark));
@@ -366,12 +320,10 @@
       align-items: center;
       gap: 10px;
     }
-    
     .login-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
     }
-    
     /* Debug Panel */
     #debug {
       position: fixed;
@@ -389,14 +341,12 @@
       border-top: 1px solid var(--card-border);
       display: none;
     }
-    
     .debug-section {
       margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    
     #debug-log {
       max-height: 120px;
       overflow: auto;
@@ -404,7 +354,6 @@
       padding-top: 10px;
       border-top: 1px dashed var(--card-border);
     }
-    
     /* Loader */
     .loader {
       display: none;
@@ -420,7 +369,6 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
       border: 1px solid var(--card-border);
     }
-    
     .loader-spinner {
       width: 40px;
       height: 40px;
@@ -430,17 +378,14 @@
       animation: spin 1s linear infinite;
       margin: 0 auto 15px;
     }
-    
     .loader-text {
       color: var(--light);
       font-size: 14px;
     }
-    
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    
     /* Toast Notifications */
     .toast {
       position: fixed;
@@ -459,23 +404,18 @@
       transform: translateX(100%);
       transition: transform 0.3s ease;
     }
-    
     .toast.show {
       transform: translateX(0);
     }
-    
     .toast-error {
       border-left-color: var(--danger);
     }
-    
     .toast-success {
       border-left-color: var(--secondary);
     }
-    
     .toast-warning {
       border-left-color: var(--warning);
     }
-    
     /* Responsive */
     @media (max-width: 768px) {
       .control-panel {
@@ -483,11 +423,9 @@
         left: 20px;
         right: 20px;
       }
-      
       .header {
         padding: 12px 16px;
       }
-      
       .logo-text {
         font-size: 16px;
       }
@@ -507,7 +445,6 @@
         </button>
       </div>
     </div>
-
     <!-- Header -->
     <div class="header">
       <div class="logo">
@@ -523,10 +460,8 @@
         </button>
       </div>
     </div>
-
     <!-- Map Container -->
     <div id="map"></div>
-
     <!-- Control Panel -->
     <div class="control-panel" id="control-panel">
       <div class="panel-header">
@@ -535,12 +470,10 @@
           <i class="material-icons">keyboard_arrow_up</i>
         </button>
       </div>
-      
       <div class="search-container">
         <input type="text" class="search-input" id="search" placeholder="Поиск по ID тайла..." />
         <i class="material-icons search-icon">search</i>
       </div>
-      
       <div class="filter-section">
         <label class="filter-label">Фильтр по меткам</label>
         <select class="filter-select" id="status-filter">
@@ -551,7 +484,6 @@
           <option value="clear">⚪ Без метки</option>
         </select>
       </div>
-      
       <div class="action-buttons">
         <button class="btn btn-secondary" id="reset">
           <i class="material-icons">refresh</i>
@@ -562,7 +494,6 @@
           Снимок
         </button>
       </div>
-      
       <div class="favorites-section">
         <div class="favorites-title">
           <i class="material-icons">star</i>
@@ -573,7 +504,6 @@
         </div>
       </div>
     </div>
-
     <!-- Map Controls -->
     <div class="map-controls">
       <button class="control-btn" id="zoom-in">
@@ -586,16 +516,13 @@
         <i class="material-icons">my_location</i>
       </button>
     </div>
-
     <!-- Loader -->
     <div class="loader" id="loader">
       <div class="loader-spinner"></div>
       <div class="loader-text">Загрузка данных...</div>
     </div>
-
     <!-- Toast -->
     <div class="toast" id="toast"></div>
-
     <!-- Debug Panel -->
     <div id="debug">
       <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
@@ -607,21 +534,18 @@
       <div id="debug-log"></div>
     </div>
   </div>
-
   <script>
     // Конфигурация приложения
     const CONFIG = {
-      API_URL: 'https://your-api-url.onrender.com', // Замените на ваш URL
-      MAPBOX_TOKEN: 'pk.your-mapbox-token', // Замените на ваш Mapbox токен
-      MAP_STYLE: 'mapbox://styles/mapbox/dark-v11',
+      API_URL: 'https://genesis-data.onrender.com', // Обновлено
+      MAP_STYLE: 'https://demotiles.maplibre.org/style.json', // Стандартный стиль MapLibre
       INITIAL_VIEW: {
         center: [49.25, -123.10],
         zoom: 6
       },
-      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php',
+      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php', // Обновлено без пробела
       CACHE_TTL: 30 * 60 * 1000 // 30 минут
     };
-
     // Глобальные переменные
     let map;
     let currentUser = null;
@@ -629,55 +553,43 @@
     let userMarks = {};
     let favorites = [];
     let visibleTiles = new Set();
-
-    // Инициализация Mapbox
-    function initMapbox() {
-      mapboxgl.accessToken = CONFIG.MAPBOX_TOKEN;
-      
-      map = new mapboxgl.Map({
+    // Инициализация MapLibre
+    function initMaplibre() {
+      map = new maplibregl.Map({
         container: 'map',
         style: CONFIG.MAP_STYLE,
         center: CONFIG.INITIAL_VIEW.center,
         zoom: CONFIG.INITIAL_VIEW.zoom,
         attributionControl: false
       });
-      
       // Добавляем элементы управления
-      map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
-      map.addControl(new mapboxgl.AttributionControl({
+      map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+      map.addControl(new maplibregl.AttributionControl({
         compact: true
       }));
-      
       // Обработчики событий карты
       map.on('load', () => {
-        log('🗺️ Карта Mapbox загружена');
+        log('🗺️ Карта MapLibre загружена');
         document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
-        
         // Загружаем данные после инициализации карты
         loadData();
       });
-      
       map.on('moveend', updateVisibleTiles);
       map.on('zoomend', updateVisibleTiles);
     }
-
     // Обновление видимых тайлов
     function updateVisibleTiles() {
       if (!map || !tileData.length) return;
-      
       const bounds = map.getBounds();
       visibleTiles.clear();
-      
       // Фильтруем тайлы в пределах видимой области
       tileData.forEach(tile => {
         if (bounds.contains([tile.lng, tile.lat])) {
           visibleTiles.add(tile.id);
         }
       });
-      
       renderTiles();
     }
-
     // Визуализация тайлов
     function renderTiles() {
       // Удаляем существующие слои если есть
@@ -687,14 +599,12 @@
       if (map.getSource('tiles-source')) {
         map.removeSource('tiles-source');
       }
-      
       // Создаем GeoJSON для видимых тайлов
       const features = tileData
         .filter(tile => visibleTiles.has(tile.id))
         .map(tile => {
           const status = getUserMarkStatus(tile.id);
           const isFavorite = favorites.includes(tile.id);
-          
           return {
             type: 'Feature',
             geometry: {
@@ -709,7 +619,6 @@
             }
           };
         });
-      
       // Добавляем источник данных
       map.addSource('tiles-source', {
         type: 'geojson',
@@ -718,7 +627,6 @@
           features: features
         }
       });
-      
       // Добавляем слой для отображения
       map.addLayer({
         id: 'tiles-layer',
@@ -749,7 +657,6 @@
           ]
         }
       });
-      
       // Добавляем всплывающие подсказки
       map.on('click', 'tiles-layer', (e) => {
         if (e.features.length > 0) {
@@ -757,25 +664,20 @@
           showTilePopup(tileId, e.lngLat);
         }
       });
-      
       // Изменение курсора при наведении
       map.on('mouseenter', 'tiles-layer', () => {
         map.getCanvas().style.cursor = 'pointer';
       });
-      
       map.on('mouseleave', 'tiles-layer', () => {
         map.getCanvas().style.cursor = '';
       });
     }
-
     // Показ всплывающего окна тайла
     function showTilePopup(tileId, lngLat) {
       const tile = tileData.find(t => t.id === tileId);
       if (!tile) return;
-      
       const status = getUserMarkStatus(tileId);
       const isFavorite = favorites.includes(tileId);
-      
       const popupContent = `
         <div class="popup-content">
           <h3>Тайл #${tileId}</h3>
@@ -789,12 +691,10 @@
           </div>
         </div>
       `;
-      
-      const popup = new mapboxgl.Popup()
+      const popup = new maplibregl.Popup()
         .setLngLat(lngLat)
         .setHTML(popupContent)
         .addTo(map);
-      
       // Добавляем обработчики событий после отображения popup
       setTimeout(() => {
         document.querySelectorAll('.mark-btn').forEach(btn => {
@@ -807,7 +707,6 @@
         });
       }, 100);
     }
-
     // Получение статуса метки пользователя
     function getUserMarkStatus(tileId) {
       const marks = userMarks[tileId] || {};
@@ -816,46 +715,39 @@
       if (marks.favorite) return 'favorite';
       return '';
     }
-
     // Инициализация приложения
     function initApp() {
-      initMapbox();
+      initMaplibre();
       initEventListeners();
       checkTelegramAuth();
     }
-
     // Проверка аутентификации Telegram
     function checkTelegramAuth() {
       const tg = window.Telegram?.WebApp;
-      
       if (tg) {
         tg.ready();
         tg.expand();
-        
         const user = tg.initDataUnsafe?.user;
         if (user) {
           currentUser = user;
           document.getElementById('login-container').style.display = 'none';
           document.getElementById('user-status').textContent = `Пользователь: ✅ ${user.first_name}`;
           log(`👤 Пользователь: ${user.first_name} (${user.id})`);
-          
           // Синхронизируем пользователя с API
           syncUser(user);
         }
       } else {
         log('Telegram WebApp не обнаружен, работаем в автономном режиме');
         document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
-        
         // Для разработки - показываем карту без аутентификации
         document.getElementById('login-container').style.display = 'none';
         currentUser = { id: 'test-user', first_name: 'Тестовый пользователь' };
       }
     }
-
     // Синхронизация пользователя с API
     async function syncUser(user) {
       try {
-        const response = await fetch(`${CONFIG.API_URL}/api/users`, {
+        const response = await fetch(`${CONFIG.API_URL}/api/users/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -867,7 +759,6 @@
             username: user.username || ''
           })
         });
-        
         if (response.ok) {
           log('💾 Пользователь синхронизирован с API');
         }
@@ -875,26 +766,20 @@
         log(`⚠️ Ошибка синхронизации пользователя: ${error.message}`, true);
       }
     }
-
     // Загрузка данных
     async function loadData() {
       showLoader(true);
       log('🔄 Загрузка данных...');
-      
       try {
         // Загрузка пользовательских меток
         await loadUserMarks();
-        
         // Загрузка данных тайлов
         await loadTileData();
-        
         // Обновление видимой области
         updateVisibleTiles();
-        
         document.getElementById('api-status').textContent = 'API: ✅ Работает';
         log('✅ Все данные успешно загружены');
         showToast('Данные успешно загружены', 'success');
-        
       } catch (error) {
         log(`⚠️ Ошибка загрузки данных: ${error.message}`, true);
         document.getElementById('api-status').textContent = 'API: 🔴 Ошибка';
@@ -903,30 +788,23 @@
         showLoader(false);
       }
     }
-
     // Загрузка пользовательских меток
     async function loadUserMarks() {
       if (!currentUser) return;
-      
       try {
         const response = await fetch(`${CONFIG.API_URL}/api/marks/${currentUser.id}`);
         if (!response.ok) throw new Error('Ошибка загрузки меток');
-        
         const marks = await response.json();
         userMarks = {};
-        
         marks.forEach(mark => {
           if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
           userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
-          
           if (mark.mark_type === 'favorite') {
             favorites.push(mark.tile_id);
           }
         });
-        
         log(`📌 Загружено ${marks.length} пользовательских меток`);
         renderFavorites();
-        
       } catch (error) {
         log(`⚠️ Ошибка загрузки меток: ${error.message}`, true);
         // Используем локальное хранилище как запасной вариант
@@ -937,63 +815,66 @@
         }
       }
     }
-
     // Загрузка данных тайлов
     async function loadTileData() {
       try {
-        // Сначала пробуем загрузить из кеша API
-        const cacheResponse = await fetch(`${CONFIG.API_URL}/api/tiles-cache`);
-        
-        if (cacheResponse.ok) {
-          const cache = await cacheResponse.json();
-          if (cache && cache.data) {
-            const cacheAge = Date.now() - new Date(cache.last_updated).getTime();
-            if (cacheAge < CONFIG.CACHE_TTL) {
-              tileData = Object.values(cache.data);
-              log(`✅ Использован кеш тайлов (${tileData.length} записей)`);
-              document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
-              return;
-            }
-          }
+        // Запрос тайлов по текущим границам карты
+        const bounds = map.getBounds();
+        const west = bounds.getWest();
+        const south = bounds.getSouth();
+        const east = bounds.getEast();
+        const north = bounds.getNorth();
+        const query = new URLSearchParams({
+          west: west.toFixed(6),
+          south: south.toFixed(6),
+          east: east.toFixed(6),
+          north: north.toFixed(6),
+          limit: '1000'
+        });
+        const response = await fetch(`${CONFIG.API_URL}/api/tiles/bounds?${query}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
-        // Если кеш устарел или недоступен, загружаем напрямую
-        log('⏬ Загрузка данных с основного сервера...');
-        const tileResponse = await fetch(CONFIG.TILE_SERVER);
-        
-        if (!tileResponse.ok) {
-          throw new Error(`Ошибка HTTP: ${tileResponse.status}`);
+        const result = await response.json();
+        if (result.tiles && Array.isArray(result.tiles)) {
+          tileData = result.tiles.map(tile => ({
+            id: tile.id,
+            lng: tile.lng,
+            lat: tile.lat,
+            has_owner: tile.has_owner || 'false'
+          }));
+          log(`✅ Загружено ${tileData.length} тайлов`);
+          document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
+        } else {
+          throw new Error('Неверный формат данных тайлов');
         }
-        
-        const tiles = await tileResponse.json();
-        tileData = Object.values(tiles);
-        
-        // Сохраняем в кеш API
-        try {
-          await fetch(`${CONFIG.API_URL}/api/tiles-cache`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: tiles })
-          });
-          log('💾 Кеш обновлен на сервере');
-        } catch (cacheError) {
-          log('⚠️ Не удалось обновить кеш на сервере', true);
-        }
-        
-        log(`✅ Загружено ${tileData.length} тайлов`);
-        document.getElementById('cache-status').textContent = 'Кеш: ✅ Обновлен';
-        
       } catch (error) {
         log(`⚠️ Ошибка загрузки тайлов: ${error.message}`, true);
-        // Создаем демо-данные для отображения
-        createDemoData();
+        // Если API недоступен, попробуем загрузить напрямую
+        try {
+          const externalResponse = await fetch(CONFIG.TILE_SERVER);
+          if (!externalResponse.ok) {
+            throw new Error(`HTTP ${externalResponse.status}: ${externalResponse.statusText}`);
+          }
+          const tiles = await externalResponse.json();
+          tileData = Object.values(tiles).map(tile => ({
+            id: tile.id,
+            lng: tile.lng,
+            lat: tile.lat,
+            has_owner: tile.has_owner || 'false'
+          }));
+          log(`✅ Загружено ${tileData.length} тайлов напрямую`);
+          document.getElementById('cache-status').textContent = 'Кеш: ⚠️ Напрямую';
+        } catch (externalError) {
+          log(`⚠️ Ошибка загрузки тайлов напрямую: ${externalError.message}`, true);
+          // Если ничего не работает, создаем демо-данные
+          createDemoData();
+        }
       }
     }
-
     // Создание демо-данных
     function createDemoData() {
       log('🔄 Создание демо-данных...');
-      
       const refId = 22313;
       const refLat = 49.25;
       const refLng = -123.10;
@@ -1001,15 +882,12 @@
       const refY = Math.floor(refId / 256);
       const degLat = 170/256;
       const degLng = 360/256;
-      
       tileData = [];
-      
       for (let i = 0; i < 500; i++) {
         const x = i % 256;
         const y = Math.floor(i / 256);
         const lat = refLat - (y - refY) * degLat;
         const lng = refLng + (x - refX) * degLng;
-        
         tileData.push({
           id: i,
           id_tile: i,
@@ -1018,11 +896,9 @@
           has_owner: Math.random() > 0.7 ? 'true' : 'false'
         });
       }
-      
       log(`✅ Создано ${tileData.length} демо-тайлов`);
       document.getElementById('cache-status').textContent = 'Кеш: ⚠️ Демо-данные';
     }
-
     // Сохранение метки
     async function saveMark(tileId, markType, comment = null) {
       try {
@@ -1037,13 +913,10 @@
               comment: comment
             })
           });
-          
           if (!response.ok) throw new Error('Ошибка сохранения на сервере');
         }
-        
         // Обновляем локальное состояние
         if (!userMarks[tileId]) userMarks[tileId] = {};
-        
         if (markType === 'clear') {
           delete userMarks[tileId];
           favorites = favorites.filter(favId => favId !== tileId);
@@ -1053,30 +926,24 @@
             favorites.push(tileId);
           }
         }
-        
         // Сохраняем в локальное хранилище
         if (currentUser) {
           localStorage.setItem(`user_marks_${currentUser.id}`, JSON.stringify(userMarks));
         }
-        
         // Обновляем UI
         updateVisibleTiles();
         renderFavorites();
-        
         log(`💾 Метка сохранена: ${tileId} (${markType})`);
         showToast('Метка сохранена', 'success');
-        
       } catch (error) {
         log(`⚠️ Ошибка сохранения метки: ${error.message}`, true);
         showToast('Ошибка сохранения метки', 'error');
       }
     }
-
     // Отрисовка избранного
     function renderFavorites() {
       const favList = document.getElementById('favorites-list');
       if (!favList) return;
-      
       favList.innerHTML = favorites.map(id => {
         const tile = tileData.find(t => t.id === id);
         return `
@@ -1093,7 +960,6 @@
           </div>
         `;
       }).join('');
-      
       // Добавляем обработчики событий
       document.querySelectorAll('.favorite-btn[data-action="goto"]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1108,7 +974,6 @@
           }
         });
       });
-      
       document.querySelectorAll('.favorite-btn[data-action="remove"]').forEach(btn => {
         btn.addEventListener('click', () => {
           const tileId = parseInt(btn.dataset.id);
@@ -1116,42 +981,34 @@
         });
       });
     }
-
     // Показ уведомления
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
       toast.textContent = message;
       toast.className = `toast ${type ? 'toast-' + type : ''}`;
       toast.classList.add('show');
-      
       setTimeout(() => {
         toast.classList.remove('show');
       }, 3000);
     }
-
     // Показать/скрыть лоадер
     function showLoader(visible) {
       document.getElementById('loader').style.display = visible ? 'block' : 'none';
     }
-
     // Логирование
     function log(message, isError = false) {
       const now = new Date();
       const timestamp = `[${now.toLocaleTimeString()}]`;
       const debugLog = document.getElementById('debug-log');
-      
       const logEntry = document.createElement('div');
       logEntry.textContent = `${timestamp} ${message}`;
       if (isError) {
         logEntry.style.color = '#ef4444';
       }
-      
       debugLog.appendChild(logEntry);
       debugLog.scrollTop = debugLog.scrollHeight;
-      
       console[isError ? 'error' : 'log'](message);
     }
-
     // Инициализация обработчиков событий
     function initEventListeners() {
       // Кнопка входа
@@ -1160,7 +1017,6 @@
         currentUser = { id: 'test-user', first_name: 'Тестовый пользователь' };
         log('👤 Используется тестовый пользователь');
       });
-      
       // Поиск
       document.getElementById('search').addEventListener('input', (e) => {
         const value = e.target.value.trim();
@@ -1176,12 +1032,10 @@
           }
         }
       });
-      
       // Фильтр
       document.getElementById('status-filter').addEventListener('change', () => {
         updateVisibleTiles();
       });
-      
       // Сброс
       document.getElementById('reset').addEventListener('click', () => {
         document.getElementById('search').value = '';
@@ -1192,7 +1046,6 @@
           essential: true
         });
       });
-      
       // Снимок
       document.getElementById('screenshot-btn').addEventListener('click', () => {
         html2canvas(document.querySelector('#app')).then(canvas => {
@@ -1202,26 +1055,21 @@
           link.click();
         });
       });
-      
       // Сворачивание панели
       document.getElementById('toggle-panel').addEventListener('click', () => {
         const panel = document.getElementById('control-panel');
         panel.classList.toggle('panel-collapsed');
-        
         const icon = document.querySelector('#toggle-panel i');
         icon.textContent = panel.classList.contains('panel-collapsed') ? 
           'keyboard_arrow_down' : 'keyboard_arrow_up';
       });
-      
       // Управление картой
       document.getElementById('zoom-in').addEventListener('click', () => {
         map.zoomIn();
       });
-      
       document.getElementById('zoom-out').addEventListener('click', () => {
         map.zoomOut();
       });
-      
       document.getElementById('locate-me').addEventListener('click', () => {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -1237,34 +1085,27 @@
           }
         );
       });
-      
       // Отладка
       document.getElementById('debug-toggle').addEventListener('click', () => {
         const debug = document.getElementById('debug');
         debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
       });
-      
       // Тема
       document.getElementById('theme-toggle').addEventListener('click', () => {
         const isDark = document.body.classList.contains('dark-theme');
         document.body.classList.toggle('dark-theme', !isDark);
         document.body.classList.toggle('light-theme', isDark);
-        
         const icon = document.querySelector('#theme-toggle i');
         icon.textContent = isDark ? 'dark_mode' : 'light_mode';
-        
         // Сохраняем настройки темы
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
       });
-      
       // Загрузка темы из localStorage
       const savedTheme = localStorage.getItem('theme') || 'dark';
       document.body.classList.add(savedTheme + '-theme');
-      
       const themeIcon = document.querySelector('#theme-toggle i');
       themeIcon.textContent = savedTheme === 'dark' ? 'light_mode' : 'dark_mode';
     }
-
     // Запуск приложения
     document.addEventListener('DOMContentLoaded', initApp);
   </script>
