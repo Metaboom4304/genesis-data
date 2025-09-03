@@ -536,17 +536,17 @@
   </div>
   <script>
     // Конфигурация приложения
-const CONFIG = {
-  API_URL: 'https://genesis-map-api.onrender.com', // Исправлено: убраны пробелы
-  MAP_STYLE: 'https://demotiles.maplibre.org/style.json', // Исправлено: убраны пробелы
-  INITIAL_VIEW: {
-    // ИСПРАВЛЕНО: Порядок [долгота, широта]
-    center: [-123.10, 49.25],
-    zoom: 6
-  },
-  TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php', // Исправлено: убраны пробелы
-  CACHE_TTL: 30 * 60 * 1000 // 30 минут
-};
+    const CONFIG = {
+      API_URL: 'https://genesis-map-api.onrender.com', // Исправлено: убраны пробелы
+      MAP_STYLE: 'https://demotiles.maplibre.org/style.json', // Исправлено: убраны пробелы
+      INITIAL_VIEW: {
+        // ИСПРАВЛЕНО: Порядок [долгота, широта]
+        center: [-123.10, 49.25],
+        zoom: 6
+      },
+      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php', // Исправлено: убраны пробелы
+      CACHE_TTL: 30 * 60 * 1000 // 30 минут
+    };
     // Глобальные переменные
     let map;
     let currentUser = null;
@@ -555,7 +555,7 @@ const CONFIG = {
     let favorites = [];
     let visibleTiles = new Set();
     let isInitialLoad = true; // Флаг для отслеживания первой загрузки
-
+    
     // --- Вспомогательные функции ---
     // Безопасное создание координат для MapLibre
     function createSafeCoordinate(lat, lng) {
@@ -565,7 +565,7 @@ const CONFIG = {
         clampedLng = ((clampedLng % 360) + 540) % 360 - 180;
         return [clampedLng, clampedLat];
     }
-
+    
     // --- Инициализация MapLibre ---
     function initMaplibre() {
       // maplibregl.accessToken не нужен для MapLibre
@@ -591,7 +591,7 @@ const CONFIG = {
       map.on('moveend', updateVisibleTiles);
       map.on('zoomend', updateVisibleTiles);
     }
-
+    
     // Обновление видимых тайлов
     function updateVisibleTiles() {
       if (!map || !tileData.length) return;
@@ -612,7 +612,7 @@ const CONFIG = {
       // После первой загрузки, при перемещении карты запрашиваем новые данные
       loadData(); 
     }
-
+    
     // Визуализация тайлов
     function renderTiles() {
       // Удаляем существующие слои если есть
@@ -642,7 +642,7 @@ const CONFIG = {
             }
           };
         });
-            // Добавляем источник данных
+      // Добавляем источник данных
       map.addSource('tiles-source', {
         type: 'geojson',
         data: { // <--- Ключевое слово 'data' ОБЯЗАТЕЛЬНО
@@ -695,7 +695,7 @@ const CONFIG = {
         map.getCanvas().style.cursor = '';
       });
     }
-
+    
     // Показ всплывающего окна тайла
     function showTilePopup(tileId, lngLat) {
       const tile = tileData.find(t => t.id === tileId);
@@ -731,7 +731,7 @@ const CONFIG = {
         });
       }, 100);
     }
-
+    
     // Получение статуса метки пользователя
     function getUserMarkStatus(tileId) {
       const marks = userMarks[tileId] || {};
@@ -740,14 +740,14 @@ const CONFIG = {
       if (marks.favorite) return 'favorite';
       return '';
     }
-
+    
     // Инициализация приложения
     function initApp() {
       initMaplibre();
       initEventListeners();
       checkTelegramAuth();
     }
-
+    
     // Проверка аутентификации Telegram
     function checkTelegramAuth() {
       const tg = window.Telegram?.WebApp;
@@ -762,20 +762,20 @@ const CONFIG = {
           log(`👤 Пользователь: ${user.first_name} (${user.id})`);
           // Синхронизируем пользователя с API
           syncUser(user);
+        } else {
+          log('⚠️ Пользователь Telegram не найден');
+          document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Пользователь не найден';
         }
       } else {
-        log('Telegram WebApp не обнаружен, работаем в автономном режиме');
+        log('⚠️ Telegram WebApp не обнаружен');
         document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
-        // Для разработки - показываем карту без аутентификации
-        document.getElementById('login-container').style.display = 'none';
-        currentUser = { id: 'test-user', first_name: 'Тестовый пользователь' };
       }
     }
-
+    
     // Синхронизация пользователя с API
     async function syncUser(user) {
       try {
-        const response = await fetch(`${CONFIG.API_URL}/api/users/register`, { // Исправлен endpoint
+        const response = await fetch(`${CONFIG.API_URL}/api/users/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -797,10 +797,13 @@ const CONFIG = {
         log(`⚠️ Ошибка синхронизации пользователя: ${error.message}`, true);
       }
     }
-
+    
     // Загрузка данных
     async function loadData() {
-      if (!currentUser) return; // Не загружаем, если нет пользователя
+      if (!currentUser) {
+        log('⚠️ Нет авторизованного пользователя, загрузка данных пропущена');
+        return;
+      }
       showLoader(true);
       log('🔄 Загрузка данных...');
       try {
@@ -821,7 +824,7 @@ const CONFIG = {
         showLoader(false);
       }
     }
-
+    
     // Загрузка пользовательских меток
     async function loadUserMarks() {
       if (!currentUser) return;
@@ -859,7 +862,7 @@ const CONFIG = {
         }
       }
     }
-
+    
     // Загрузка данных тайлов
     async function loadTileData() {
       try {
@@ -904,10 +907,9 @@ const CONFIG = {
       } catch (error) {
         log(`⚠️ Ошибка загрузки тайлов: ${error.message}`, true);
         document.getElementById('cache-status').textContent = 'Кеш: 🔴 Ошибка';
-        // Не создаем демо-данные, просто сообщаем об ошибке
       }
     }
-
+    
     // Сохранение метки
     async function saveMark(tileId, markType, comment = null) {
       if (!currentUser) {
@@ -953,7 +955,7 @@ const CONFIG = {
         showToast('Ошибка сохранения метки', 'error');
       }
     }
-
+    
     // Отрисовка избранного
     function renderFavorites() {
       const favList = document.getElementById('favorites-list');
@@ -1003,7 +1005,7 @@ const CONFIG = {
         });
       });
     }
-
+    
     // Показ уведомления
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
@@ -1014,12 +1016,12 @@ const CONFIG = {
         toast.classList.remove('show');
       }, 3000);
     }
-
+    
     // Показать/скрыть лоадер
     function showLoader(visible) {
       document.getElementById('loader').style.display = visible ? 'block' : 'none';
     }
-
+    
     // Логирование
     function log(message, isError = false) {
       const now = new Date();
@@ -1034,15 +1036,13 @@ const CONFIG = {
       debugLog.scrollTop = debugLog.scrollHeight;
       console[isError ? 'error' : 'log'](message);
     }
-
+    
     // Инициализация обработчиков событий
     function initEventListeners() {
       // Кнопка входа
       document.getElementById('login-button').addEventListener('click', () => {
-        document.getElementById('login-container').style.display = 'none';
-        currentUser = { id: 'test-user', first_name: 'Тестовый пользователь' };
-        log('👤 Используется тестовый пользователь');
-        loadData(); // Загружаем данные после "входа"
+        // При клике на кнопку входа ничего не делаем, пользователь должен войти через Telegram WebApp
+        showToast('Пожалуйста, откройте карту через Telegram бот @Goamap_bot', 'warning');
       });
       // Поиск
       document.getElementById('search').addEventListener('input', (e) => {
@@ -1077,13 +1077,6 @@ const CONFIG = {
       document.getElementById('screenshot-btn').addEventListener('click', () => {
         // html2canvas не подключен, отключаем или подключаем
         showToast('Функция скриншота временно недоступна', 'warning');
-        // Если нужно, подключите html2canvas:
-        // html2canvas(document.querySelector('#app')).then(canvas => {
-        //   const link = document.createElement('a');
-        //   link.href = canvas.toDataURL('image/png');
-        //   link.download = `genesis-map-${new Date().toISOString().slice(0, 19)}.png`;
-        //   link.click();
-        // });
       });
       // Сворачивание панели
       document.getElementById('toggle-panel').addEventListener('click', () => {
@@ -1134,7 +1127,7 @@ const CONFIG = {
       const themeIcon = document.querySelector('#theme-toggle i');
       themeIcon.textContent = savedTheme === 'dark' ? 'light_mode' : 'dark_mode';
     }
-
+    
     // Запуск приложения
     document.addEventListener('DOMContentLoaded', initApp);
   </script>
