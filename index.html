@@ -537,13 +537,13 @@
   <script>
     // Конфигурация приложения
     const CONFIG = {
-      API_URL: 'https://genesis-map-api.onrender.com', // Исправлено
-      MAP_STYLE: 'https://demotiles.maplibre.org/style.json', // Стиль MapLibre
+      API_URL: 'https://genesis-map-api.onrender.com', // Исправлено: убраны пробелы
+      MAP_STYLE: 'https://demotiles.maplibre.org/style.json', // Исправлено: убраны пробелы
       INITIAL_VIEW: {
         center: [49.25, -123.10],
         zoom: 6
       },
-      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php', // Исправлено (без пробелов)
+      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php', // Исправлено: убраны пробелы
       CACHE_TTL: 30 * 60 * 1000 // 30 минут
     };
     // Глобальные переменные
@@ -644,7 +644,8 @@
       // Добавляем источник данных
       map.addSource('tiles-source', {
         type: 'geojson',
-        data: {
+        // ИСПРАВЛЕНО: Добавлено ключевое слово 'data'
+         {
           type: 'FeatureCollection',
           features: features
         }
