@@ -554,7 +554,18 @@
     let favorites = [];
     let visibleTiles = new Set();
     let isInitialLoad = true; // Флаг для отслеживания первой загрузки
-    // Инициализация MapLibre
+
+    // --- Вспомогательные функции ---
+    // Безопасное создание координат для MapLibre
+    function createSafeCoordinate(lat, lng) {
+        const clampedLat = Math.max(-89.999999, Math.min(89.999999, parseFloat(lat) || 0));
+        // Приводим долготу к диапазону [-180, 180]
+        let clampedLng = parseFloat(lng) || 0;
+        clampedLng = ((clampedLng % 360) + 540) % 360 - 180;
+        return [clampedLng, clampedLat];
+    }
+
+    // --- Инициализация MapLibre ---
     function initMaplibre() {
       // maplibregl.accessToken не нужен для MapLibre
       map = new maplibregl.Map({
@@ -579,6 +590,7 @@
       map.on('moveend', updateVisibleTiles);
       map.on('zoomend', updateVisibleTiles);
     }
+
     // Обновление видимых тайлов
     function updateVisibleTiles() {
       if (!map || !tileData.length) return;
@@ -599,6 +611,7 @@
       // После первой загрузки, при перемещении карты запрашиваем новые данные
       loadData(); 
     }
+
     // Визуализация тайлов
     function renderTiles() {
       // Удаляем существующие слои если есть
@@ -618,7 +631,7 @@
             type: 'Feature',
             geometry: {
               type: 'Point',
-              coordinates: [tile.lng, tile.lat]
+              coordinates: [tile.lng, tile.lat] // Координаты уже проверены
             },
             properties: {
               id: tile.id,
@@ -681,6 +694,7 @@
         map.getCanvas().style.cursor = '';
       });
     }
+
     // Показ всплывающего окна тайла
     function showTilePopup(tileId, lngLat) {
       const tile = tileData.find(t => t.id === tileId);
@@ -716,6 +730,7 @@
         });
       }, 100);
     }
+
     // Получение статуса метки пользователя
     function getUserMarkStatus(tileId) {
       const marks = userMarks[tileId] || {};
@@ -724,12 +739,14 @@
       if (marks.favorite) return 'favorite';
       return '';
     }
+
     // Инициализация приложения
     function initApp() {
       initMaplibre();
       initEventListeners();
       checkTelegramAuth();
     }
+
     // Проверка аутентификации Telegram
     function checkTelegramAuth() {
       const tg = window.Telegram?.WebApp;
@@ -753,6 +770,7 @@
         currentUser = { id: 'test-user', first_name: 'Тестовый пользователь' };
       }
     }
+
     // Синхронизация пользователя с API
     async function syncUser(user) {
       try {
@@ -778,6 +796,7 @@
         log(`⚠️ Ошибка синхронизации пользователя: ${error.message}`, true);
       }
     }
+
     // Загрузка данных
     async function loadData() {
       if (!currentUser) return; // Не загружаем, если нет пользователя
@@ -801,6 +820,7 @@
         showLoader(false);
       }
     }
+
     // Загрузка пользовательских меток
     async function loadUserMarks() {
       if (!currentUser) return;
@@ -838,6 +858,7 @@
         }
       }
     }
+
     // Загрузка данных тайлов
     async function loadTileData() {
       try {
@@ -862,12 +883,18 @@
         }
         const result = await response.json();
         if (result.tiles && Array.isArray(result.tiles)) {
-          tileData = result.tiles.map(tile => ({
-            id: tile.id,
-            lng: tile.lng,
-            lat: tile.lat,
-            has_owner: tile.has_owner || 'false'
-          }));
+          // Фильтруем и корректируем координаты
+          tileData = result.tiles
+            .filter(tile => tile.id !== undefined && tile.lat !== undefined && tile.lng !== undefined)
+            .map(tile => {
+                const coords = createSafeCoordinate(tile.lat, tile.lng);
+                return {
+                    id: tile.id,
+                    lng: coords[0],
+                    lat: coords[1],
+                    has_owner: tile.has_owner || 'false'
+                };
+            });
           log(`✅ Загружено ${tileData.length} тайлов`);
           document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
         } else {
@@ -879,6 +906,7 @@
         // Не создаем демо-данные, просто сообщаем об ошибке
       }
     }
+
     // Сохранение метки
     async function saveMark(tileId, markType, comment = null) {
       if (!currentUser) {
@@ -924,6 +952,7 @@
         showToast('Ошибка сохранения метки', 'error');
       }
     }
+
     // Отрисовка избранного
     function renderFavorites() {
       const favList = document.getElementById('favorites-list');
@@ -973,6 +1002,7 @@
         });
       });
     }
+
     // Показ уведомления
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
@@ -983,10 +1013,12 @@
         toast.classList.remove('show');
       }, 3000);
     }
+
     // Показать/скрыть лоадер
     function showLoader(visible) {
       document.getElementById('loader').style.display = visible ? 'block' : 'none';
     }
+
     // Логирование
     function log(message, isError = false) {
       const now = new Date();
@@ -1001,6 +1033,7 @@
       debugLog.scrollTop = debugLog.scrollHeight;
       console[isError ? 'error' : 'log'](message);
     }
+
     // Инициализация обработчиков событий
     function initEventListeners() {
       // Кнопка входа
@@ -1100,6 +1133,7 @@
       const themeIcon = document.querySelector('#theme-toggle i');
       themeIcon.textContent = savedTheme === 'dark' ? 'light_mode' : 'dark_mode';
     }
+
     // Запуск приложения
     document.addEventListener('DOMContentLoaded', initApp);
   </script>
