@@ -749,28 +749,44 @@
     }
     
     // Проверка аутентификации Telegram
-    function checkTelegramAuth() {
-      const tg = window.Telegram?.WebApp;
-      if (tg) {
-        tg.ready();
-        tg.expand();
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-          currentUser = user;
-          document.getElementById('login-container').style.display = 'none';
-          document.getElementById('user-status').textContent = `Пользователь: ✅ ${user.first_name}`;
-          log(`👤 Пользователь: ${user.first_name} (${user.id})`);
-          // Синхронизируем пользователя с API
-          syncUser(user);
-        } else {
-          log('⚠️ Пользователь Telegram не найден');
-          document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Пользователь не найден';
-        }
-      } else {
-        log('⚠️ Telegram WebApp не обнаружен');
-        document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
-      }
+function checkTelegramAuth() {
+  // Попытка получить объект Telegram WebApp
+  const tg = window.Telegram?.WebApp;
+  
+  if (tg) {
+    // Инициализируем WebApp
+    tg.ready();
+    tg.expand();
+    
+    // Правильный способ получить данные пользователя
+    // initDataUnsafe - это распарсенный объект из параметра tgWebAppData URL
+    const initData = tg.initDataUnsafe; 
+    const user = initData?.user; // user находится внутри initDataUnsafe
+    
+    if (user && user.id) { // Проверяем, что user существует и у него есть ID
+      currentUser = user;
+      document.getElementById('login-container').style.display = 'none';
+      document.getElementById('user-status').textContent = `Пользователь: ✅ ${user.first_name}`;
+      log(`👤 Пользователь: ${user.first_name} (${user.id})`);
+      // Синхронизируем пользователя с API
+      syncUser(user);
+    } else {
+       // Даже если WebApp есть, но данных пользователя нет (редко, но бывает)
+       log('⚠️ Данные пользователя в Telegram WebApp не найдены');
+       document.getElementById('user-status').textContent = 'Пользователь: ⚠️ Не найден';
+       // Можно либо показать экран входа, либо использовать тестового
+       document.getElementById('login-container').style.display = 'none';
+       currentUser = { id: 'test-user-fallback', first_name: 'Fallback User' };
     }
+  } else {
+    // WebApp не обнаружен (браузер)
+    log('⚠️ Telegram WebApp не обнаружен, работаем в автономном режиме');
+    document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
+    // Для разработки - показываем карту без аутентификации
+    document.getElementById('login-container').style.display = 'none';
+    currentUser = { id: 'test-user-browser', first_name: 'Browser Test User' };
+  }
+}
     
     // Синхронизация пользователя с API
     async function syncUser(user) {
