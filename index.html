@@ -641,11 +641,10 @@
             }
           };
         });
-      // Добавляем источник данных
+            // Добавляем источник данных
       map.addSource('tiles-source', {
         type: 'geojson',
-        // ИСПРАВЛЕНО: Добавлено ключевое слово 'data'
-         {
+        data: { // <--- Ключевое слово 'data' ОБЯЗАТЕЛЬНО
           type: 'FeatureCollection',
           features: features
         }
