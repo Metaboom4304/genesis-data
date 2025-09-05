@@ -430,6 +430,42 @@
         font-size: 16px;
       }
     }
+    
+    /* ДОБАВЛЕНО: Замена устаревших -ms-high-contrast на стандартные forced-colors */
+    @media (forced-colors: active) {
+      body {
+        background: Canvas;
+        color: CanvasText;
+      }
+      .card-bg {
+        background: Canvas;
+        border: 1px solid ButtonText;
+      }
+      .control-btn {
+        background: Canvas;
+        border: 1px solid ButtonText;
+        color: ButtonText;
+      }
+      .search-input {
+        background: Canvas;
+        border-color: ButtonText;
+        color: ButtonText;
+      }
+      .filter-select {
+        background: Canvas;
+        border-color: ButtonText;
+        color: ButtonText;
+      }
+      .favorite-item {
+        background: Canvas;
+        border: 1px solid ButtonText;
+      }
+      .btn {
+        background: Canvas;
+        border: 1px solid ButtonText;
+        color: ButtonText;
+      }
+    }
   </style>
 </head>
 <body>
@@ -537,13 +573,13 @@
   <script>
     // Конфигурация приложения
     const CONFIG = {
-      API_URL: 'https://genesis-map-api.onrender.com', // ИСПРАВЛЕНО: Пробелы удалены
-      MAP_STYLE: 'https://demotiles.maplibre.org/style.json', // ИСПРАВЛЕНО: Пробелы удалены
+      API_URL: 'https://genesis-map-api.onrender.com',
+      MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
       INITIAL_VIEW: {
         center: [-123.10, 49.25],
         zoom: 6
       },
-      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php', // ИСПРАВЛЕНО: Пробелы удалены
+      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php',
       CACHE_TTL: 30 * 60 * 1000 // 30 минут
     };
     // Глобальные переменные
@@ -657,7 +693,7 @@
         // Создаём источник и слой, если их нет
         map.addSource('tiles-source', {
           type: 'geojson',
-           {
+          data: {
             type: 'FeatureCollection',
             features: features
           }
@@ -1202,7 +1238,8 @@
         document.body.classList.toggle('dark-theme', !isDark);
         document.body.classList.toggle('light-theme', isDark);
         const icon = document.querySelector('#theme-toggle i');
-        icon.textContent = isDark ? 'dark_mode' : 'light_mode';
+        // ИСПРАВЛЕНО: Правильное отображение иконки
+        icon.textContent = isDark ? 'light_mode' : 'dark_mode';
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
       });
       const savedTheme = localStorage.getItem('theme') || 'dark';
