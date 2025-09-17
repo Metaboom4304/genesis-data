@@ -2,8 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>GENESIS WAR MAP</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Добавляем мета-теги для Telegram WebApp -->
+  <meta name="telegram:webapp:url" content="https://ваш-домен.com">
+  <meta name="telegram:webapp:name" content="GENESIS WAR MAP">
+  <meta name="telegram:webapp:theme-color" content="#0f172a">
   <!-- MapLibre GL JS -->
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
@@ -34,6 +38,8 @@
       color: var(--light);
       overflow: hidden;
       height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
     #app {
       display: flex;
@@ -282,6 +288,11 @@
       justify-content: center;
       z-index: 1000;
       padding: 20px;
+      transition: opacity 0.3s;
+    }
+    #login-container.hidden {
+      opacity: 0;
+      pointer-events: none;
     }
     .login-card {
       background: var(--card-bg);
@@ -471,7 +482,7 @@
 <body>
   <div id="app">
     <!-- Login Screen -->
-    <div id="login-container">
+    <div id="login-container" class="hidden">
       <div class="login-card">
         <h1 class="login-title">GENESIS WAR MAP</h1>
         <p class="login-subtitle">Стратегическая карта для тактического планирования и координации</p>
@@ -580,8 +591,12 @@
         zoom: 6
       },
       TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php',
-      CACHE_TTL: 30 * 60 * 1000 // 30 минут
+      CACHE_TTL: 30 * 60 * 1000, // 30 минут
+      INIT_TIMEOUT: 5000, // 5 секунд ожидания Telegram WebApp
+      MAX_RETRY_COUNT: 3, // Максимальное количество попыток инициализации
+      RETRY_DELAY: 500 // Задержка между попытками в мс
     };
+    
     // Глобальные переменные
     let map;
     let currentUser = null;
@@ -592,6 +607,7 @@
     let isInitialLoad = true; // Флаг для отслеживания первой загрузки
     let debounceTimer = null; // ИСПРАВЛЕНО: Добавлен debounce
     let currentAbortController = null; // ИСПРАВЛЕНО: Добавлен AbortController
+    let initAttempts = 0; // Количество попыток инициализации
     
     // --- Вспомогательные функции ---
     // Безопасное создание координат для MapLibre
@@ -603,147 +619,198 @@
       return [clampedLng, clampedLat];
     }
     
+    // Проверка наличия Telegram WebApp
+    function isTelegramWebApp() {
+      return typeof window.Telegram !== 'undefined' && 
+             typeof window.Telegram.WebApp !== 'undefined';
+    }
+    
+    // Получение данных пользователя из Telegram
+    function getTelegramUser() {
+      try {
+        if (!isTelegramWebApp()) return null;
+        
+        const initData = window.Telegram.WebApp.initData || 
+                         window.Telegram.WebApp.initDataUnsafe;
+        const user = initData?.user;
+        
+        if (user && user.id) {
+          return {
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name || '',
+            username: user.username || '',
+            language_code: user.language_code || 'ru',
+            is_premium: user.is_premium || false
+          };
+        }
+        return null;
+      } catch (error) {
+        log(`⚠️ Ошибка получения данных пользователя: ${error.message}`, true);
+        return null;
+      }
+    }
+    
     // --- Инициализация MapLibre ---
     function initMaplibre() {
-      map = new maplibregl.Map({
-        container: 'map',
-        style: CONFIG.MAP_STYLE,
-        center: CONFIG.INITIAL_VIEW.center,
-        zoom: CONFIG.INITIAL_VIEW.zoom,
-        attributionControl: false
-      });
-      // Добавляем элементы управления
-      map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
-      map.addControl(new maplibregl.AttributionControl({
-        compact: true
-      }));
-      // Обработчики событий карты
-      map.on('load', () => {
-        log('🗺️ Карта MapLibre загружена');
-        document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
-        // Загружаем данные после инициализации карты
-        loadData();
-      });
-      map.on('moveend', updateVisibleTiles);
-      map.on('zoomend', updateVisibleTiles);
+      try {
+        map = new maplibregl.Map({
+          container: 'map',
+          style: CONFIG.MAP_STYLE,
+          center: CONFIG.INITIAL_VIEW.center,
+          zoom: CONFIG.INITIAL_VIEW.zoom,
+          attributionControl: false
+        });
+        
+        // Добавляем элементы управления
+        map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+        map.addControl(new maplibregl.AttributionControl({
+          compact: true
+        }));
+        
+        // Обработчики событий карты
+        map.on('load', () => {
+          log('🗺️ Карта MapLibre загружена');
+          document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
+          // Загружаем данные после инициализации карты
+          loadData();
+        });
+        
+        map.on('moveend', updateVisibleTiles);
+        map.on('zoomend', updateVisibleTiles);
+      } catch (error) {
+        log(`⚠️ Ошибка инициализации карты: ${error.message}`, true);
+        document.getElementById('map-status').textContent = 'Карта: 🔴 Ошибка';
+        showToast('Ошибка инициализации карты', 'error');
+      }
     }
     
     // Обновление видимых тайлов
     function updateVisibleTiles() {
       if (!map || !tileData.length) return;
       
-      const bounds = map.getBounds();
-      visibleTiles.clear();
-      
-      // Фильтруем тайлы в пределах видимой области
-      tileData.forEach(tile => {
-        if (bounds.contains([tile.lng, tile.lat])) {
-          visibleTiles.add(tile.id);
+      try {
+        const bounds = map.getBounds();
+        visibleTiles.clear();
+        
+        // Фильтруем тайлы в пределах видимой области
+        tileData.forEach(tile => {
+          if (bounds.contains([tile.lng, tile.lat])) {
+            visibleTiles.add(tile.id);
+          }
+        });
+        
+        renderTiles();
+        
+        // При первой загрузке не запрашиваем данные снова, они уже загружены
+        if (isInitialLoad) {
+            isInitialLoad = false;
+            return;
         }
-      });
-      
-      renderTiles();
-      
-      // При первой загрузке не запрашиваем данные снова, они уже загружены
-      if (isInitialLoad) {
-          isInitialLoad = false;
-          return;
+        
+        // ИСПРАВЛЕНО: Добавлен debounce для предотвращения частых запросов
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+        
+        debounceTimer = setTimeout(() => {
+          loadData();
+        }, 500); // Запрос данных через 500мс после последнего движения карты
+      } catch (error) {
+        log(`⚠️ Ошибка обновления видимых тайлов: ${error.message}`, true);
       }
-      
-      // ИСПРАВЛЕНО: Добавлен debounce для предотвращения частых запросов
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
-      
-      debounceTimer = setTimeout(() => {
-        loadData();
-      }, 500); // Запрос данных через 500мс после последнего движения карты
     }
     
     // Визуализация тайлов
     function renderTiles() {
-      // ИСПРАВЛЕНО: Обновляем источник вместо удаления и создания слоя
-      const features = tileData
-        .filter(tile => visibleTiles.has(tile.id))
-        .map(tile => {
-          const status = getUserMarkStatus(tile.id);
-          const isFavorite = favorites.includes(tile.id);
-          return {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [tile.lng, tile.lat] // Координаты уже проверены
-            },
-            properties: {
-              id: tile.id,
-              status: status,
-              isFavorite: isFavorite,
-              owned: tile.has_owner === 'true'
-            }
-          };
-        });
+      try {
+        // ИСПРАВЛЕНО: Обновляем источник вместо удаления и создания слоя
+        const features = tileData
+          .filter(tile => visibleTiles.has(tile.id))
+          .map(tile => {
+            const status = getUserMarkStatus(tile.id);
+            const isFavorite = favorites.includes(tile.id);
+            return {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [tile.lng, tile.lat] // Координаты уже проверены
+              },
+              properties: {
+                id: tile.id,
+                status: status,
+                isFavorite: isFavorite,
+                owned: tile.has_owner === 'true'
+              }
+            };
+          });
 
-      if (map.getSource('tiles-source')) {
-        // Обновляем существующий источник
-        map.getSource('tiles-source').setData({
-          type: 'FeatureCollection',
-          features: features
-        });
-      } else {
-        // Создаём источник и слой, если их нет
-        map.addSource('tiles-source', {
-          type: 'geojson',
-          data: {
+        if (map.getSource('tiles-source')) {
+          // Обновляем существующий источник
+          map.getSource('tiles-source').setData({
             type: 'FeatureCollection',
             features: features
-          }
-        });
-        
-        // Добавляем слой для отображения
-        map.addLayer({
-          id: 'tiles-layer',
-          type: 'circle',
-          source: 'tiles-source',
-          paint: {
-            'circle-radius': [
-              'interpolate', ['linear'], ['zoom'],
-              3, 3,
-              10, 8
-            ],
-            'circle-color': [
-              'case',
-              ['==', ['get', 'status'], 'ally'], '#10b981',
-              ['==', ['get', 'status'], 'enemy'], '#ef4444',
-              ['==', ['get', 'status'], 'favorite'], '#f59e0b',
-              ['==', ['get', 'owned'], true], '#3b82f6',
-              '#6b7280'
-            ],
-            'circle-stroke-width': 2,
-            'circle-stroke-color': [
-              'case',
-              ['==', ['get', 'status'], 'ally'], '#059669',
-              ['==', ['get', 'status'], 'enemy'], '#dc2626',
-              ['==', ['get', 'status'], 'favorite'], '#d97706',
-              ['==', ['get', 'owned'], true], '#1d4ed8',
-              '#4b5563'
-            ]
-          }
-        });
-        
-        // Добавляем всплывающие подсказки
-        map.on('click', 'tiles-layer', (e) => {
-          if (e.features.length > 0) {
-            const tileId = e.features[0].properties.id;
-            showTilePopup(tileId, e.lngLat);
-          }
-        });
-        // Изменение курсора при наведении
-        map.on('mouseenter', 'tiles-layer', () => {
-          map.getCanvas().style.cursor = 'pointer';
-        });
-        map.on('mouseleave', 'tiles-layer', () => {
-          map.getCanvas().style.cursor = '';
-        });
+          });
+        } else {
+          // Создаём источник и слой, если их нет
+          map.addSource('tiles-source', {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: features
+            }
+          });
+          
+          // Добавляем слой для отображения
+          map.addLayer({
+            id: 'tiles-layer',
+            type: 'circle',
+            source: 'tiles-source',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                3, 3,
+                10, 8
+              ],
+              'circle-color': [
+                'case',
+                ['==', ['get', 'status'], 'ally'], '#10b981',
+                ['==', ['get', 'status'], 'enemy'], '#ef4444',
+                ['==', ['get', 'status'], 'favorite'], '#f59e0b',
+                ['==', ['get', 'owned'], true], '#3b82f6',
+                '#6b7280'
+              ],
+              'circle-stroke-width': 2,
+              'circle-stroke-color': [
+                'case',
+                ['==', ['get', 'status'], 'ally'], '#059669',
+                ['==', ['get', 'status'], 'enemy'], '#dc2626',
+                ['==', ['get', 'status'], 'favorite'], '#d97706',
+                ['==', ['get', 'owned'], true], '#1d4ed8',
+                '#4b5563'
+              ]
+            }
+          });
+          
+          // Добавляем всплывающие подсказки
+          map.on('click', 'tiles-layer', (e) => {
+            if (e.features.length > 0) {
+              const tileId = e.features[0].properties.id;
+              showTilePopup(tileId, e.lngLat);
+            }
+          });
+          
+          // Изменение курсора при наведении
+          map.on('mouseenter', 'tiles-layer', () => {
+            map.getCanvas().style.cursor = 'pointer';
+          });
+          
+          map.on('mouseleave', 'tiles-layer', () => {
+            map.getCanvas().style.cursor = '';
+          });
+        }
+      } catch (error) {
+        log(`⚠️ Ошибка визуализации тайлов: ${error.message}`, true);
       }
     }
     
@@ -751,8 +818,10 @@
     function showTilePopup(tileId, lngLat) {
       const tile = tileData.find(t => t.id === tileId);
       if (!tile) return;
+      
       const status = getUserMarkStatus(tileId);
       const isFavorite = favorites.includes(tileId);
+      
       const popupContent = `
         <div class="popup-content">
           <h3>Тайл #${tileId}</h3>
@@ -766,10 +835,12 @@
           </div>
         </div>
       `;
+      
       const popup = new maplibregl.Popup()
         .setLngLat(lngLat)
         .setHTML(popupContent)
         .addTo(map);
+      
       // Добавляем обработчики событий после отображения popup
       setTimeout(() => {
         document.querySelectorAll('.mark-btn').forEach(btn => {
@@ -794,82 +865,150 @@
     
     // Инициализация приложения
     function initApp() {
-      initMaplibre();
-      initEventListeners();
-      checkTelegramAuth();
+      // Проверяем наличие Telegram WebApp
+      if (isTelegramWebApp()) {
+        initTelegramWebApp();
+      } else {
+        // Пробуем подождать инициализации
+        waitForTelegramWebApp();
+      }
     }
     
-    // Проверка аутентификации Telegram
-    function checkTelegramAuth() {
-      // Попытка получить объект Telegram WebApp
-      const tg = window.Telegram?.WebApp;
-      
-      if (tg) {
+    // Инициализация Telegram WebApp
+    function initTelegramWebApp() {
+      try {
         // Инициализируем WebApp
-        tg.ready();
-        tg.expand();
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+        window.Telegram.WebApp.setHeaderColor('#0f172a');
+        window.Telegram.WebApp.setBackgroundColor('#0f172a');
         
-        // Правильный способ получить данные пользователя
-        const initData = tg.initDataUnsafe; 
-        const user = initData?.user;
+        document.getElementById('tg-status').textContent = 'Telegram WebApp: ✅ Инициализирован';
+        log('✅ Telegram WebApp инициализирован');
         
-        if (user && user.id) {
-          currentUser = {
-            id: user.id,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            username: user.username,
-            language_code: user.language_code
-          };
-          document.getElementById('login-container').style.display = 'none';
+        // Получаем данные пользователя
+        const user = getTelegramUser();
+        
+        if (user) {
+          currentUser = user;
           document.getElementById('user-status').textContent = `Пользователь: ✅ ${user.first_name}`;
           log(`👤 Пользователь: ${user.first_name} (${user.id})`);
+          
           // Синхронизируем пользователя с API
-          syncUser(currentUser);
+          syncUser(user).then(() => {
+            // Инициализируем карту
+            initMaplibre();
+            // Скрываем экран входа
+            document.getElementById('login-container').classList.add('hidden');
+          });
         } else {
-          log('⚠️ Данные пользователя в Telegram WebApp не найдены');
+          log('⚠️ Данные пользователя в Telegram WebApp не найдены', true);
           document.getElementById('user-status').textContent = 'Пользователь: ⚠️ Не найден';
           showLoginScreen();
         }
-      } else {
-        // WebApp не обнаружен (браузер)
-        log('⚠️ Telegram WebApp не обнаружен, требуется запуск через Telegram');
-        document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
+      } catch (error) {
+        log(`⚠️ Ошибка инициализации Telegram WebApp: ${error.message}`, true);
+        document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Ошибка';
         showLoginScreen();
       }
     }
     
+    // Ожидание инициализации Telegram WebApp
+    function waitForTelegramWebApp() {
+      if (initAttempts >= CONFIG.MAX_RETRY_COUNT) {
+        log('❌ Превышено максимальное количество попыток инициализации Telegram WebApp', true);
+        document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
+        showLoginScreen();
+        return;
+      }
+      
+      initAttempts++;
+      log(`ℹ️ Попытка ${initAttempts} инициализации Telegram WebApp...`);
+      
+      // Проверяем наличие объекта Telegram каждые 500мс
+      const interval = setInterval(() => {
+        if (isTelegramWebApp()) {
+          clearInterval(interval);
+          initTelegramWebApp();
+        }
+      }, CONFIG.RETRY_DELAY);
+      
+      // Таймаут на случай, если Telegram WebApp так и не появится
+      setTimeout(() => {
+        clearInterval(interval);
+        waitForTelegramWebApp();
+      }, CONFIG.INIT_TIMEOUT);
+    }
+    
     // Показать экран входа
     function showLoginScreen() {
-      document.getElementById('login-container').style.display = 'flex';
+      const loginContainer = document.getElementById('login-container');
+      loginContainer.classList.remove('hidden');
+      
       document.getElementById('map-status').textContent = 'Карта: ⚠️ Требуется вход';
       document.getElementById('api-status').textContent = 'API: ⚠️ Не авторизован';
+      
       showToast('Пожалуйста, откройте карту через Telegram бот @Goamap_bot', 'warning');
+      
+      log('⚠️ Требуется вход через Telegram');
     }
     
     // Синхронизация пользователя с API
     async function syncUser(user) {
       try {
+        log(`📡 Синхронизация пользователя с API: ${user.id}`);
+        
         const response = await fetch(`${CONFIG.API_URL}/api/users/register`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Telegram-Init-Data': window.Telegram?.WebApp?.initData || ''
           },
           body: JSON.stringify({
             telegram_id: user.id,
             first_name: user.first_name,
             last_name: user.last_name || '',
-            username: user.username || ''
+            username: user.username || '',
+            language_code: user.language_code || 'ru',
+            is_premium: user.is_premium || false,
+            auth_date: window.Telegram?.WebApp?.initDataUnsafe?.auth_date || Math.floor(Date.now() / 1000)
           })
         });
+        
         if (response.ok) {
-          log('💾 Пользователь синхронизирован с API');
+          const result = await response.json();
+          log('✅ Пользователь синхронизирован с API', false);
+          return true;
         } else {
-            const errorText = await response.text();
-            log(`⚠️ Ошибка синхронизации пользователя: ${response.status} ${errorText}`, true);
+          const errorText = await response.text();
+          log(`❌ Ошибка синхронизации пользователя: ${response.status} ${errorText}`, true);
+          
+          // Попробуем сохранить данные в localStorage как временный вариант
+          try {
+            localStorage.setItem(`user_data_${user.id}`, JSON.stringify(user));
+            log('⚠️ Данные пользователя сохранены в localStorage', false);
+          } catch (e) {
+            log(`❌ Не удалось сохранить данные в localStorage: ${e.message}`, true);
+          }
+          
+          return false;
         }
       } catch (error) {
-        log(`⚠️ Ошибка синхронизации пользователя: ${error.message}`, true);
+        log(`❌ Критическая ошибка синхронизации: ${error.message}`, true);
+        
+        // Попробуем использовать данные из localStorage
+        try {
+          const storedUser = localStorage.getItem(`user_data_${user.id}`);
+          if (storedUser) {
+            currentUser = JSON.parse(storedUser);
+            log('⚠️ Используем данные пользователя из localStorage', false);
+            return true;
+          }
+        } catch (e) {
+          log(`❌ Не удалось восстановить данные из localStorage: ${e.message}`, true);
+        }
+        
+        return false;
       }
     }
     
@@ -1172,11 +1311,9 @@
     function initEventListeners() {
       // Кнопка входа
       document.getElementById('login-button').addEventListener('click', () => {
-        // Открываем карту через Telegram бот
         showToast('Пожалуйста, откройте карту через Telegram бот @Goamap_bot', 'warning');
-        // В реальном приложении здесь должен быть вызов Telegram WebApp
-        // Например: window.Telegram.WebApp.openTelegramLink('https://t.me/Goamap_bot');
       });
+      
       // Поиск
       document.getElementById('search').addEventListener('input', (e) => {
         const value = e.target.value.trim();
@@ -1196,10 +1333,12 @@
           }
         }
       });
+      
       // Фильтр
       document.getElementById('status-filter').addEventListener('change', () => {
         updateVisibleTiles();
       });
+      
       // Сброс
       document.getElementById('reset').addEventListener('click', () => {
         document.getElementById('search').value = '';
@@ -1210,6 +1349,7 @@
           essential: true
         });
       });
+      
       // Снимок
       document.getElementById('screenshot-btn').addEventListener('click', () => {
         // html2canvas не подключен, но теперь есть заглушка
@@ -1219,6 +1359,7 @@
           showToast('Снимок карты сохранен', 'success');
         }, 1000);
       });
+      
       // Сворачивание панели
       document.getElementById('toggle-panel').addEventListener('click', () => {
         const panel = document.getElementById('control-panel');
@@ -1227,13 +1368,16 @@
         icon.textContent = panel.classList.contains('panel-collapsed') ? 
           'keyboard_arrow_down' : 'keyboard_arrow_up';
       });
+      
       // Управление картой
       document.getElementById('zoom-in').addEventListener('click', () => {
         map.zoomIn();
       });
+      
       document.getElementById('zoom-out').addEventListener('click', () => {
         map.zoomOut();
       });
+      
       document.getElementById('locate-me').addEventListener('click', () => {
         showLoader(true);
         navigator.geolocation.getCurrentPosition(
@@ -1252,11 +1396,13 @@
           }
         );
       });
+      
       // Отладка
       document.getElementById('debug-toggle').addEventListener('click', () => {
         const debug = document.getElementById('debug');
         debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
       });
+      
       // Тема
       document.getElementById('theme-toggle').addEventListener('click', () => {
         const isDark = document.body.classList.contains('dark-theme');
@@ -1267,6 +1413,8 @@
         icon.textContent = isDark ? 'light_mode' : 'dark_mode';
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
       });
+      
+      // Инициализация темы из localStorage
       const savedTheme = localStorage.getItem('theme') || 'dark';
       document.body.classList.add(savedTheme + '-theme');
       const themeIcon = document.querySelector('#theme-toggle i');
@@ -1274,7 +1422,13 @@
     }
     
     // Запуск приложения
-    document.addEventListener('DOMContentLoaded', initApp);
+    document.addEventListener('DOMContentLoaded', () => {
+      initEventListeners();
+      initApp();
+      
+      // Добавляем обработчик события готовности Telegram WebApp
+      window.addEventListener('tgWebAppReady', initTelegramWebApp);
+    });
   </script>
 </body>
 </html>
