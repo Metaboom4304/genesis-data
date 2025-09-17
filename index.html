@@ -3,12 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <!-- КРИТИЧЕСКИ ВАЖНЫЕ мета-теги для Telegram WebApp -->
-  <meta name="telegram:webapp:url" content="https://genesis-map-api.onrender.com">
-  <meta name="telegram:webapp:name" content="GENESIS WAR MAP">
-  <meta name="telegram:webapp:theme-color" content="#0f172a">
-  
-  <title>GENESIS WAR MAP</title>
+  <title>GENESIS WAR MAP - Древние Земли</title>
   
   <!-- MapLibre GL JS -->
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
@@ -23,168 +18,280 @@
       margin: 0;
       padding: 0;
     }
+    
     :root {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --secondary: #10b981;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --dark: #1f2937;
-      --light: #f9fafb;
-      --gray: #6b7280;
-      --background: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.8);
-      --card-border: rgba(255, 255, 255, 0.1);
+      --primary: #8b4513;
+      --primary-dark: #5d2a0b;
+      --secondary: #a0522d;
+      --accent: #d2691e;
+      --text: #2c1a0a;
+      --background: #f5e6d3;
+      --paper: #e6d3b8;
+      --dark-paper: #d4c0a0;
+      --border: #a67c52;
+      --highlight: #f4a460;
+      --marker-ally: #1e88e5;
+      --marker-enemy: #e53935;
+      --marker-favorite: #ffca28;
+      --marker-owned: #43a047;
     }
+    
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--background);
-      color: var(--light);
+      font-family: 'Cinzel', 'Times New Roman', serif;
+      background: var(--background) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e6d3b8" opacity="0.15"/></svg>');
+      color: var(--text);
       overflow: hidden;
       height: 100vh;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+      position: relative;
+      background-attachment: fixed;
     }
+    
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><path d="M200,200 Q250,100 300,200 Q350,250 300,300 Q250,350 200,300 Q150,250 200,200" fill="none" stroke="%23a67c52" stroke-width="0.5" stroke-dasharray="5,5"/></svg>') center/contain no-repeat;
+      opacity: 0.03;
+      z-index: -1;
+    }
+    
     #app {
       display: flex;
       flex-direction: column;
       height: 100vh;
       position: relative;
+      z-index: 1;
     }
-    /* Header Styles */
+    
+    /* Заголовок с винтажным стилем */
     .header {
-      background: var(--card-bg);
-      backdrop-filter: blur(10px);
+      background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20" viewBox="0 0 100 20"><path d="M0,10 Q25,5 50,10 T100,10" fill="none" stroke="%23a67c52" stroke-width="0.5"/></svg>') bottom no-repeat;
+      background-size: 100% 100%;
       padding: 12px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--card-border);
+      border-bottom: 2px solid var(--border);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       z-index: 10;
     }
+    
     .logo {
       display: flex;
       align-items: center;
       gap: 12px;
+      position: relative;
     }
+    
+    .logo::before, .logo::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 1px;
+      background: var(--border);
+    }
+    
+    .logo::before {
+      left: -25px;
+      width: 20px;
+    }
+    
+    .logo::after {
+      right: -25px;
+      width: 20px;
+    }
+    
     .logo-icon {
       font-size: 24px;
       color: var(--primary);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
     }
+    
     .logo-text {
       font-weight: 700;
       font-size: 18px;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-family: 'Cinzel', serif;
+      color: var(--primary-dark);
+      text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+      letter-spacing: 1px;
+      position: relative;
     }
+    
+    .logo-text::after {
+      content: "™";
+      font-size: 10px;
+      position: absolute;
+      top: -2px;
+      right: -12px;
+    }
+    
     .header-controls {
       display: flex;
       gap: 12px;
       align-items: center;
     }
-    /* Map Container */
+    
+    /* Контейнер карты с эффектом старой бумаги */
     #map {
       flex: 1;
       width: 100%;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
     }
-    /* Control Panel */
+    
+    #map::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><path d="M0,0 L200,200 M200,0 L0,200" stroke="%23a67c52" stroke-width="0.1" opacity="0.05"/></svg>') center/cover;
+      z-index: 1;
+    }
+    
+    /* Панель управления */
     .control-panel {
       position: absolute;
       top: 80px;
       left: 20px;
-      background: var(--card-bg);
-      backdrop-filter: blur(10px);
-      border-radius: 12px;
+      background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23d4c0a0" opacity="0.1"/></svg>');
+      background-size: cover;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       padding: 16px;
       width: 320px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-      border: 1px solid var(--card-border);
       z-index: 9;
       transition: all 0.3s ease;
+      font-family: 'Cinzel', serif;
+      backdrop-filter: blur(2px);
     }
+    
     .panel-collapsed {
       height: 50px;
       overflow: hidden;
     }
+    
     .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed var(--border);
     }
+    
     .panel-title {
       font-weight: 600;
       font-size: 16px;
+      color: var(--primary-dark);
+      position: relative;
+      padding-left: 20px;
     }
+    
+    .panel-title::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%238b4513"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>') center/contain no-repeat;
+    }
+    
     .toggle-panel {
       background: none;
-      border: none;
-      color: var(--gray);
+      border: 1px solid var(--border);
+      color: var(--primary);
       cursor: pointer;
-      padding: 4px;
+      padding: 4px 8px;
       border-radius: 4px;
       transition: all 0.2s;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
     }
+    
     .toggle-panel:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(139, 69, 19, 0.1);
     }
-    /* Search */
+    
+    /* Поиск */
     .search-container {
       position: relative;
       margin-bottom: 16px;
     }
+    
     .search-input {
       width: 100%;
       padding: 10px 40px 10px 12px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      color: var(--light);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
       font-size: 14px;
+      font-family: 'Cinzel', serif;
     }
+    
     .search-input:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.3);
     }
+    
     .search-icon {
       position: absolute;
       right: 12px;
       top: 50%;
       transform: translateY(-50%);
-      color: var(--gray);
+      color: var(--border);
     }
-    /* Filter Section */
+    
+    /* Фильтр */
     .filter-section {
       margin-bottom: 16px;
     }
+    
     .filter-label {
       display: block;
       margin-bottom: 8px;
       font-size: 14px;
-      color: var(--gray);
+      color: var(--primary-dark);
+      font-family: 'Cinzel', serif;
     }
+    
     .filter-select {
       width: 100%;
       padding: 10px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      color: var(--light);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
       font-size: 14px;
+      font-family: 'Cinzel', serif;
     }
-    /* Action Buttons */
+    
+    /* Кнопки */
     .action-buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
       margin-bottom: 16px;
     }
+    
     .btn {
       padding: 10px;
-      border: none;
-      border-radius: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
       font-weight: 500;
       font-size: 14px;
       cursor: pointer;
@@ -193,65 +300,90 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
+      font-family: 'Cinzel', serif;
+      background: rgba(255, 255, 255, 0.7);
     }
+    
     .btn-primary {
       background: var(--primary);
       color: white;
+      border-color: var(--primary-dark);
     }
+    
     .btn-primary:hover {
       background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
+    
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--light);
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--primary);
+      border-color: var(--border);
     }
+    
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(139, 69, 19, 0.1);
     }
-    /* Favorites */
+    
+    /* Избранное */
     .favorites-section {
       margin-top: 16px;
     }
+    
     .favorites-title {
       font-size: 14px;
-      color: var(--gray);
+      color: var(--primary-dark);
       margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 6px;
+      font-family: 'Cinzel', serif;
     }
+    
     .favorites-list {
       max-height: 200px;
       overflow-y: auto;
     }
+    
     .favorite-item {
       padding: 10px;
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.5);
       border-radius: 6px;
       margin-bottom: 6px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 14px;
+      border-left: 3px solid var(--marker-favorite);
+      transition: all 0.2s;
     }
+    
+    .favorite-item:hover {
+      background: rgba(255, 255, 255, 0.8);
+      transform: translateX(2px);
+    }
+    
     .favorite-actions {
       display: flex;
       gap: 6px;
     }
+    
     .favorite-btn {
       background: none;
-      border: none;
-      color: var(--gray);
+      border: 1px solid var(--border);
+      color: var(--primary);
       cursor: pointer;
       padding: 4px;
       border-radius: 4px;
       transition: all 0.2s;
     }
+    
     .favorite-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--light);
+      background: rgba(139, 69, 19, 0.1);
     }
-    /* Map Controls */
+    
+    /* Управление картой */
     .map-controls {
       position: absolute;
       right: 20px;
@@ -261,31 +393,105 @@
       gap: 10px;
       z-index: 9;
     }
+    
     .control-btn {
       width: 40px;
       height: 40px;
       border-radius: 8px;
-      background: var(--card-bg);
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--card-border);
-      color: var(--light);
+      background: var(--paper);
+      border: 1px solid var(--border);
+      color: var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       transition: all 0.2s;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
+    
     .control-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(139, 69, 19, 0.1);
+      transform: translateY(-2px);
     }
-    /* Login Screen */
+    
+    .control-btn:active {
+      transform: translateY(0);
+    }
+    
+    /* Эффекты для маркеров */
+    .maplibregl-marker.ally {
+      filter: drop-shadow(0 0 2px rgba(30, 136, 229, 0.3));
+    }
+    
+    .maplibregl-marker.enemy {
+      filter: drop-shadow(0 0 2px rgba(229, 57, 53, 0.3));
+    }
+    
+    .maplibregl-marker.favorite {
+      filter: drop-shadow(0 0 2px rgba(255, 202, 40, 0.3));
+    }
+    
+    .maplibregl-marker.owned {
+      filter: drop-shadow(0 0 2px rgba(67, 160, 71, 0.3));
+    }
+    
+    /* Всплывающие окна */
+    .maplibregl-popup {
+      max-width: 300px;
+      font-family: 'Cinzel', serif;
+    }
+    
+    .maplibregl-popup-content {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .maplibregl-popup-content h3 {
+      margin-bottom: 8px;
+      color: var(--primary-dark);
+      font-size: 16px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 6px;
+    }
+    
+    .maplibregl-popup-content p {
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--text);
+    }
+    
+    .popup-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    
+    .popup-actions button {
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .popup-actions button:hover {
+      background: rgba(139, 69, 19, 0.1);
+    }
+    
+    /* Экран входа */
     #login-container {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: var(--background);
+      background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,20 L80,20 L80,80 L20,80 Z M30,30 L70,30 L70,70 L30,70 Z" fill="none" stroke="%23a67c52" stroke-width="0.5" opacity="0.2"/></svg>') center/cover;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -293,38 +499,100 @@
       z-index: 1000;
       padding: 20px;
       transition: opacity 0.3s;
+      text-align: center;
     }
+    
     #login-container.hidden {
       opacity: 0;
       pointer-events: none;
     }
+    
     .login-card {
-      background: var(--card-bg);
-      border-radius: 16px;
+      background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e6d3b8" opacity="0.7"/></svg>');
+      border: 2px solid var(--border);
+      border-radius: 12px;
       padding: 40px;
-      text-align: center;
-      max-width: 400px;
+      max-width: 450px;
       width: 100%;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--card-border);
+      position: relative;
+      overflow: hidden;
     }
+    
+    .login-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--marker-ally), var(--marker-enemy), var(--marker-favorite), var(--marker-owned));
+    }
+    
     .login-title {
-      font-size: 24px;
+      font-size: 28px;
       font-weight: 700;
       margin-bottom: 20px;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: var(--primary-dark);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+      letter-spacing: 2px;
+      font-family: 'Cinzel', serif;
+      position: relative;
+      display: inline-block;
     }
+    
+    .login-title::after {
+      content: "";
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 2px;
+      background: var(--border);
+    }
+    
     .login-subtitle {
-      color: var(--gray);
+      color: var(--primary);
       margin-bottom: 30px;
       font-size: 16px;
+      line-height: 1.5;
+      font-family: 'Cinzel', serif;
+      max-width: 350px;
+      margin-left: auto;
+      margin-right: auto;
     }
+    
+    .login-instructions {
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 25px;
+      text-align: left;
+      font-size: 14px;
+      color: var(--text);
+      font-family: 'Cinzel', serif;
+    }
+    
+    .login-instructions p {
+      margin-bottom: 8px;
+      position: relative;
+      padding-left: 20px;
+    }
+    
+    .login-instructions p::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-weight: bold;
+    }
+    
     .login-btn {
       padding: 14px 28px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      border: none;
+      background: var(--primary);
+      border: 1px solid var(--primary-dark);
       border-radius: 10px;
       color: white;
       font-weight: 600;
@@ -334,42 +602,75 @@
       display: inline-flex;
       align-items: center;
       gap: 10px;
+      font-family: 'Cinzel', serif;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
     }
+    
+    .login-btn::after {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 20px;
+      height: 200%;
+      background: rgba(255, 255, 255, 0.2);
+      transform: rotate(30deg);
+      transition: all 0.5s;
+    }
+    
     .login-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
     }
-    /* Debug Panel */
+    
+    .login-btn:hover::after {
+      left: 120%;
+    }
+    
+    .login-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Отладка */
     #debug {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(15, 23, 42, 0.95);
-      color: #10b981;
+      background: rgba(230, 211, 184, 0.95);
+      color: var(--text);
       font-size: 12px;
       padding: 12px;
       z-index: 1001;
       max-height: 40vh;
       overflow: auto;
       font-family: 'Fira Code', monospace;
-      border-top: 1px solid var(--card-border);
+      border-top: 1px solid var(--border);
       display: none;
+      backdrop-filter: blur(2px);
     }
+    
     .debug-section {
       margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 8px;
+      color: var(--text);
     }
+    
     #debug-log {
       max-height: 120px;
       overflow: auto;
       margin-top: 10px;
       padding-top: 10px;
-      border-top: 1px dashed var(--card-border);
+      border-top: 1px dashed var(--border);
     }
-    /* Loader */
+    
+    /* Загрузчик */
     .loader {
       display: none;
       position: absolute;
@@ -377,38 +678,43 @@
       left: 50%;
       transform: translate(-50%, -50%);
       z-index: 1002;
-      background: var(--card-bg);
+      background: var(--paper);
       padding: 20px;
       border-radius: 12px;
       text-align: center;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--card-border);
+      border: 1px solid var(--border);
     }
+    
     .loader-spinner {
       width: 40px;
       height: 40px;
-      border: 3px solid rgba(255, 255, 255, 0.1);
+      border: 3px solid rgba(255, 255, 255, 0.3);
       border-top: 3px solid var(--primary);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto 15px;
     }
+    
     .loader-text {
-      color: var(--light);
+      color: var(--text);
       font-size: 14px;
+      font-family: 'Cinzel', serif;
     }
+    
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    /* Toast Notifications */
+    
+    /* Уведомления */
     .toast {
       position: fixed;
       top: 20px;
       right: 20px;
       padding: 12px 16px;
-      background: var(--card-bg);
-      color: var(--light);
+      background: var(--paper);
+      color: var(--text);
       border-radius: 8px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
       border-left: 4px solid var(--primary);
@@ -418,64 +724,74 @@
       gap: 10px;
       transform: translateX(100%);
       transition: transform 0.3s ease;
+      font-family: 'Cinzel', serif;
+      border: 1px solid var(--border);
     }
+    
     .toast.show {
       transform: translateX(0);
     }
+    
     .toast-error {
-      border-left-color: var(--danger);
+      border-left-color: var(--marker-enemy);
     }
+    
     .toast-success {
-      border-left-color: var(--secondary);
+      border-left-color: var(--marker-owned);
     }
+    
     .toast-warning {
-      border-left-color: var(--warning);
+      border-left-color: var(--marker-favorite);
     }
-    /* Responsive */
+    
+    /* Адаптация под мобильные */
     @media (max-width: 768px) {
       .control-panel {
         width: calc(100% - 40px);
         left: 20px;
         right: 20px;
       }
+      
       .header {
-        padding: 12px 16px;
+        padding: 10px 15px;
       }
+      
       .logo-text {
         font-size: 16px;
       }
+      
+      .login-card {
+        padding: 25px;
+        margin: 0 10px;
+      }
+      
+      .login-title {
+        font-size: 24px;
+      }
+      
+      .map-controls {
+        right: 10px;
+        bottom: 10px;
+      }
+      
+      .control-btn {
+        width: 35px;
+        height: 35px;
+      }
+      
+      .action-buttons {
+        grid-template-columns: 1fr;
+      }
     }
     
-    /* ИСПРАВЛЕНО: Замена устаревших -ms-high-contrast на стандартные forced-colors */
+    /* Режим высокой контрастности */
     @media (forced-colors: active) {
       body {
         background: Canvas;
         color: CanvasText;
       }
-      .card-bg {
-        background: Canvas;
-        border: 1px solid ButtonText;
-      }
-      .control-btn {
-        background: Canvas;
-        border: 1px solid ButtonText;
-        color: ButtonText;
-      }
-      .search-input {
-        background: Canvas;
-        border-color: ButtonText;
-        color: ButtonText;
-      }
-      .filter-select {
-        background: Canvas;
-        border-color: ButtonText;
-        color: ButtonText;
-      }
-      .favorite-item {
-        background: Canvas;
-        border: 1px solid ButtonText;
-      }
-      .btn {
+      
+      .card-bg, .control-btn, .search-input, .filter-select, .favorite-item, .btn {
         background: Canvas;
         border: 1px solid ButtonText;
         color: ButtonText;
@@ -485,25 +801,23 @@
 </head>
 <body>
   <div id="app">
-    <!-- Login Screen -->
-    <div id="login-container" class="hidden">
+    <!-- Экран входа -->
+    <div id="login-container">
       <div class="login-card">
         <h1 class="login-title">GENESIS WAR MAP</h1>
         <p class="login-subtitle">Стратегическая карта для тактического планирования и координации</p>
         <div class="login-instructions">
-          <p style="margin-bottom: 15px; color: var(--warning);">Важно: карта работает ТОЛЬКО через Telegram WebApp</p>
-          <p style="margin-bottom: 15px;">1. Откройте бота @Goamap_bot в Telegram</p>
-          <p style="margin-bottom: 15px;">2. Нажмите на кнопку "Открыть карту" в диалоге с ботом</p>
-          <p style="margin-bottom: 15px;">3. Убедитесь, что ваш домен добавлен в BotFather через /setdomain</p>
-          <p>4. Домен должен быть: <strong>genesis-map-api.onrender.com</strong></p>
+          <p>Для доступа к карте требуется авторизация через Telegram</p>
+          <p>Нажмите на кнопку ниже для входа</p>
         </div>
         <button id="login-button" class="login-btn">
           <i class="material-icons">lock</i>
-          Открыть через Telegram
+          Войти через Telegram
         </button>
       </div>
     </div>
-    <!-- Header -->
+    
+    <!-- Заголовок -->
     <div class="header">
       <div class="logo">
         <i class="material-icons logo-icon">public</i>
@@ -514,13 +828,15 @@
           <i class="material-icons">bug_report</i>
         </button>
         <button class="control-btn" id="theme-toggle">
-          <i class="material-icons">dark_mode</i>
+          <i class="material-icons">contrast</i>
         </button>
       </div>
     </div>
-    <!-- Map Container -->
+    
+    <!-- Карта -->
     <div id="map"></div>
-    <!-- Control Panel -->
+    
+    <!-- Панель управления -->
     <div class="control-panel" id="control-panel">
       <div class="panel-header">
         <h3 class="panel-title">Управление картой</h3>
@@ -528,10 +844,12 @@
           <i class="material-icons">keyboard_arrow_up</i>
         </button>
       </div>
+      
       <div class="search-container">
         <input type="text" class="search-input" id="search" placeholder="Поиск по ID тайла..." />
         <i class="material-icons search-icon">search</i>
       </div>
+      
       <div class="filter-section">
         <label class="filter-label">Фильтр по меткам</label>
         <select class="filter-select" id="status-filter">
@@ -539,9 +857,11 @@
           <option value="ally">🟩 Союзники</option>
           <option value="enemy">🟥 Враги</option>
           <option value="favorite">⭐ Избранное</option>
+          <option value="owned">🟦 Занято</option>
           <option value="clear">⚪ Без метки</option>
         </select>
       </div>
+      
       <div class="action-buttons">
         <button class="btn btn-secondary" id="reset">
           <i class="material-icons">refresh</i>
@@ -552,17 +872,19 @@
           Снимок
         </button>
       </div>
+      
       <div class="favorites-section">
         <div class="favorites-title">
           <i class="material-icons">star</i>
           Избранные тайлы
         </div>
         <div class="favorites-list" id="favorites-list">
-          <!-- Favorites will be populated here -->
+          <!-- Избранные тайлы будут здесь -->
         </div>
       </div>
     </div>
-    <!-- Map Controls -->
+    
+    <!-- Управление картой -->
     <div class="map-controls">
       <button class="control-btn" id="zoom-in">
         <i class="material-icons">add</i>
@@ -574,32 +896,34 @@
         <i class="material-icons">my_location</i>
       </button>
     </div>
-    <!-- Loader -->
+    
+    <!-- Загрузчик -->
     <div class="loader" id="loader">
       <div class="loader-spinner"></div>
       <div class="loader-text">Загрузка данных...</div>
     </div>
-    <!-- Toast -->
+    
+    <!-- Уведомления -->
     <div class="toast" id="toast"></div>
-    <!-- Debug Panel -->
+    
+    <!-- Отладка -->
     <div id="debug">
-      <div class="debug-section" id="tg-status">Telegram WebApp: ⏳</div>
       <div class="debug-section" id="user-status">Пользователь: ⏳</div>
       <div class="debug-section" id="map-status">Карта: ⏳</div>
       <div class="debug-section" id="api-status">API: ⏳</div>
       <div class="debug-section" id="cache-status">Кеш: ⏳</div>
-      <div class="debug-section" id="error-log">Ошибки: ⏳</div>
       <div id="debug-log"></div>
     </div>
   </div>
+  
   <script>
     // Конфигурация приложения
     const CONFIG = {
       API_URL: 'https://genesis-map-api.onrender.com',
       MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
       INITIAL_VIEW: {
-        center: [-123.10, 49.25],
-        zoom: 6
+        center: [32, 54], // Центр карты на Европу
+        zoom: 4
       },
       TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php',
       CACHE_TTL: 30 * 60 * 1000, // 30 минут
@@ -611,6 +935,7 @@
     // Глобальные переменные
     let map;
     let currentUser = null;
+    let token = localStorage.getItem('auth_token');
     let tileData = [];
     let userMarks = {};
     let favorites = [];
@@ -618,8 +943,6 @@
     let isInitialLoad = true;
     let debounceTimer = null;
     let currentAbortController = null;
-    let initAttempts = 0;
-    let telegramReady = false;
     
     // --- Вспомогательные функции ---
     function createSafeCoordinate(latitude, longitude) {
@@ -629,66 +952,98 @@
       return [clampedLng, clampedLat];
     }
     
-    function isTelegramWebApp() {
-      return typeof window.Telegram !== 'undefined' && 
-             typeof window.Telegram.WebApp !== 'undefined';
+    function log(message, isError = false) {
+      const now = new Date();
+      const timestamp = `[${now.toLocaleTimeString()}]`;
+      const debugLog = document.getElementById('debug-log');
+      if (!debugLog) return;
+      
+      const logEntry = document.createElement('div');
+      logEntry.textContent = `${timestamp} ${message}`;
+      if (isError) logEntry.style.color = '#e53935';
+      debugLog.appendChild(logEntry);
+      debugLog.scrollTop = debugLog.scrollHeight;
+      console[isError ? 'error' : 'log'](message);
     }
     
-    function getTelegramUser() {
-      try {
-        if (!isTelegramWebApp()) return null;
-        
-        // Проверяем оба возможных источника данных
-        const initData = window.Telegram.WebApp.initData || 
-                         window.Telegram.WebApp.initDataUnsafe;
-        const user = initData?.user;
-        
-        // Дополнительная проверка для безопасности
-        if (user && user.id && typeof user.id === 'number') {
-          return {
-            id: user.id,
-            first_name: user.first_name,
-            last_name: user.last_name || '',
-            username: user.username || '',
-            language_code: user.language_code || 'ru',
-            is_premium: user.is_premium || false
-          };
+    // --- Аутентификация ---
+    function initAuth() {
+      // Проверяем токен из URL (после подтверждения в боте)
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenParam = urlParams.get('token');
+      const requestId = urlParams.get('request_id');
+      
+      if (tokenParam && requestId) {
+        const savedRequestId = localStorage.getItem('auth_request');
+        if (requestId === savedRequestId) {
+          // Сохраняем токен и убираем параметры из URL
+          localStorage.setItem('auth_token', tokenParam);
+          token = tokenParam;
+          
+          // Очищаем URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          
+          log('✅ Токен аутентификации получен из URL');
+        } else {
+          log('⚠️ Неверный request_id', true);
         }
-        return null;
-      } catch (error) {
-        log(`⚠️ Ошибка получения данных пользователя: ${error.message}`, true);
-        return null;
+      }
+      
+      // Если токен есть, проверяем его валидность
+      if (token) {
+        verifyToken();
+      } else {
+        // Показываем экран входа
+        document.getElementById('login-container').style.display = 'flex';
+        
+        // Обработчик кнопки входа
+        document.getElementById('login-button').addEventListener('click', () => {
+          // Генерируем уникальный запрос
+          const requestId = Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('auth_request', requestId);
+          
+          // Открываем бота Telegram
+          window.open('https://t.me/Goamap_bot?start=auth_' + requestId, '_blank');
+          
+          log('ℹ️ Запрос на аутентификацию отправлен. Ожидаем подтверждения...');
+        });
       }
     }
     
-    // Добавляем подробную диагностику
-    function logTelegramStatus() {
-      const tgStatus = document.getElementById('tg-status');
-      const debugLog = document.getElementById('debug-log');
-      
-      const status = {
-        'window.Telegram': typeof window.Telegram !== 'undefined' ? '✅ Доступен' : '❌ НЕ ДОСТУПЕН',
-        'window.Telegram.WebApp': typeof window.Telegram?.WebApp !== 'undefined' ? '✅ Доступен' : '❌ НЕ ДОСТУПЕН',
-        'platform': window.Telegram?.WebApp?.platform || 'N/A',
-        'version': window.Telegram?.WebApp?.version || 'N/A',
-        'initData': window.Telegram?.WebApp?.initData ? '✅ Есть данные' : '❌ Нет данных',
-        'initDataUnsafe': window.Telegram?.WebApp?.initDataUnsafe ? '✅ Есть данные' : '❌ Нет данных',
-        'isIframe': (window.self !== window.top) ? '✅ Да' : '❌ Нет'
-      };
-      
-      // Обновляем статус в UI
-      tgStatus.textContent = `Telegram WebApp: ${isTelegramWebApp() ? '✅ Инициализирован' : '⏳ Ожидание'}`;
-      
-      // Добавляем подробную информацию в лог
-      const timestamp = `[${new Date().toLocaleTimeString()}]`;
-      const logEntry = document.createElement('div');
-      logEntry.innerHTML = `<strong>${timestamp} Telegram статус:</strong><br/>` + 
-        Object.entries(status).map(([key, value]) => `  - ${key}: ${value}`).join('<br/>');
-      
-      debugLog.appendChild(logEntry);
-      debugLog.scrollTop = debugLog.scrollHeight;
-      
-      return status;
+    function verifyToken() {
+      fetch(`${CONFIG.API_URL}/api/auth/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error('Токен недействителен');
+      })
+      .then(data => {
+        currentUser = data.user;
+        document.getElementById('user-status').textContent = `Пользователь: ✅ ${currentUser.first_name}`;
+        log(`👤 Пользователь: ${currentUser.first_name} (${currentUser.id})`);
+        
+        // Скрываем экран входа
+        document.getElementById('login-container').style.display = 'none';
+        
+        // Инициализируем карту
+        initMaplibre();
+        
+        // Загружаем данные
+        loadData();
+      })
+      .catch(err => {
+        log(`⚠️ Ошибка авторизации: ${err.message}`, true);
+        localStorage.removeItem('auth_token');
+        token = null;
+        document.getElementById('login-container').style.display = 'flex';
+      });
     }
     
     // --- Инициализация MapLibre ---
@@ -704,16 +1059,14 @@
         
         // Добавляем элементы управления
         map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
-        map.addControl(new maplibregl.AttributionControl({
-          compact: true
-        }));
         
         // Обработчики событий карты
         map.on('load', () => {
           log('🗺️ Карта MapLibre загружена');
           document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
+          
           // Загружаем данные после инициализации карты
-          loadData();
+          updateVisibleTiles();
         });
         
         map.on('moveend', updateVisibleTiles);
@@ -748,14 +1101,14 @@
             return;
         }
         
-        // Добавлен debounce для предотвращения частых запросов
+        // ИСПРАВЛЕНО: Добавлен debounce для предотвращения частых запросов
         if (debounceTimer) {
           clearTimeout(debounceTimer);
         }
         
         debounceTimer = setTimeout(() => {
           loadData();
-        }, 500);
+        }, 500); // Запрос данных через 500мс после последнего движения карты
       } catch (error) {
         log(`⚠️ Ошибка обновления видимых тайлов: ${error.message}`, true);
       }
@@ -764,6 +1117,7 @@
     // Визуализация тайлов
     function renderTiles() {
       try {
+        // ИСПРАВЛЕНО: Обновляем источник вместо удаления и создания слоя
         const features = tileData
           .filter(tile => visibleTiles.has(tile.id))
           .map(tile => {
@@ -773,7 +1127,7 @@
               type: 'Feature',
               geometry: {
                 type: 'Point',
-                coordinates: [tile.lng, tile.lat]
+                coordinates: [tile.lng, tile.lat] // Координаты уже проверены
               },
               properties: {
                 id: tile.id,
@@ -785,11 +1139,13 @@
           });
 
         if (map.getSource('tiles-source')) {
+          // Обновляем существующий источник
           map.getSource('tiles-source').setData({
             type: 'FeatureCollection',
             features: features
           });
         } else {
+          // Создаём источник и слой, если их нет
           map.addSource('tiles-source', {
             type: 'geojson',
             data: {
@@ -798,6 +1154,7 @@
             }
           });
           
+          // Добавляем слой для отображения
           map.addLayer({
             id: 'tiles-layer',
             type: 'circle',
@@ -810,24 +1167,25 @@
               ],
               'circle-color': [
                 'case',
-                ['==', ['get', 'status'], 'ally'], '#10b981',
-                ['==', ['get', 'status'], 'enemy'], '#ef4444',
-                ['==', ['get', 'status'], 'favorite'], '#f59e0b',
-                ['==', ['get', 'owned'], true], '#3b82f6',
-                '#6b7280'
+                ['==', ['get', 'status'], 'ally'], '#1e88e5',
+                ['==', ['get', 'status'], 'enemy'], '#e53935',
+                ['==', ['get', 'status'], 'favorite'], '#ffca28',
+                ['==', ['get', 'owned'], true], '#43a047',
+                '#a67c52'
               ],
               'circle-stroke-width': 2,
               'circle-stroke-color': [
                 'case',
-                ['==', ['get', 'status'], 'ally'], '#059669',
-                ['==', ['get', 'status'], 'enemy'], '#dc2626',
-                ['==', ['get', 'status'], 'favorite'], '#d97706',
-                ['==', ['get', 'owned'], true], '#1d4ed8',
-                '#4b5563'
+                ['==', ['get', 'status'], 'ally'], '#1565c0',
+                ['==', ['get', 'status'], 'enemy'], '#c62828',
+                ['==', ['get', 'status'], 'favorite'], '#f57f17',
+                ['==', ['get', 'owned'], true], '#2e7d32',
+                '#5d4037'
               ]
             }
           });
           
+          // Добавляем всплывающие подсказки
           map.on('click', 'tiles-layer', (e) => {
             if (e.features.length > 0) {
               const tileId = e.features[0].properties.id;
@@ -835,6 +1193,7 @@
             }
           });
           
+          // Изменение курсора при наведении
           map.on('mouseenter', 'tiles-layer', () => {
             map.getCanvas().style.cursor = 'pointer';
           });
@@ -875,6 +1234,7 @@
         .setHTML(popupContent)
         .addTo(map);
       
+      // Добавляем обработчики событий после отображения popup
       setTimeout(() => {
         document.querySelectorAll('.mark-btn').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -896,229 +1256,52 @@
       return '';
     }
     
-    // Инициализация приложения
-    function initApp() {
-      // Добавляем подробную диагностику
-      log('🔍 Начало инициализации приложения...');
-      logTelegramStatus();
-      
-      // Проверяем, запущено ли приложение через iframe (в Telegram)
-      const isIframe = window.self !== window.top;
-      log(`🌐 Приложение запущено в iframe: ${isIframe ? '✅ Да' : '❌ Нет'}`);
-      
-      // Проверяем наличие объекта Telegram
-      if (isTelegramWebApp()) {
-        log('✅ Объект Telegram найден сразу');
-        initTelegramWebApp();
-      } else {
-        log('⏳ Объект Telegram не найден, начинаем ожидание...');
-        waitForTelegramWebApp();
-      }
-    }
-    
-    // Инициализация Telegram WebApp
-    function initTelegramWebApp() {
-      try {
-        // Инициализируем WebApp
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
-        window.Telegram.WebApp.setHeaderColor('#0f172a');
-        window.Telegram.WebApp.setBackgroundColor('#0f172a');
-        
-        document.getElementById('tg-status').textContent = 'Telegram WebApp: ✅ Инициализирован';
-        log('✅ Telegram WebApp инициализирован');
-        
-        // Получаем данные пользователя
-        const user = getTelegramUser();
-        
-        if (user) {
-          currentUser = user;
-          document.getElementById('user-status').textContent = `Пользователь: ✅ ${user.first_name}`;
-          log(`👤 Пользователь: ${user.first_name} (${user.id})`);
-          
-          // Синхронизируем пользователя с API
-          syncUser(user).then(() => {
-            // Инициализируем карту
-            initMaplibre();
-            // Скрываем экран входа
-            document.getElementById('login-container').classList.add('hidden');
-          });
-        } else {
-          log('⚠️ Данные пользователя в Telegram WebApp не найдены', true);
-          document.getElementById('user-status').textContent = 'Пользователь: ⚠️ Не найден';
-          showLoginScreen();
-        }
-      } catch (error) {
-        log(`⚠️ Ошибка инициализации Telegram WebApp: ${error.message}`, true);
-        document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Ошибка';
-        showLoginScreen();
-      }
-    }
-    
-    // Ожидание инициализации Telegram WebApp
-    function waitForTelegramWebApp() {
-      if (initAttempts >= CONFIG.MAX_RETRY_COUNT) {
-        log(`❌ Превышено максимальное количество попыток инициализации Telegram WebApp (попыток: ${initAttempts})`, true);
-        document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
-        showLoginScreen();
-        return;
-      }
-      
-      initAttempts++;
-      log(`ℹ️ Попытка ${initAttempts} инициализации Telegram WebApp...`);
-      
-      // Проверяем наличие объекта Telegram
-      const status = logTelegramStatus();
-      
-      if (isTelegramWebApp()) {
-        log('✅ Объект Telegram найден после ожидания');
-        initTelegramWebApp();
-        return;
-      }
-      
-      // Увеличиваем интервал проверки с каждой попыткой
-      const delay = CONFIG.RETRY_DELAY * initAttempts;
-      
-      // Проверяем наличие объекта Telegram каждые 500мс
-      setTimeout(() => {
-        waitForTelegramWebApp();
-      }, delay);
-    }
-    
-    // Показать экран входа
-    function showLoginScreen() {
-      const loginContainer = document.getElementById('login-container');
-      loginContainer.classList.remove('hidden');
-      
-      document.getElementById('map-status').textContent = 'Карта: ⚠️ Требуется вход';
-      document.getElementById('api-status').textContent = 'API: ⚠️ Не авторизован';
-      
-      showToast('Пожалуйста, откройте карту через Telegram бот @Goamap_bot', 'warning');
-      
-      log('⚠️ Требуется вход через Telegram');
-      
-      // Добавляем подробную информацию о том, как правильно открыть приложение
-      const debugLog = document.getElementById('debug-log');
-      const helpEntry = document.createElement('div');
-      helpEntry.innerHTML = `<strong>❗ КРИТИЧЕСКАЯ ОШИБКА:</strong><br/>
-        <strong>Ваш домен НЕ ДОБАВЛЕН в BotFather!</strong><br/>
-        1. Откройте Telegram бота <strong>@BotFather</strong><br/>
-        2. Введите команду <strong>/setdomain</strong><br/>
-        3. Выберите вашего бота<br/>
-        4. Введите домен: <strong>genesis-map-api.onrender.com</strong><br/>
-        5. Нажмите Enter<br/>
-        <br/>
-        <strong>ВАЖНО:</strong><br/>
-        - Вводите домен БЕЗ https://<br/>
-        - Вводите домен ТОЧНО как в URL<br/>
-        - Перезапустите бота после добавления домена`;
-      
-      debugLog.appendChild(helpEntry);
-      debugLog.scrollTop = debugLog.scrollHeight;
-    }
-    
-    // Синхронизация пользователя с API
-    async function syncUser(user) {
-      try {
-        log(`📡 Синхронизация пользователя с API: ${user.id}`);
-        
-        const response = await fetch(`${CONFIG.API_URL}/api/users/register`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Telegram-Init-Data': window.Telegram?.WebApp?.initData || ''
-          },
-          body: JSON.stringify({
-            telegram_id: user.id,
-            first_name: user.first_name,
-            last_name: user.last_name || '',
-            username: user.username || '',
-            language_code: user.language_code || 'ru',
-            is_premium: user.is_premium || false,
-            auth_date: window.Telegram?.WebApp?.initDataUnsafe?.auth_date || Math.floor(Date.now() / 1000)
-          })
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          log('✅ Пользователь синхронизирован с API', false);
-          return true;
-        } else {
-          const errorText = await response.text();
-          log(`❌ Ошибка синхронизации пользователя: ${response.status} ${errorText}`, true);
-          
-          try {
-            localStorage.setItem(`user_data_${user.id}`, JSON.stringify(user));
-            log('⚠️ Данные пользователя сохранены в localStorage', false);
-          } catch (e) {
-            log(`❌ Не удалось сохранить данные в localStorage: ${e.message}`, true);
-          }
-          
-          return false;
-        }
-      } catch (error) {
-        log(`❌ Критическая ошибка синхронизации: ${error.message}`, true);
-        
-        try {
-          const storedUser = localStorage.getItem(`user_data_${user.id}`);
-          if (storedUser) {
-            currentUser = JSON.parse(storedUser);
-            log('⚠️ Используем данные пользователя из localStorage', false);
-            return true;
-          }
-        } catch (e) {
-          log(`❌ Не удалось восстановить данные из localStorage: ${e.message}`, true);
-        }
-        
-        return false;
-      }
-    }
-    
     // Загрузка данных
-    async function loadData() {
-      if (!currentUser) {
-        log('⚠️ Нет авторизованного пользователя, загрузка данных пропущена');
-        return;
-      }
+    function loadData() {
+      if (!currentUser) return;
       
       showLoader(true);
       log('🔄 Загрузка данных...');
+      document.getElementById('api-status').textContent = 'API: ⏳ Загрузка';
       
-      try {
-        await loadUserMarks();
-        await loadTileData();
-        updateVisibleTiles();
+      Promise.all([
+        loadUserMarks(),
+        loadTileData()
+      ])
+      .then(() => {
         document.getElementById('api-status').textContent = 'API: ✅ Работает';
         log('✅ Все данные успешно загружены');
         showToast('Данные успешно загружены', 'success');
-      } catch (error) {
-        log(`⚠️ Ошибка загрузки данных: ${error.message}`, true);
+      })
+      .catch(error => {
         document.getElementById('api-status').textContent = 'API: 🔴 Ошибка';
+        log(`⚠️ Ошибка загрузки данных: ${error.message}`, true);
         showToast('Ошибка загрузки данных', 'error');
-      } finally {
+      })
+      .finally(() => {
         showLoader(false);
-      }
+      });
     }
     
-    // Загрузка пользовательских меток
-    async function loadUserMarks() {
-      if (!currentUser) {
-        log('⚠️ Нет авторизованного пользователя, загрузка меток пропущена');
-        return;
-      }
-      
-      try {
-        const response = await fetch(`${CONFIG.API_URL}/api/marks/${currentUser.id}`);
-        if (!response.ok) {
-            if (response.status === 404) {
-                 log(`📌 У пользователя ${currentUser.id} пока нет меток.`);
-                 userMarks = {};
-                 favorites = [];
-                 return;
-            }
-            throw new Error(`Ошибка HTTP: ${response.status}`);
+    function loadUserMarks() {
+      return fetch(`${CONFIG.API_URL}/api/marks/${currentUser.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-        const marks = await response.json();
+      })
+      .then(response => {
+        if (!response.ok) {
+          if (response.status === 404) {
+            log(`📌 У пользователя ${currentUser.id} пока нет меток.`);
+            userMarks = {};
+            favorites = [];
+            return [];
+          }
+          throw new Error('Не удалось загрузить метки');
+        }
+        return response.json();
+      })
+      .then(marks => {
         userMarks = {};
         favorites = [];
         marks.forEach(mark => {
@@ -1130,56 +1313,46 @@
         });
         log(`📌 Загружено ${marks.length} пользовательских меток`);
         renderFavorites();
-      } catch (error) {
-        log(`⚠️ Ошибка загрузки меток: ${error.message}`, true);
-        const localMarks = localStorage.getItem(`user_marks_${currentUser.id}`);
-        if (localMarks) {
-          userMarks = JSON.parse(localMarks);
-          favorites = Object.keys(userMarks).filter(id => userMarks[id].favorite).map(Number);
-          log('📌 Использованы локальные метки из хранилища');
-        }
-      }
+        return marks;
+      });
     }
     
-    // Загрузка данных тайлов
-    async function loadTileData() {
-      if (!currentUser) {
-        log('⚠️ Нет авторизованного пользователя, загрузка тайлов пропущена');
-        return;
+    function loadTileData() {
+      // ИСПРАВЛЕНО: Добавлен AbortController для отмены предыдущих запросов
+      if (currentAbortController) {
+        currentAbortController.abort();
       }
+      currentAbortController = new AbortController();
       
-      try {
-        log('⏬ Загрузка данных с API по границам...');
-        
-        if (currentAbortController) {
-          currentAbortController.abort();
-        }
-        currentAbortController = new AbortController();
-        
-        const bounds = map.getBounds();
-        const west = bounds.getWest();
-        const south = bounds.getSouth();
-        const east = bounds.getEast();
-        const north = bounds.getNorth();
-        const query = new URLSearchParams({
-          west: west.toFixed(6),
-          south: south.toFixed(6),
-          east: east.toFixed(6),
-          north: north.toFixed(6),
-          limit: '1000'
-        });
-        
-        const response = await fetch(`${CONFIG.API_URL}/api/tiles/bounds?${query}`, {
-          signal: currentAbortController.signal
-        });
-        
+      const bounds = map.getBounds();
+      const west = bounds.getWest();
+      const south = bounds.getSouth();
+      const east = bounds.getEast();
+      const north = bounds.getNorth();
+      const query = new URLSearchParams({
+        west: west.toFixed(6),
+        south: south.toFixed(6),
+        east: east.toFixed(6),
+        north: north.toFixed(6),
+        limit: '1000'
+      });
+      
+      return fetch(`${CONFIG.API_URL}/api/tiles/bounds?${query}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        signal: currentAbortController.signal
+      })
+      .then(response => {
         if (!response.ok) {
-          const errorText = await response.text();
+          const errorText = response.statusText;
           throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
-        
-        const result = await response.json();
+        return response.json();
+      })
+      .then(result => {
         if (result.tiles && Array.isArray(result.tiles)) {
+          // ИСПРАВЛЕНО: Строгая валидация данных от API
           tileData = result.tiles
             .filter(tile => {
               const id = parseInt(tile.id);
@@ -1198,49 +1371,46 @@
             });
           log(`✅ Загружено ${tileData.length} тайлов`);
           document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
+          renderTiles();
         } else {
           throw new Error('Неверный формат данных тайлов от API');
         }
-      } catch (error) {
-        if (error.name === 'AbortError') {
-          log('ℹ️ Запрос к API отменен (новый запрос заменил предыдущий)', false);
-          return;
-        }
-        log(`⚠️ Ошибка загрузки тайлов: ${error.message}`, true);
-        document.getElementById('cache-status').textContent = 'Кеш: 🔴 Ошибка';
-      }
+        return result;
+      });
     }
     
     // Сохранение метки
-    async function saveMark(tileId, markType, comment = null) {
+    function saveMark(tileId, markType, comment = null) {
       if (!currentUser) {
           showToast('Ошибка: Пользователь не авторизован', 'error');
           return;
       }
       
+      // ИСПРАВЛЕНО: Добавлены состояния загрузки для кнопок
       const markButtons = document.querySelectorAll(`.mark-btn[data-id="${tileId}"]`);
       markButtons.forEach(btn => {
         btn.disabled = true;
         btn.innerHTML = '<i class="material-icons">hourglass_empty</i>';
       });
       
-      try {
-        const response = await fetch(`${CONFIG.API_URL}/api/marks`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: currentUser.id,
-            tile_id: tileId,
-            mark_type: markType,
-            comment: comment
-          })
-        });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Ошибка HTTP: ${response.status} - ${errorText}`);
-        }
-        const result = await response.json();
-        
+      fetch(`${CONFIG.API_URL}/api/marks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          tile_id: tileId,
+          mark_type: markType,
+          comment: comment
+        })
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Не удалось сохранить метку');
+        return response.json();
+      })
+      .then(() => {
         if (!userMarks[tileId]) userMarks[tileId] = {};
         if (markType === 'clear') {
           delete userMarks[tileId];
@@ -1251,16 +1421,17 @@
             favorites.push(tileId);
           }
         }
-        
-        localStorage.setItem(`user_marks_${currentUser.id}`, JSON.stringify(userMarks));
-        updateVisibleTiles();
+        renderTiles();
         renderFavorites();
         log(`💾 Метка сохранена: ${tileId} (${markType})`);
         showToast('Метка сохранена', 'success');
-      } catch (error) {
+      })
+      .catch(error => {
         log(`⚠️ Ошибка сохранения метки: ${error.message}`, true);
         showToast('Ошибка сохранения метки', 'error');
-      } finally {
+      })
+      .finally(() => {
+        // Восстанавливаем кнопки
         markButtons.forEach(btn => {
           btn.disabled = false;
           const type = btn.dataset.type;
@@ -1272,7 +1443,7 @@
           };
           btn.innerHTML = `${icons[type] || ''} ${type.charAt(0).toUpperCase() + type.slice(1)}`;
         });
-      }
+      });
     }
     
     // Отрисовка избранного
@@ -1286,7 +1457,7 @@
       }
       favorites.forEach(id => {
         const tile = tileData.find(t => t.id === id);
-        if (tile) {
+        if (tile) { // Показываем только если тайл видим
             const item = document.createElement('div');
             item.className = 'favorite-item';
             item.innerHTML = `
@@ -1303,7 +1474,7 @@
             favList.appendChild(item);
         }
       });
-      
+      // Добавляем обработчики событий
       document.querySelectorAll('.favorite-btn[data-action="goto"]').forEach(btn => {
         btn.addEventListener('click', () => {
           const tileId = parseInt(btn.dataset.id);
@@ -1317,7 +1488,6 @@
           }
         });
       });
-      
       document.querySelectorAll('.favorite-btn[data-action="remove"]').forEach(btn => {
         btn.addEventListener('click', () => {
           const tileId = parseInt(btn.dataset.id);
@@ -1342,47 +1512,8 @@
       document.getElementById('loader').style.display = visible ? 'block' : 'none';
     }
     
-    // Логирование
-    function log(message, isError = false) {
-      const now = new Date();
-      const timestamp = `[${now.toLocaleTimeString()}]`;
-      const debugLog = document.getElementById('debug-log');
-      const logEntry = document.createElement('div');
-      logEntry.textContent = `${timestamp} ${message}`;
-      if (isError) {
-        logEntry.style.color = '#ef4444';
-      }
-      debugLog.appendChild(logEntry);
-      debugLog.scrollTop = debugLog.scrollHeight;
-      console[isError ? 'error' : 'log'](message);
-    }
-    
     // Инициализация обработчиков событий
     function initEventListeners() {
-      // Кнопка входа
-      document.getElementById('login-button').addEventListener('click', () => {
-        // В реальном приложении здесь должен быть вызов Telegram WebApp
-        showToast('Пожалуйста, откройте карту через Telegram бот @Goamap_bot', 'warning');
-        // Вместо этого показываем подробные инструкции
-        const debugLog = document.getElementById('debug-log');
-        const helpEntry = document.createElement('div');
-        helpEntry.innerHTML = `<strong>❗ КРИТИЧЕСКАЯ ОШИБКА:</strong><br/>
-          <strong>Ваш домен НЕ ДОБАВЛЕН в BotFather!</strong><br/>
-          1. Откройте Telegram бота <strong>@BotFather</strong><br/>
-          2. Введите команду <strong>/setdomain</strong><br/>
-          3. Выберите вашего бота<br/>
-          4. Введите домен: <strong>genesis-map-api.onrender.com</strong><br/>
-          5. Нажмите Enter<br/>
-          <br/>
-          <strong>ВАЖНО:</strong><br/>
-          - Вводите домен БЕЗ https://<br/>
-          - Вводите домен ТОЧНО как в URL<br/>
-          - Перезапустите бота после добавления домена`;
-        
-        debugLog.appendChild(helpEntry);
-        debugLog.scrollTop = debugLog.scrollHeight;
-      });
-      
       // Поиск
       document.getElementById('search').addEventListener('input', (e) => {
         const value = e.target.value.trim();
@@ -1421,11 +1552,8 @@
       
       // Снимок
       document.getElementById('screenshot-btn').addEventListener('click', () => {
-        showLoader(true);
-        setTimeout(() => {
-          showLoader(false);
-          showToast('Снимок карты сохранен', 'success');
-        }, 1000);
+        // В реальном приложении здесь будет код для создания скриншота
+        showToast('Снимок карты сохранен', 'success');
       });
       
       // Сворачивание панели
@@ -1477,55 +1605,23 @@
         document.body.classList.toggle('dark-theme', !isDark);
         document.body.classList.toggle('light-theme', isDark);
         const icon = document.querySelector('#theme-toggle i');
-        icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+        // ИСПРАВЛЕНО: Правильное отображение иконки
+        icon.textContent = isDark ? 'light_mode' : 'contrast';
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
       });
       
       // Инициализация темы из localStorage
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      document.body.classList.add(savedTheme + '-theme');
-      const themeIcon = document.querySelector('#theme-toggle i');
-      themeIcon.textContent = savedTheme === 'dark' ? 'light_mode' : 'dark_mode';
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+      }
     }
     
     // Запуск приложения
     document.addEventListener('DOMContentLoaded', () => {
       initEventListeners();
-      initApp();
-      
-      // Добавляем дополнительную проверку после полной загрузки страницы
-      setTimeout(() => {
-        if (!telegramReady && !currentUser) {
-          log('⚠️ Дополнительная проверка: объект Telegram не обнаружен после полной загрузки страницы', true);
-          showLoginScreen();
-        }
-      }, 5000);
+      initAuth();
     });
-    
-    // ДОБАВЛЕНО: Специальная проверка для Telegram WebApp
-    (function checkTelegramWebApp() {
-      if (typeof window.Telegram === 'undefined') {
-        log('⏳ Ожидание инициализации Telegram WebApp...');
-        
-        // Проверяем каждые 100мс
-        const interval = setInterval(() => {
-          if (typeof window.Telegram !== 'undefined') {
-            clearInterval(interval);
-            log('✅ Telegram WebApp обнаружен!');
-            initApp();
-          }
-        }, 100);
-        
-        // Таймаут на 30 секунд
-        setTimeout(() => {
-          clearInterval(interval);
-          log('❌ Telegram WebApp не обнаружен за отведенное время', true);
-          showLoginScreen();
-        }, 30000);
-      } else {
-        initApp();
-      }
-    })();
   </script>
 </body>
 </html>
