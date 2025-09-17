@@ -431,7 +431,7 @@
       }
     }
     
-    /* ДОБАВЛЕНО: Замена устаревших -ms-high-contrast на стандартные forced-colors */
+    /* ИСПРАВЛЕНО: Замена устаревших -ms-high-contrast на стандартные forced-colors */
     @media (forced-colors: active) {
       body {
         background: Canvas;
@@ -814,26 +814,37 @@
         const user = initData?.user;
         
         if (user && user.id) {
-          currentUser = user;
+          currentUser = {
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            username: user.username,
+            language_code: user.language_code
+          };
           document.getElementById('login-container').style.display = 'none';
           document.getElementById('user-status').textContent = `Пользователь: ✅ ${user.first_name}`;
           log(`👤 Пользователь: ${user.first_name} (${user.id})`);
           // Синхронизируем пользователя с API
-          syncUser(user);
+          syncUser(currentUser);
         } else {
           log('⚠️ Данные пользователя в Telegram WebApp не найдены');
           document.getElementById('user-status').textContent = 'Пользователь: ⚠️ Не найден';
-          document.getElementById('login-container').style.display = 'none';
-          currentUser = { id: 'test-user-fallback', first_name: 'Fallback User' };
+          showLoginScreen();
         }
       } else {
         // WebApp не обнаружен (браузер)
-        log('⚠️ Telegram WebApp не обнаружен, работаем в автономном режиме');
+        log('⚠️ Telegram WebApp не обнаружен, требуется запуск через Telegram');
         document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
-        // Для разработки - показываем карту без аутентификации
-        document.getElementById('login-container').style.display = 'none';
-        currentUser = { id: 'test-user-browser', first_name: 'Browser Test User' };
+        showLoginScreen();
       }
+    }
+    
+    // Показать экран входа
+    function showLoginScreen() {
+      document.getElementById('login-container').style.display = 'flex';
+      document.getElementById('map-status').textContent = 'Карта: ⚠️ Требуется вход';
+      document.getElementById('api-status').textContent = 'API: ⚠️ Не авторизован';
+      showToast('Пожалуйста, откройте карту через Telegram бот @Goamap_bot', 'warning');
     }
     
     // Синхронизация пользователя с API
@@ -864,6 +875,7 @@
     
     // Загрузка данных
     async function loadData() {
+      // ИСПРАВЛЕНО: Не загружаем данные без авторизованного пользователя
       if (!currentUser) {
         log('⚠️ Нет авторизованного пользователя, загрузка данных пропущена');
         return;
@@ -893,7 +905,11 @@
     
     // Загрузка пользовательских меток
     async function loadUserMarks() {
-      if (!currentUser) return;
+      // ИСПРАВЛЕНО: Не загружаем метки без авторизованного пользователя
+      if (!currentUser) {
+        log('⚠️ Нет авторизованного пользователя, загрузка меток пропущена');
+        return;
+      }
       
       try {
         const response = await fetch(`${CONFIG.API_URL}/api/marks/${currentUser.id}`);
@@ -932,6 +948,12 @@
     
     // Загрузка данных тайлов
     async function loadTileData() {
+      // ИСПРАВЛЕНО: Не загружаем тайлы без авторизованного пользователя
+      if (!currentUser) {
+        log('⚠️ Нет авторизованного пользователя, загрузка тайлов пропущена');
+        return;
+      }
+      
       try {
         log('⏬ Загрузка данных с API по границам...');
         
@@ -1150,7 +1172,10 @@
     function initEventListeners() {
       // Кнопка входа
       document.getElementById('login-button').addEventListener('click', () => {
+        // Открываем карту через Telegram бот
         showToast('Пожалуйста, откройте карту через Telegram бот @Goamap_bot', 'warning');
+        // В реальном приложении здесь должен быть вызов Telegram WebApp
+        // Например: window.Telegram.WebApp.openTelegramLink('https://t.me/Goamap_bot');
       });
       // Поиск
       document.getElementById('search').addEventListener('input', (e) => {
