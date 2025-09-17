@@ -486,9 +486,15 @@
       <div class="login-card">
         <h1 class="login-title">GENESIS WAR MAP</h1>
         <p class="login-subtitle">Стратегическая карта для тактического планирования и координации</p>
+        <div class="login-instructions">
+          <p style="margin-bottom: 15px; color: var(--warning);">Важно: карта работает ТОЛЬКО через Telegram WebApp</p>
+          <p style="margin-bottom: 15px;">1. Откройте бота @Goamap_bot в Telegram</p>
+          <p style="margin-bottom: 15px;">2. Нажмите на кнопку "Открыть карту" в диалоге с ботом</p>
+          <p>3. Не используйте прямую ссылку или профиль бота</p>
+        </div>
         <button id="login-button" class="login-btn">
           <i class="material-icons">lock</i>
-          Войти через Telegram
+          Открыть через Telegram
         </button>
       </div>
     </div>
@@ -592,8 +598,8 @@
       },
       TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php',
       CACHE_TTL: 30 * 60 * 1000, // 30 минут
-      INIT_TIMEOUT: 5000, // 5 секунд ожидания Telegram WebApp
-      MAX_RETRY_COUNT: 3, // Максимальное количество попыток инициализации
+      INIT_TIMEOUT: 15000, // Увеличенный таймаут до 15 секунд
+      MAX_RETRY_COUNT: 10, // Увеличено количество попыток до 10
       RETRY_DELAY: 500 // Задержка между попытками в мс
     };
     
@@ -604,28 +610,25 @@
     let userMarks = {};
     let favorites = [];
     let visibleTiles = new Set();
-    let isInitialLoad = true; // Флаг для отслеживания первой загрузки
-    let debounceTimer = null; // ИСПРАВЛЕНО: Добавлен debounce
-    let currentAbortController = null; // ИСПРАВЛЕНО: Добавлен AbortController
-    let initAttempts = 0; // Количество попыток инициализации
+    let isInitialLoad = true;
+    let debounceTimer = null;
+    let currentAbortController = null;
+    let initAttempts = 0;
+    let telegramReady = false;
     
     // --- Вспомогательные функции ---
-    // Безопасное создание координат для MapLibre
     function createSafeCoordinate(latitude, longitude) {
       const clampedLat = Math.max(-89.999999, Math.min(89.999999, parseFloat(latitude) || 0));
-      // Приводим долготу к диапазону [-180, 180]
       let clampedLng = parseFloat(longitude) || 0;
       clampedLng = ((clampedLng % 360) + 540) % 360 - 180;
       return [clampedLng, clampedLat];
     }
     
-    // Проверка наличия Telegram WebApp
     function isTelegramWebApp() {
       return typeof window.Telegram !== 'undefined' && 
              typeof window.Telegram.WebApp !== 'undefined';
     }
     
-    // Получение данных пользователя из Telegram
     function getTelegramUser() {
       try {
         if (!isTelegramWebApp()) return null;
@@ -651,6 +654,35 @@
       }
     }
     
+    // Добавляем подробную диагностику
+    function logTelegramStatus() {
+      const tgStatus = document.getElementById('tg-status');
+      const debugLog = document.getElementById('debug-log');
+      
+      const status = {
+        'window.Telegram': typeof window.Telegram !== 'undefined' ? '✅ Доступен' : '❌ НЕ ДОСТУПЕН',
+        'window.Telegram.WebApp': typeof window.Telegram?.WebApp !== 'undefined' ? '✅ Доступен' : '❌ НЕ ДОСТУПЕН',
+        'platform': window.Telegram?.WebApp?.platform || 'N/A',
+        'version': window.Telegram?.WebApp?.version || 'N/A',
+        'initData': window.Telegram?.WebApp?.initData ? '✅ Есть данные' : '❌ Нет данных',
+        'initDataUnsafe': window.Telegram?.WebApp?.initDataUnsafe ? '✅ Есть данные' : '❌ Нет данных'
+      };
+      
+      // Обновляем статус в UI
+      tgStatus.textContent = `Telegram WebApp: ${isTelegramWebApp() ? '✅ Инициализирован' : '⏳ Ожидание'}`;
+      
+      // Добавляем подробную информацию в лог
+      const timestamp = `[${new Date().toLocaleTimeString()}]`;
+      const logEntry = document.createElement('div');
+      logEntry.innerHTML = `<strong>${timestamp} Telegram статус:</strong><br/>` + 
+        Object.entries(status).map(([key, value]) => `  - ${key}: ${value}`).join('<br/>');
+      
+      debugLog.appendChild(logEntry);
+      debugLog.scrollTop = debugLog.scrollHeight;
+      
+      return status;
+    }
+    
     // --- Инициализация MapLibre ---
     function initMaplibre() {
       try {
@@ -664,7 +696,7 @@
         
         // Добавляем элементы управления
         map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
-        map.addControl(new maplibregl.AttributionControl({
+        map.addControl(new maplibregregl.AttributionControl({
           compact: true
         }));
         
@@ -708,14 +740,14 @@
             return;
         }
         
-        // ИСПРАВЛЕНО: Добавлен debounce для предотвращения частых запросов
+        // Добавлен debounce для предотвращения частых запросов
         if (debounceTimer) {
           clearTimeout(debounceTimer);
         }
         
         debounceTimer = setTimeout(() => {
           loadData();
-        }, 500); // Запрос данных через 500мс после последнего движения карты
+        }, 500);
       } catch (error) {
         log(`⚠️ Ошибка обновления видимых тайлов: ${error.message}`, true);
       }
@@ -724,7 +756,6 @@
     // Визуализация тайлов
     function renderTiles() {
       try {
-        // ИСПРАВЛЕНО: Обновляем источник вместо удаления и создания слоя
         const features = tileData
           .filter(tile => visibleTiles.has(tile.id))
           .map(tile => {
@@ -734,7 +765,7 @@
               type: 'Feature',
               geometry: {
                 type: 'Point',
-                coordinates: [tile.lng, tile.lat] // Координаты уже проверены
+                coordinates: [tile.lng, tile.lat]
               },
               properties: {
                 id: tile.id,
@@ -746,13 +777,11 @@
           });
 
         if (map.getSource('tiles-source')) {
-          // Обновляем существующий источник
           map.getSource('tiles-source').setData({
             type: 'FeatureCollection',
             features: features
           });
         } else {
-          // Создаём источник и слой, если их нет
           map.addSource('tiles-source', {
             type: 'geojson',
             data: {
@@ -761,7 +790,6 @@
             }
           });
           
-          // Добавляем слой для отображения
           map.addLayer({
             id: 'tiles-layer',
             type: 'circle',
@@ -792,7 +820,6 @@
             }
           });
           
-          // Добавляем всплывающие подсказки
           map.on('click', 'tiles-layer', (e) => {
             if (e.features.length > 0) {
               const tileId = e.features[0].properties.id;
@@ -800,7 +827,6 @@
             }
           });
           
-          // Изменение курсора при наведении
           map.on('mouseenter', 'tiles-layer', () => {
             map.getCanvas().style.cursor = 'pointer';
           });
@@ -841,7 +867,6 @@
         .setHTML(popupContent)
         .addTo(map);
       
-      // Добавляем обработчики событий после отображения popup
       setTimeout(() => {
         document.querySelectorAll('.mark-btn').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -865,11 +890,20 @@
     
     // Инициализация приложения
     function initApp() {
-      // Проверяем наличие Telegram WebApp
+      // Добавляем подробную диагностику
+      log('🔍 Начало инициализации приложения...');
+      logTelegramStatus();
+      
+      // Проверяем, запущено ли приложение через iframe (в Telegram)
+      const isIframe = window.self !== window.top;
+      log(`🌐 Приложение запущено в iframe: ${isIframe ? '✅ Да' : '❌ Нет'}`);
+      
+      // Проверяем наличие объекта Telegram
       if (isTelegramWebApp()) {
+        log('✅ Объект Telegram найден сразу');
         initTelegramWebApp();
       } else {
-        // Пробуем подождать инициализации
+        log('⏳ Объект Telegram не найден, начинаем ожидание...');
         waitForTelegramWebApp();
       }
     }
@@ -916,7 +950,7 @@
     // Ожидание инициализации Telegram WebApp
     function waitForTelegramWebApp() {
       if (initAttempts >= CONFIG.MAX_RETRY_COUNT) {
-        log('❌ Превышено максимальное количество попыток инициализации Telegram WebApp', true);
+        log(`❌ Превышено максимальное количество попыток инициализации Telegram WebApp (попыток: ${initAttempts})`, true);
         document.getElementById('tg-status').textContent = 'Telegram WebApp: ⚠️ Не обнаружен';
         showLoginScreen();
         return;
@@ -925,19 +959,22 @@
       initAttempts++;
       log(`ℹ️ Попытка ${initAttempts} инициализации Telegram WebApp...`);
       
-      // Проверяем наличие объекта Telegram каждые 500мс
-      const interval = setInterval(() => {
-        if (isTelegramWebApp()) {
-          clearInterval(interval);
-          initTelegramWebApp();
-        }
-      }, CONFIG.RETRY_DELAY);
+      // Проверяем наличие объекта Telegram
+      const status = logTelegramStatus();
       
-      // Таймаут на случай, если Telegram WebApp так и не появится
+      if (isTelegramWebApp()) {
+        log('✅ Объект Telegram найден после ожидания');
+        initTelegramWebApp();
+        return;
+      }
+      
+      // Увеличиваем интервал проверки с каждой попыткой
+      const delay = CONFIG.RETRY_DELAY * initAttempts;
+      
+      // Проверяем наличие объекта Telegram каждые 500мс
       setTimeout(() => {
-        clearInterval(interval);
         waitForTelegramWebApp();
-      }, CONFIG.INIT_TIMEOUT);
+      }, delay);
     }
     
     // Показать экран входа
@@ -951,6 +988,18 @@
       showToast('Пожалуйста, откройте карту через Telegram бот @Goamap_bot', 'warning');
       
       log('⚠️ Требуется вход через Telegram');
+      
+      // Добавляем подробную информацию о том, как правильно открыть приложение
+      const debugLog = document.getElementById('debug-log');
+      const helpEntry = document.createElement('div');
+      helpEntry.innerHTML = `<strong>❗ Как правильно открыть карту:</strong><br/>
+        1. Откройте Telegram бота <strong>@Goamap_bot</strong><br/>
+        2. Нажмите на кнопку <strong>"Открыть карту"</strong> в диалоге с ботом<br/>
+        3. <strong>НЕ ИСПОЛЬЗУЙТЕ</strong> прямую ссылку или профиль бота<br/>
+        4. Убедитесь, что ваш домен добавлен в BotFather через команду /setdomain`;
+      
+      debugLog.appendChild(helpEntry);
+      debugLog.scrollTop = debugLog.scrollHeight;
     }
     
     // Синхронизация пользователя с API
@@ -983,7 +1032,6 @@
           const errorText = await response.text();
           log(`❌ Ошибка синхронизации пользователя: ${response.status} ${errorText}`, true);
           
-          // Попробуем сохранить данные в localStorage как временный вариант
           try {
             localStorage.setItem(`user_data_${user.id}`, JSON.stringify(user));
             log('⚠️ Данные пользователя сохранены в localStorage', false);
@@ -996,7 +1044,6 @@
       } catch (error) {
         log(`❌ Критическая ошибка синхронизации: ${error.message}`, true);
         
-        // Попробуем использовать данные из localStorage
         try {
           const storedUser = localStorage.getItem(`user_data_${user.id}`);
           if (storedUser) {
@@ -1014,7 +1061,6 @@
     
     // Загрузка данных
     async function loadData() {
-      // ИСПРАВЛЕНО: Не загружаем данные без авторизованного пользователя
       if (!currentUser) {
         log('⚠️ Нет авторизованного пользователя, загрузка данных пропущена');
         return;
@@ -1024,11 +1070,8 @@
       log('🔄 Загрузка данных...');
       
       try {
-        // Загрузка пользовательских меток
         await loadUserMarks();
-        // Загрузка данных тайлов
         await loadTileData();
-        // Обновление видимой области
         updateVisibleTiles();
         document.getElementById('api-status').textContent = 'API: ✅ Работает';
         log('✅ Все данные успешно загружены');
@@ -1044,7 +1087,6 @@
     
     // Загрузка пользовательских меток
     async function loadUserMarks() {
-      // ИСПРАВЛЕНО: Не загружаем метки без авторизованного пользователя
       if (!currentUser) {
         log('⚠️ Нет авторизованного пользователя, загрузка меток пропущена');
         return;
@@ -1075,7 +1117,6 @@
         renderFavorites();
       } catch (error) {
         log(`⚠️ Ошибка загрузки меток: ${error.message}`, true);
-        // Используем локальное хранилище как запасной вариант
         const localMarks = localStorage.getItem(`user_marks_${currentUser.id}`);
         if (localMarks) {
           userMarks = JSON.parse(localMarks);
@@ -1087,7 +1128,6 @@
     
     // Загрузка данных тайлов
     async function loadTileData() {
-      // ИСПРАВЛЕНО: Не загружаем тайлы без авторизованного пользователя
       if (!currentUser) {
         log('⚠️ Нет авторизованного пользователя, загрузка тайлов пропущена');
         return;
@@ -1096,13 +1136,11 @@
       try {
         log('⏬ Загрузка данных с API по границам...');
         
-        // ИСПРАВЛЕНО: Добавлен AbortController для отмены предыдущих запросов
         if (currentAbortController) {
           currentAbortController.abort();
         }
         currentAbortController = new AbortController();
         
-        // Запрос тайлов по текущим границам карты
         const bounds = map.getBounds();
         const west = bounds.getWest();
         const south = bounds.getSouth();
@@ -1127,7 +1165,6 @@
         
         const result = await response.json();
         if (result.tiles && Array.isArray(result.tiles)) {
-          // ИСПРАВЛЕНО: Строгая валидация данных от API
           tileData = result.tiles
             .filter(tile => {
               const id = parseInt(tile.id);
@@ -1166,7 +1203,6 @@
           return;
       }
       
-      // ИСПРАВЛЕНО: Добавлены состояния загрузки для кнопок
       const markButtons = document.querySelectorAll(`.mark-btn[data-id="${tileId}"]`);
       markButtons.forEach(btn => {
         btn.disabled = true;
@@ -1189,7 +1225,7 @@
             throw new Error(`Ошибка HTTP: ${response.status} - ${errorText}`);
         }
         const result = await response.json();
-        // Обновляем локальное состояние
+        
         if (!userMarks[tileId]) userMarks[tileId] = {};
         if (markType === 'clear') {
           delete userMarks[tileId];
@@ -1200,9 +1236,8 @@
             favorites.push(tileId);
           }
         }
-        // Сохраняем в локальное хранилище
+        
         localStorage.setItem(`user_marks_${currentUser.id}`, JSON.stringify(userMarks));
-        // Обновляем UI
         updateVisibleTiles();
         renderFavorites();
         log(`💾 Метка сохранена: ${tileId} (${markType})`);
@@ -1211,7 +1246,6 @@
         log(`⚠️ Ошибка сохранения метки: ${error.message}`, true);
         showToast('Ошибка сохранения метки', 'error');
       } finally {
-        // Восстанавливаем кнопки
         markButtons.forEach(btn => {
           btn.disabled = false;
           const type = btn.dataset.type;
@@ -1237,7 +1271,7 @@
       }
       favorites.forEach(id => {
         const tile = tileData.find(t => t.id === id);
-        if (tile) { // Показываем только если тайл видим
+        if (tile) {
             const item = document.createElement('div');
             item.className = 'favorite-item';
             item.innerHTML = `
@@ -1254,7 +1288,7 @@
             favList.appendChild(item);
         }
       });
-      // Добавляем обработчики событий
+      
       document.querySelectorAll('.favorite-btn[data-action="goto"]').forEach(btn => {
         btn.addEventListener('click', () => {
           const tileId = parseInt(btn.dataset.id);
@@ -1268,6 +1302,7 @@
           }
         });
       });
+      
       document.querySelectorAll('.favorite-btn[data-action="remove"]').forEach(btn => {
         btn.addEventListener('click', () => {
           const tileId = parseInt(btn.dataset.id);
@@ -1311,7 +1346,19 @@
     function initEventListeners() {
       // Кнопка входа
       document.getElementById('login-button').addEventListener('click', () => {
+        // В реальном приложении здесь должен быть вызов Telegram WebApp
         showToast('Пожалуйста, откройте карту через Telegram бот @Goamap_bot', 'warning');
+        // Вместо этого показываем подробные инструкции
+        const debugLog = document.getElementById('debug-log');
+        const helpEntry = document.createElement('div');
+        helpEntry.innerHTML = `<strong>❗ Как правильно открыть карту:</strong><br/>
+          1. Откройте Telegram бота <strong>@Goamap_bot</strong><br/>
+          2. Нажмите на кнопку <strong>"Открыть карту"</strong> в диалоге с ботом<br/>
+          3. <strong>НЕ ИСПОЛЬЗУЙТЕ</strong> прямую ссылку или профиль бота<br/>
+          4. Убедитесь, что ваш домен добавлен в BotFather через команду /setdomain`;
+        
+        debugLog.appendChild(helpEntry);
+        debugLog.scrollTop = debugLog.scrollHeight;
       });
       
       // Поиск
@@ -1352,7 +1399,6 @@
       
       // Снимок
       document.getElementById('screenshot-btn').addEventListener('click', () => {
-        // html2canvas не подключен, но теперь есть заглушка
         showLoader(true);
         setTimeout(() => {
           showLoader(false);
@@ -1409,7 +1455,6 @@
         document.body.classList.toggle('dark-theme', !isDark);
         document.body.classList.toggle('light-theme', isDark);
         const icon = document.querySelector('#theme-toggle i');
-        // ИСПРАВЛЕНО: Правильное отображение иконки
         icon.textContent = isDark ? 'light_mode' : 'dark_mode';
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
       });
@@ -1426,8 +1471,13 @@
       initEventListeners();
       initApp();
       
-      // Добавляем обработчик события готовности Telegram WebApp
-      window.addEventListener('tgWebAppReady', initTelegramWebApp);
+      // Добавляем дополнительную проверку после полной загрузки страницы
+      setTimeout(() => {
+        if (!telegramReady && !currentUser) {
+          log('⚠️ Дополнительная проверка: объект Telegram не обнаружен после полной загрузки страницы', true);
+          showLoginScreen();
+        }
+      }, 2000);
     });
   </script>
 </body>
