@@ -3,16 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GENESIS WAR MAP</title>
-  <!-- Добавляем мета-теги для Telegram WebApp -->
-  <meta name="telegram:webapp:url" content="https://ваш-домен.com">
+  <!-- КРИТИЧЕСКИ ВАЖНЫЕ мета-теги для Telegram WebApp -->
+  <meta name="telegram:webapp:url" content="https://genesis-map-api.onrender.com">
   <meta name="telegram:webapp:name" content="GENESIS WAR MAP">
   <meta name="telegram:webapp:theme-color" content="#0f172a">
+  
+  <title>GENESIS WAR MAP</title>
+  
   <!-- MapLibre GL JS -->
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+  
   <!-- Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
   <style>
     * {
       box-sizing: border-box;
@@ -490,7 +494,8 @@
           <p style="margin-bottom: 15px; color: var(--warning);">Важно: карта работает ТОЛЬКО через Telegram WebApp</p>
           <p style="margin-bottom: 15px;">1. Откройте бота @Goamap_bot в Telegram</p>
           <p style="margin-bottom: 15px;">2. Нажмите на кнопку "Открыть карту" в диалоге с ботом</p>
-          <p>3. Не используйте прямую ссылку или профиль бота</p>
+          <p style="margin-bottom: 15px;">3. Убедитесь, что ваш домен добавлен в BotFather через /setdomain</p>
+          <p>4. Домен должен быть: <strong>genesis-map-api.onrender.com</strong></p>
         </div>
         <button id="login-button" class="login-btn">
           <i class="material-icons">lock</i>
@@ -598,8 +603,8 @@
       },
       TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php',
       CACHE_TTL: 30 * 60 * 1000, // 30 минут
-      INIT_TIMEOUT: 15000, // Увеличенный таймаут до 15 секунд
-      MAX_RETRY_COUNT: 10, // Увеличено количество попыток до 10
+      INIT_TIMEOUT: 30000, // Увеличенный таймаут до 30 секунд
+      MAX_RETRY_COUNT: 20, // Увеличено количество попыток до 20
       RETRY_DELAY: 500 // Задержка между попытками в мс
     };
     
@@ -633,11 +638,13 @@
       try {
         if (!isTelegramWebApp()) return null;
         
+        // Проверяем оба возможных источника данных
         const initData = window.Telegram.WebApp.initData || 
                          window.Telegram.WebApp.initDataUnsafe;
         const user = initData?.user;
         
-        if (user && user.id) {
+        // Дополнительная проверка для безопасности
+        if (user && user.id && typeof user.id === 'number') {
           return {
             id: user.id,
             first_name: user.first_name,
@@ -665,7 +672,8 @@
         'platform': window.Telegram?.WebApp?.platform || 'N/A',
         'version': window.Telegram?.WebApp?.version || 'N/A',
         'initData': window.Telegram?.WebApp?.initData ? '✅ Есть данные' : '❌ Нет данных',
-        'initDataUnsafe': window.Telegram?.WebApp?.initDataUnsafe ? '✅ Есть данные' : '❌ Нет данных'
+        'initDataUnsafe': window.Telegram?.WebApp?.initDataUnsafe ? '✅ Есть данные' : '❌ Нет данных',
+        'isIframe': (window.self !== window.top) ? '✅ Да' : '❌ Нет'
       };
       
       // Обновляем статус в UI
@@ -696,7 +704,7 @@
         
         // Добавляем элементы управления
         map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
-        map.addControl(new maplibregregl.AttributionControl({
+        map.addControl(new maplibregl.AttributionControl({
           compact: true
         }));
         
@@ -992,11 +1000,18 @@
       // Добавляем подробную информацию о том, как правильно открыть приложение
       const debugLog = document.getElementById('debug-log');
       const helpEntry = document.createElement('div');
-      helpEntry.innerHTML = `<strong>❗ Как правильно открыть карту:</strong><br/>
-        1. Откройте Telegram бота <strong>@Goamap_bot</strong><br/>
-        2. Нажмите на кнопку <strong>"Открыть карту"</strong> в диалоге с ботом<br/>
-        3. <strong>НЕ ИСПОЛЬЗУЙТЕ</strong> прямую ссылку или профиль бота<br/>
-        4. Убедитесь, что ваш домен добавлен в BotFather через команду /setdomain`;
+      helpEntry.innerHTML = `<strong>❗ КРИТИЧЕСКАЯ ОШИБКА:</strong><br/>
+        <strong>Ваш домен НЕ ДОБАВЛЕН в BotFather!</strong><br/>
+        1. Откройте Telegram бота <strong>@BotFather</strong><br/>
+        2. Введите команду <strong>/setdomain</strong><br/>
+        3. Выберите вашего бота<br/>
+        4. Введите домен: <strong>genesis-map-api.onrender.com</strong><br/>
+        5. Нажмите Enter<br/>
+        <br/>
+        <strong>ВАЖНО:</strong><br/>
+        - Вводите домен БЕЗ https://<br/>
+        - Вводите домен ТОЧНО как в URL<br/>
+        - Перезапустите бота после добавления домена`;
       
       debugLog.appendChild(helpEntry);
       debugLog.scrollTop = debugLog.scrollHeight;
@@ -1351,11 +1366,18 @@
         // Вместо этого показываем подробные инструкции
         const debugLog = document.getElementById('debug-log');
         const helpEntry = document.createElement('div');
-        helpEntry.innerHTML = `<strong>❗ Как правильно открыть карту:</strong><br/>
-          1. Откройте Telegram бота <strong>@Goamap_bot</strong><br/>
-          2. Нажмите на кнопку <strong>"Открыть карту"</strong> в диалоге с ботом<br/>
-          3. <strong>НЕ ИСПОЛЬЗУЙТЕ</strong> прямую ссылку или профиль бота<br/>
-          4. Убедитесь, что ваш домен добавлен в BotFather через команду /setdomain`;
+        helpEntry.innerHTML = `<strong>❗ КРИТИЧЕСКАЯ ОШИБКА:</strong><br/>
+          <strong>Ваш домен НЕ ДОБАВЛЕН в BotFather!</strong><br/>
+          1. Откройте Telegram бота <strong>@BotFather</strong><br/>
+          2. Введите команду <strong>/setdomain</strong><br/>
+          3. Выберите вашего бота<br/>
+          4. Введите домен: <strong>genesis-map-api.onrender.com</strong><br/>
+          5. Нажмите Enter<br/>
+          <br/>
+          <strong>ВАЖНО:</strong><br/>
+          - Вводите домен БЕЗ https://<br/>
+          - Вводите домен ТОЧНО как в URL<br/>
+          - Перезапустите бота после добавления домена`;
         
         debugLog.appendChild(helpEntry);
         debugLog.scrollTop = debugLog.scrollHeight;
@@ -1477,8 +1499,33 @@
           log('⚠️ Дополнительная проверка: объект Telegram не обнаружен после полной загрузки страницы', true);
           showLoginScreen();
         }
-      }, 2000);
+      }, 5000);
     });
+    
+    // ДОБАВЛЕНО: Специальная проверка для Telegram WebApp
+    (function checkTelegramWebApp() {
+      if (typeof window.Telegram === 'undefined') {
+        log('⏳ Ожидание инициализации Telegram WebApp...');
+        
+        // Проверяем каждые 100мс
+        const interval = setInterval(() => {
+          if (typeof window.Telegram !== 'undefined') {
+            clearInterval(interval);
+            log('✅ Telegram WebApp обнаружен!');
+            initApp();
+          }
+        }, 100);
+        
+        // Таймаут на 30 секунд
+        setTimeout(() => {
+          clearInterval(interval);
+          log('❌ Telegram WebApp не обнаружен за отведенное время', true);
+          showLoginScreen();
+        }, 30000);
+      } else {
+        initApp();
+      }
+    })();
   </script>
 </body>
 </html>
