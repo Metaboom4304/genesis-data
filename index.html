@@ -38,7 +38,7 @@
     
     body {
       font-family: 'Cinzel', 'Times New Roman', serif;
-      background: var(--background) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e6d3b8" opacity="0.15"/></svg>');
+      background: var(--background) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e6d3b8" opacity="0.15"/></svg>');
       color: var(--text);
       overflow: hidden;
       height: 100vh;
@@ -54,7 +54,7 @@
       right: 0;
       bottom: 0;
       pointer-events: none;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><path d="M200,200 Q250,100 300,200 Q350,250 300,300 Q250,350 200,300 Q150,250 200,200" fill="none" stroke="%23a67c52" stroke-width="0.5" stroke-dasharray="5,5"/></svg>') center/contain no-repeat;
+      background: url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><path d="M200,200 Q250,100 300,200 Q350,250 300,300 Q250,350 200,300 Q150,250 200,200" fill="none" stroke="%23a67c52" stroke-width="0.5" stroke-dasharray="5,5"/></svg>') center/contain no-repeat;
       opacity: 0.03;
       z-index: -1;
     }
@@ -69,7 +69,7 @@
     
     /* Заголовок с винтажным стилем */
     .header {
-      background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20" viewBox="0 0 100 20"><path d="M0,10 Q25,5 50,10 T100,10" fill="none" stroke="%23a67c52" stroke-width="0.5"/></svg>') bottom no-repeat;
+      background: var(--paper) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20" viewBox="0 0 100 20"><path d="M0,10 Q25,5 50,10 T100,10" fill="none" stroke="%23a67c52" stroke-width="0.5"/></svg>') bottom no-repeat;
       background-size: 100% 100%;
       padding: 12px 20px;
       display: flex;
@@ -163,7 +163,7 @@
       position: absolute;
       top: 80px;
       left: 20px;
-      background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23d4c0a0" opacity="0.1"/></svg>');
+      background: var(--paper) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23d4c0a0" opacity="0.1"/></svg>');
       background-size: cover;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -491,7 +491,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,20 L80,20 L80,80 L20,80 Z M30,30 L70,30 L70,70 L30,70 Z" fill="none" stroke="%23a67c52" stroke-width="0.5" opacity="0.2"/></svg>') center/cover;
+      background: var(--paper) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,20 L80,20 L80,80 L20,80 Z M30,30 L70,30 L70,70 L30,70 Z" fill="none" stroke="%23a67c52" stroke-width="0.5" opacity="0.2"/></svg>') center/cover;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -508,7 +508,7 @@
     }
     
     .login-card {
-      background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e6d3b8" opacity="0.7"/></svg>');
+      background: var(--paper) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e6d3b8" opacity="0.7"/></svg>');
       border: 2px solid var(--border);
       border-radius: 12px;
       padding: 40px;
@@ -784,13 +784,12 @@
       }
     }
     
-    /* Режим высокой контрастности */
+    /* Режим высокой контрастности - ИСПРАВЛЕНО */
     @media (forced-colors: active) {
       body {
         background: Canvas;
         color: CanvasText;
       }
-      
       .card-bg, .control-btn, .search-input, .filter-select, .favorite-item, .btn {
         background: Canvas;
         border: 1px solid ButtonText;
@@ -967,14 +966,22 @@
     }
     
     // --- Аутентификация ---
+    // Добавлен флаг для предотвращения двойного запроса
+    let authInProgress = false;
+    
     function initAuth() {
       // Проверяем токен из URL (после подтверждения в боте)
       const urlParams = new URLSearchParams(window.location.search);
       const tokenParam = urlParams.get('token');
       const requestId = urlParams.get('request_id');
       
+      log(`🔍 Проверка аутентификации из URL: token=${!!tokenParam}, request_id=${requestId}`);
+      
       if (tokenParam && requestId) {
         const savedRequestId = localStorage.getItem('auth_request');
+        
+        log(`  - Сохраненный request_id: ${savedRequestId}`);
+        
         if (requestId === savedRequestId) {
           // Сохраняем токен и убираем параметры из URL
           localStorage.setItem('auth_token', tokenParam);
@@ -983,34 +990,76 @@
           // Очищаем URL
           window.history.replaceState({}, document.title, window.location.pathname);
           
-          log('✅ Токен аутентификации получен из URL');
+          log('✅ request_id совпадает, токен сохранен');
+          
+          // Проверяем токен и инициализируем приложение
+          verifyToken();
         } else {
           log('⚠️ Неверный request_id', true);
+          
+          // Показываем подробное сообщение пользователю
+          showToast(
+            'Ошибка аутентификации. Пожалуйста, попробуйте войти снова.',
+            'error'
+          );
+          
+          // Очищаем старый request_id
+          localStorage.removeItem('auth_request');
+          
+          // Показываем экран входа
+          document.getElementById('login-container').style.display = 'flex';
         }
+        return;
       }
       
       // Если токен есть, проверяем его валидность
       if (token) {
+        log('🔍 Проверка существующего токена');
         verifyToken();
       } else {
         // Показываем экран входа
+        log('ℹ️ Токен отсутствует, показываем экран входа');
         document.getElementById('login-container').style.display = 'flex';
         
         // Обработчик кнопки входа
-        document.getElementById('login-button').addEventListener('click', () => {
-          // Генерируем уникальный запрос
-          const requestId = Math.random().toString(36).substr(2, 9);
-          localStorage.setItem('auth_request', requestId);
+        const loginButton = document.getElementById('login-button');
+        if (loginButton) {
+          // Удаляем предыдущие обработчики, чтобы избежать дублирования
+          const newButton = loginButton.cloneNode(true);
+          loginButton.parentNode.replaceChild(newButton, loginButton);
           
-          // Открываем бота Telegram
-          window.open('https://t.me/Goamap_bot?start=auth_' + requestId, '_blank');
-          
-          log('ℹ️ Запрос на аутентификацию отправлен. Ожидаем подтверждения...');
-        });
+          newButton.addEventListener('click', () => {
+            if (authInProgress) {
+              log('ℹ️ Запрос уже отправлен. Пожалуйста, дождитесь подтверждения.');
+              showToast('Запрос уже отправлен. Пожалуйста, дождитесь подтверждения.', 'warning');
+              return;
+            }
+            
+            authInProgress = true;
+            newButton.disabled = true;
+            
+            log('ℹ️ Запрос на аутентификацию отправлен. Ожидаем подтверждения...');
+            
+            // Генерируем уникальный запрос
+            const requestId = Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('auth_request', requestId);
+            
+            // Открываем бота Telegram
+            window.open('https://t.me/Goamap_bot?start=auth_' + requestId, '_blank');
+            
+            // Сбрасываем флаг через 10 секунд (на случай, если что-то пошло не так)
+            setTimeout(() => {
+              authInProgress = false;
+              newButton.disabled = false;
+            }, 10000);
+          });
+        }
       }
     }
     
     function verifyToken() {
+      log('🔍 Проверка токена на сервере...');
+      
       fetch(`${CONFIG.API_URL}/api/auth/verify`, {
         method: 'POST',
         headers: {
@@ -1101,7 +1150,7 @@
             return;
         }
         
-        // ИСПРАВЛЕНО: Добавлен debounce для предотвращения частых запросов
+        // Добавлен debounce для предотвращения частых запросов
         if (debounceTimer) {
           clearTimeout(debounceTimer);
         }
@@ -1117,7 +1166,6 @@
     // Визуализация тайлов
     function renderTiles() {
       try {
-        // ИСПРАВЛЕНО: Обновляем источник вместо удаления и создания слоя
         const features = tileData
           .filter(tile => visibleTiles.has(tile.id))
           .map(tile => {
@@ -1127,7 +1175,7 @@
               type: 'Feature',
               geometry: {
                 type: 'Point',
-                coordinates: [tile.lng, tile.lat] // Координаты уже проверены
+                coordinates: [tile.lng, tile.lat]
               },
               properties: {
                 id: tile.id,
@@ -1318,7 +1366,7 @@
     }
     
     function loadTileData() {
-      // ИСПРАВЛЕНО: Добавлен AbortController для отмены предыдущих запросов
+      // Добавлен AbortController для отмены предыдущих запросов
       if (currentAbortController) {
         currentAbortController.abort();
       }
@@ -1352,7 +1400,7 @@
       })
       .then(result => {
         if (result.tiles && Array.isArray(result.tiles)) {
-          // ИСПРАВЛЕНО: Строгая валидация данных от API
+          // Строгая валидация данных от API
           tileData = result.tiles
             .filter(tile => {
               const id = parseInt(tile.id);
@@ -1386,7 +1434,7 @@
           return;
       }
       
-      // ИСПРАВЛЕНО: Добавлены состояния загрузки для кнопок
+      // Добавлены состояния загрузки для кнопок
       const markButtons = document.querySelectorAll(`.mark-btn[data-id="${tileId}"]`);
       markButtons.forEach(btn => {
         btn.disabled = true;
@@ -1605,7 +1653,6 @@
         document.body.classList.toggle('dark-theme', !isDark);
         document.body.classList.toggle('light-theme', isDark);
         const icon = document.querySelector('#theme-toggle i');
-        // ИСПРАВЛЕНО: Правильное отображение иконки
         icon.textContent = isDark ? 'light_mode' : 'contrast';
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
       });
