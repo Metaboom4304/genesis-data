@@ -154,7 +154,7 @@
       right: 0;
       bottom: 0;
       pointer-events: none;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><path d="M0,0 L200,200 M200,0 L0,200" stroke="%23a67c52" stroke-width="0.1" opacity="0.05"/></svg>') center/cover;
+      background: url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><path d="M0,0 L200,200 M200,0 L0,200" stroke="%23a67c52" stroke-width="0.1" opacity="0.05"/></svg>') center/cover;
       z-index: 1;
     }
     
@@ -206,7 +206,7 @@
       transform: translateY(-50%);
       width: 12px;
       height: 12px;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%238b4513"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>') center/contain no-repeat;
+      background: url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%238b4513"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>') center/contain no-repeat;
     }
     
     .toggle-panel {
@@ -484,8 +484,8 @@
       background: rgba(139, 69, 19, 0.1);
     }
     
-    /* Экран входа */
-    #login-container {
+    /* Экран ввода кода */
+    #code-container {
       position: absolute;
       top: 0;
       left: 0;
@@ -502,12 +502,12 @@
       text-align: center;
     }
     
-    #login-container.hidden {
+    #code-container.hidden {
       opacity: 0;
       pointer-events: none;
     }
     
-    .login-card {
+    .code-card {
       background: var(--paper) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e6d3b8" opacity="0.7"/></svg>');
       border: 2px solid var(--border);
       border-radius: 12px;
@@ -519,7 +519,7 @@
       overflow: hidden;
     }
     
-    .login-card::before {
+    .code-card::before {
       content: "";
       position: absolute;
       top: 0;
@@ -529,7 +529,7 @@
       background: linear-gradient(90deg, var(--marker-ally), var(--marker-enemy), var(--marker-favorite), var(--marker-owned));
     }
     
-    .login-title {
+    .code-title {
       font-size: 28px;
       font-weight: 700;
       margin-bottom: 20px;
@@ -541,7 +541,7 @@
       display: inline-block;
     }
     
-    .login-title::after {
+    .code-title::after {
       content: "";
       position: absolute;
       bottom: -8px;
@@ -552,7 +552,7 @@
       background: var(--border);
     }
     
-    .login-subtitle {
+    .code-subtitle {
       color: var(--primary);
       margin-bottom: 30px;
       font-size: 16px;
@@ -563,7 +563,7 @@
       margin-right: auto;
     }
     
-    .login-instructions {
+    .code-instructions {
       background: rgba(255, 255, 255, 0.5);
       border: 1px dashed var(--border);
       border-radius: 8px;
@@ -575,13 +575,13 @@
       font-family: 'Cinzel', serif;
     }
     
-    .login-instructions p {
+    .code-instructions p {
       margin-bottom: 8px;
       position: relative;
       padding-left: 20px;
     }
     
-    .login-instructions p::before {
+    .code-instructions p::before {
       content: "•";
       position: absolute;
       left: 0;
@@ -589,50 +589,49 @@
       font-weight: bold;
     }
     
-    .login-btn {
-      padding: 14px 28px;
-      background: var(--primary);
-      border: 1px solid var(--primary-dark);
-      border-radius: 10px;
-      color: white;
-      font-weight: 600;
+    .code-input-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .code-input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
       font-size: 16px;
+      font-family: monospace;
+      text-align: center;
+    }
+    
+    .code-button {
+      padding: 0 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
       transition: all 0.3s;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
       font-family: 'Cinzel', serif;
       letter-spacing: 1px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      position: relative;
-      overflow: hidden;
     }
     
-    .login-btn::after {
-      content: "";
-      position: absolute;
-      top: -50%;
-      left: -60%;
-      width: 20px;
-      height: 200%;
-      background: rgba(255, 255, 255, 0.2);
-      transform: rotate(30deg);
-      transition: all 0.5s;
-    }
-    
-    .login-btn:hover {
+    .code-button:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
     }
     
-    .login-btn:hover::after {
-      left: 120%;
-    }
-    
-    .login-btn:active {
+    .code-button:active {
       transform: translateY(0);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .code-help {
+      font-size: 14px;
+      color: var(--border);
+      margin-top: 15px;
     }
     
     /* Отладка */
@@ -760,12 +759,12 @@
         font-size: 16px;
       }
       
-      .login-card {
+      .code-card {
         padding: 25px;
         margin: 0 10px;
       }
       
-      .login-title {
+      .code-title {
         font-size: 24px;
       }
       
@@ -784,12 +783,13 @@
       }
     }
     
-    /* Режим высокой контрастности - ИСПРАВЛЕНО */
+    /* Режим высокой контрастности */
     @media (forced-colors: active) {
       body {
         background: Canvas;
         color: CanvasText;
       }
+      
       .card-bg, .control-btn, .search-input, .filter-select, .favorite-item, .btn {
         background: Canvas;
         border: 1px solid ButtonText;
@@ -800,19 +800,24 @@
 </head>
 <body>
   <div id="app">
-    <!-- Экран входа -->
-    <div id="login-container">
-      <div class="login-card">
-        <h1 class="login-title">GENESIS WAR MAP</h1>
-        <p class="login-subtitle">Стратегическая карта для тактического планирования и координации</p>
-        <div class="login-instructions">
-          <p>Для доступа к карте требуется авторизация через Telegram</p>
-          <p>Нажмите на кнопку ниже для входа</p>
+    <!-- Экран ввода кода -->
+    <div id="code-container">
+      <div class="code-card">
+        <h1 class="code-title">GENESIS WAR MAP</h1>
+        <p class="code-subtitle">Стратегическая карта для тактического планирования и координации</p>
+        <div class="code-instructions">
+          <p>Для доступа к карте введите код, полученный через Telegram бота</p>
+          <p>Код действителен 5 минут после генерации</p>
         </div>
-        <button id="login-button" class="login-btn">
-          <i class="material-icons">lock</i>
-          Войти через Telegram
-        </button>
+        
+        <div class="code-input-container">
+          <input type="text" class="code-input" id="access-code" maxlength="6" placeholder="Введите код">
+          <button class="code-button" id="submit-code">Войти</button>
+        </div>
+        
+        <p class="code-help">
+          Не получили код? Напишите боту <strong>@Goamap_bot</strong> команду <strong>/code</strong>
+        </p>
       </div>
     </div>
     
@@ -934,7 +939,7 @@
     // Глобальные переменные
     let map;
     let currentUser = null;
-    let token = localStorage.getItem('auth_token');
+    let accessToken = localStorage.getItem('access_token');
     let tileData = [];
     let userMarks = {};
     let favorites = [];
@@ -965,134 +970,125 @@
       console[isError ? 'error' : 'log'](message);
     }
     
-    // --- Аутентификация ---
-    // Добавлен флаг для предотвращения двойного запроса
-    let authInProgress = false;
+    // --- Аутентификация через код ---
+    function setupCodeForm() {
+      const submitButton = document.getElementById('submit-code');
+      const codeInput = document.getElementById('access-code');
+      
+      // Разрешаем только цифры
+      codeInput.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+      });
+      
+      // Обработчик отправки
+      submitButton.addEventListener('click', verifyCode);
+      
+      // Обработчик нажатия Enter
+      codeInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') verifyCode();
+      });
+    }
     
-    function initAuth() {
-      // Проверяем токен из URL (после подтверждения в боте)
-      const urlParams = new URLSearchParams(window.location.search);
-      const tokenParam = urlParams.get('token');
-      const requestId = urlParams.get('request_id');
+    async function verifyCode() {
+      const codeInput = document.getElementById('access-code');
+      const code = codeInput.value.trim();
       
-      log(`🔍 Проверка аутентификации из URL: token=${!!tokenParam}, request_id=${requestId}`);
-      
-      if (tokenParam && requestId) {
-        const savedRequestId = localStorage.getItem('auth_request');
-        
-        log(`  - Сохраненный request_id: ${savedRequestId}`);
-        
-        if (requestId === savedRequestId) {
-          // Сохраняем токен и убираем параметры из URL
-          localStorage.setItem('auth_token', tokenParam);
-          token = tokenParam;
-          
-          // Очищаем URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-          
-          log('✅ request_id совпадает, токен сохранен');
-          
-          // Проверяем токен и инициализируем приложение
-          verifyToken();
-        } else {
-          log('⚠️ Неверный request_id', true);
-          
-          // Показываем подробное сообщение пользователю
-          showToast(
-            'Ошибка аутентификации. Пожалуйста, попробуйте войти снова.',
-            'error'
-          );
-          
-          // Очищаем старый request_id
-          localStorage.removeItem('auth_request');
-          
-          // Показываем экран входа
-          document.getElementById('login-container').style.display = 'flex';
-        }
+      if (!code || code.length !== 6) {
+        showToast('Пожалуйста, введите 6-значный код', 'warning');
         return;
       }
       
-      // Если токен есть, проверяем его валидность
-      if (token) {
-        log('🔍 Проверка существующего токена');
-        verifyToken();
-      } else {
-        // Показываем экран входа
-        log('ℹ️ Токен отсутствует, показываем экран входа');
-        document.getElementById('login-container').style.display = 'flex';
-        
-        // Обработчик кнопки входа
-        const loginButton = document.getElementById('login-button');
-        if (loginButton) {
-          // Удаляем предыдущие обработчики, чтобы избежать дублирования
-          const newButton = loginButton.cloneNode(true);
-          loginButton.parentNode.replaceChild(newButton, loginButton);
-          
-          newButton.addEventListener('click', () => {
-            if (authInProgress) {
-              log('ℹ️ Запрос уже отправлен. Пожалуйста, дождитесь подтверждения.');
-              showToast('Запрос уже отправлен. Пожалуйста, дождитесь подтверждения.', 'warning');
-              return;
-            }
-            
-            authInProgress = true;
-            newButton.disabled = true;
-            
-            log('ℹ️ Запрос на аутентификацию отправлен. Ожидаем подтверждения...');
-            
-            // Генерируем уникальный запрос
-            const requestId = Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('auth_request', requestId);
-            
-            // Открываем бота Telegram
-            window.open('https://t.me/Goamap_bot?start=auth_' + requestId, '_blank');
-            
-            // Сбрасываем флаг через 10 секунд (на случай, если что-то пошло не так)
-            setTimeout(() => {
-              authInProgress = false;
-              newButton.disabled = false;
-            }, 10000);
-          });
-        }
-      }
-    }
-    
-    function verifyToken() {
-      log('🔍 Проверка токена на сервере...');
+      showLoader(true);
+      log('🔄 Проверка кода доступа...');
       
-      fetch(`${CONFIG.API_URL}/api/auth/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      .then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        throw new Error('Токен недействителен');
-      })
-      .then(data => {
-        currentUser = data.user;
-        document.getElementById('user-status').textContent = `Пользователь: ✅ ${currentUser.first_name}`;
-        log(`👤 Пользователь: ${currentUser.first_name} (${currentUser.id})`);
+      try {
+        const response = await fetch(`${CONFIG.API_URL}/api/verify-code`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ code })
+        });
         
-        // Скрываем экран входа
-        document.getElementById('login-container').style.display = 'none';
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Неверный код');
+        }
+        
+        const { accessToken: token, expiresIn } = await response.json();
+        
+        // Сохраняем токен
+        accessToken = token;
+        localStorage.setItem('access_token', token);
+        
+        // Скрываем форму ввода кода
+        document.getElementById('code-container').style.display = 'none';
+        
+        log('✅ Код подтвержден, токен получен');
         
         // Инициализируем карту
         initMaplibre();
         
         // Загружаем данные
         loadData();
-      })
-      .catch(err => {
-        log(`⚠️ Ошибка авторизации: ${err.message}`, true);
-        localStorage.removeItem('auth_token');
-        token = null;
-        document.getElementById('login-container').style.display = 'flex';
-      });
+        
+        // Запускаем проверку токена
+        startTokenRefresh();
+        
+      } catch (error) {
+        log(`⚠️ Ошибка проверки кода: ${error.message}`, true);
+        showToast(error.message || 'Ошибка проверки кода', 'error');
+      } finally {
+        showLoader(false);
+      }
+    }
+    
+    async function checkAccessToken() {
+      if (!accessToken) {
+        return false;
+      }
+      
+      try {
+        const response = await fetch(`${CONFIG.API_URL}/api/check-access`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ accessToken })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Токен недействителен');
+        }
+        
+        const { valid } = await response.json();
+        return valid;
+        
+      } catch (error) {
+        log(`⚠️ Ошибка проверки токена: ${error.message}`, true);
+        return false;
+      }
+    }
+    
+    // Периодическая проверка токена
+    function startTokenRefresh() {
+      // Проверяем токен каждые 15 минут
+      setInterval(async () => {
+        const isValid = await checkAccessToken();
+        
+        if (!isValid) {
+          log('⚠️ Токен устарел, требуется новый код доступа');
+          accessToken = null;
+          localStorage.removeItem('access_token');
+          
+          // Показываем форму ввода кода
+          document.getElementById('code-container').style.display = 'flex';
+          setupCodeForm();
+          
+          showToast('Время сессии истекло. Введите новый код доступа.', 'warning');
+        }
+      }, 15 * 60 * 1000);
     }
     
     // --- Инициализация MapLibre ---
@@ -1306,7 +1302,10 @@
     
     // Загрузка данных
     function loadData() {
-      if (!currentUser) return;
+      if (!accessToken) {
+        log('⚠️ Токен отсутствует', true);
+        return;
+      }
       
       showLoader(true);
       log('🔄 Загрузка данных...');
@@ -1332,9 +1331,11 @@
     }
     
     function loadUserMarks() {
+      // Получаем ID пользователя из токена (в реальном приложении нужно расшифровать токен)
+      // Для упрощения мы получаем метки через API с токеном в заголовке
       return fetch(`${CONFIG.API_URL}/api/marks/${currentUser.id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${accessToken}`
         }
       })
       .then(response => {
@@ -1387,7 +1388,7 @@
       
       return fetch(`${CONFIG.API_URL}/api/tiles/bounds?${query}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${accessToken}`
         },
         signal: currentAbortController.signal
       })
@@ -1429,8 +1430,8 @@
     
     // Сохранение метки
     function saveMark(tileId, markType, comment = null) {
-      if (!currentUser) {
-          showToast('Ошибка: Пользователь не авторизован', 'error');
+      if (!accessToken) {
+          showToast('Ошибка: Требуется авторизация', 'error');
           return;
       }
       
@@ -1445,7 +1446,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({
           user_id: currentUser.id,
@@ -1666,8 +1667,32 @@
     
     // Запуск приложения
     document.addEventListener('DOMContentLoaded', () => {
+      // Проверяем, есть ли активный токен
+      if (accessToken) {
+        // Проверяем валидность токена
+        checkAccessToken().then(isValid => {
+          if (isValid) {
+            // Токен валиден, показываем карту
+            document.getElementById('code-container').style.display = 'none';
+            initMaplibre();
+            loadData();
+            startTokenRefresh();
+          } else {
+            // Токен недействителен, показываем форму ввода кода
+            accessToken = null;
+            localStorage.removeItem('access_token');
+            document.getElementById('code-container').style.display = 'flex';
+            setupCodeForm();
+          }
+        });
+      } else {
+        // Показываем форму ввода кода
+        document.getElementById('code-container').style.display = 'flex';
+        setupCodeForm();
+      }
+      
+      // Инициализация обработчиков событий
       initEventListeners();
-      initAuth();
     });
   </script>
 </body>
