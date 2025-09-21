@@ -38,25 +38,12 @@
     
     body {
       font-family: 'Cinzel', 'Times New Roman', serif;
-      background: var(--background) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e6d3b8" opacity="0.15"/></svg>');
+      background: var(--background);
       color: var(--text);
       overflow: hidden;
       height: 100vh;
       position: relative;
       background-attachment: fixed;
-    }
-    
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      pointer-events: none;
-      background: url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><path d="M200,200 Q250,100 300,200 Q350,250 300,300 Q250,350 200,300 Q150,250 200,200" fill="none" stroke="%23a67c52" stroke-width="0.5" stroke-dasharray="5,5"/></svg>') center/contain no-repeat;
-      opacity: 0.03;
-      z-index: -1;
     }
     
     #app {
@@ -69,8 +56,7 @@
     
     /* Заголовок с винтажным стилем */
     .header {
-      background: var(--paper) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="20" viewBox="0 0 100 20"><path d="M0,10 Q25,5 50,10 T100,10" fill="none" stroke="%23a67c52" stroke-width="0.5"/></svg>') bottom no-repeat;
-      background-size: 100% 100%;
+      background: var(--paper);
       padding: 12px 20px;
       display: flex;
       align-items: center;
@@ -84,26 +70,6 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      position: relative;
-    }
-    
-    .logo::before, .logo::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      height: 1px;
-      background: var(--border);
-    }
-    
-    .logo::before {
-      left: -25px;
-      width: 20px;
-    }
-    
-    .logo::after {
-      right: -25px;
-      width: 20px;
     }
     
     .logo-icon {
@@ -122,40 +88,19 @@
       position: relative;
     }
     
-    .logo-text::after {
-      content: "™";
-      font-size: 10px;
-      position: absolute;
-      top: -2px;
-      right: -12px;
-    }
-    
     .header-controls {
       display: flex;
       gap: 12px;
       align-items: center;
     }
     
-    /* Контейнер карты с эффектом старой бумаги */
+    /* Контейнер карты */
     #map {
       flex: 1;
       width: 100%;
       position: relative;
       overflow: hidden;
       border: 1px solid var(--border);
-      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-    }
-    
-    #map::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      pointer-events: none;
-      background: url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><path d="M0,0 L200,200 M200,0 L0,200" stroke="%23a67c52" stroke-width="0.1" opacity="0.05"/></svg>') center/cover;
-      z-index: 1;
     }
     
     /* Панель управления */
@@ -163,8 +108,7 @@
       position: absolute;
       top: 80px;
       left: 20px;
-      background: var(--paper) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23d4c0a0" opacity="0.1"/></svg>');
-      background-size: cover;
+      background: var(--paper);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 16px;
@@ -173,7 +117,6 @@
       z-index: 9;
       transition: all 0.3s ease;
       font-family: 'Cinzel', serif;
-      backdrop-filter: blur(2px);
     }
     
     .panel-collapsed {
@@ -194,19 +137,6 @@
       font-weight: 600;
       font-size: 16px;
       color: var(--primary-dark);
-      position: relative;
-      padding-left: 20px;
-    }
-    
-    .panel-title::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 12px;
-      height: 12px;
-      background: url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%238b4513"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>') center/contain no-repeat;
     }
     
     .toggle-panel {
@@ -491,7 +421,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: var(--paper) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,20 L80,20 L80,80 L20,80 Z M30,30 L70,30 L70,70 L30,70 Z" fill="none" stroke="%23a67c52" stroke-width="0.5" opacity="0.2"/></svg>') center/cover;
+      background: var(--paper);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -508,7 +438,7 @@
     }
     
     .code-card {
-      background: var(--paper) url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e6d3b8" opacity="0.7"/></svg>');
+      background: var(--paper);
       border: 2px solid var(--border);
       border-radius: 12px;
       padding: 40px;
@@ -519,16 +449,6 @@
       overflow: hidden;
     }
     
-    .code-card::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--marker-ally), var(--marker-enemy), var(--marker-favorite), var(--marker-owned));
-    }
-    
     .code-title {
       font-size: 28px;
       font-weight: 700;
@@ -537,19 +457,6 @@
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
       letter-spacing: 2px;
       font-family: 'Cinzel', serif;
-      position: relative;
-      display: inline-block;
-    }
-    
-    .code-title::after {
-      content: "";
-      position: absolute;
-      bottom: -8px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 60px;
-      height: 2px;
-      background: var(--border);
     }
     
     .code-subtitle {
@@ -573,20 +480,6 @@
       font-size: 14px;
       color: var(--text);
       font-family: 'Cinzel', serif;
-    }
-    
-    .code-instructions p {
-      margin-bottom: 8px;
-      position: relative;
-      padding-left: 20px;
-    }
-    
-    .code-instructions p::before {
-      content: "•";
-      position: absolute;
-      left: 0;
-      color: var(--primary);
-      font-weight: bold;
     }
     
     .code-input-container {
@@ -650,7 +543,6 @@
       font-family: 'Fira Code', monospace;
       border-top: 1px solid var(--border);
       display: none;
-      backdrop-filter: blur(2px);
     }
     
     .debug-section {
@@ -780,20 +672,6 @@
       
       .action-buttons {
         grid-template-columns: 1fr;
-      }
-    }
-    
-    /* Режим высокой контрастности */
-    @media (forced-colors: active) {
-      body {
-        background: Canvas;
-        color: CanvasText;
-      }
-      
-      .card-bg, .control-btn, .search-input, .filter-select, .favorite-item, .btn {
-        background: Canvas;
-        border: 1px solid ButtonText;
-        color: ButtonText;
       }
     }
   </style>
@@ -929,7 +807,6 @@
         center: [32, 54], // Центр карты на Европу
         zoom: 4
       },
-      TILE_SERVER: 'https://back.genesis-of-ages.space/manage/get_tile_info.php',
       CACHE_TTL: 30 * 60 * 1000, // 30 минут
       INIT_TIMEOUT: 30000, // Увеличенный таймаут до 30 секунд
       MAX_RETRY_COUNT: 20, // Увеличено количество попыток до 20
@@ -938,7 +815,7 @@
     
     // Глобальные переменные
     let map;
-    let currentUser = null;
+    let currentUser = { id: 1 }; // Заглушка для пользователя
     let accessToken = localStorage.getItem('access_token');
     let tileData = [];
     let userMarks = {};
@@ -1119,7 +996,7 @@
       } catch (error) {
         log(`⚠️ Ошибка инициализации карты: ${error.message}`, true);
         document.getElementById('map-status').textContent = 'Карта: 🔴 Ошибка';
-        showToast('Ошибка инициализации карты', 'error');
+        showToast('Ошибка инициализации карта', 'error');
       }
     }
     
@@ -1192,13 +1069,13 @@
           // Создаём источник и слой, если их нет
           map.addSource('tiles-source', {
             type: 'geojson',
-             {
+            data: {
               type: 'FeatureCollection',
               features: features
             }
           });
           
-          // Добавляем слой для отображения
+          // Добавляем слой для отображение
           map.addLayer({
             id: 'tiles-layer',
             type: 'circle',
