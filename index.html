@@ -635,6 +635,26 @@
       border-left-color: var(--marker-favorite);
     }
     
+    /* Кнопка тестирования API */
+    #test-api-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 10000;
+      padding: 10px;
+      background: #8b4513;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+    }
+    
+    #test-api-btn:hover {
+      background: #5d2a0b;
+    }
+    
     /* Адаптация под мобильные */
     @media (max-width: 768px) {
       .control-panel {
@@ -672,6 +692,13 @@
       
       .action-buttons {
         grid-template-columns: 1fr;
+      }
+      
+      #test-api-btn {
+        top: 5px;
+        right: 5px;
+        padding: 8px;
+        font-size: 10px;
       }
     }
   </style>
@@ -801,21 +828,18 @@
   <script>
     // Конфигурация приложения
     const CONFIG = {
-      API_URL: 'https://genesis-map-api.onrender.com',
+      API_URL: 'https://genesis-map-api.onrender.com', // Замените на ваш URL API
       MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
       INITIAL_VIEW: {
-        center: [32, 54], // Центр карты на Европу
+        center: [32, 54],
         zoom: 4
       },
-      CACHE_TTL: 30 * 60 * 1000, // 30 минут
-      INIT_TIMEOUT: 30000, // Увеличенный таймаут до 30 секунд
-      MAX_RETRY_COUNT: 20, // Увеличено количество попыток до 20
-      RETRY_DELAY: 500 // Задержка между попытками в мс
+      CACHE_TTL: 30 * 60 * 1000,
     };
     
     // Глобальные переменные
     let map;
-    let currentUser = { id: 1 }; // Заглушка для пользователя
+    let currentUser = { id: 1 };
     let accessToken = localStorage.getItem('access_token');
     let tileData = [];
     let userMarks = {};
@@ -847,20 +871,30 @@
       console[isError ? 'error' : 'log'](message);
     }
     
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type ? 'toast-' + type : ''}`;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+    
+    function showLoader(visible) {
+      document.getElementById('loader').style.display = visible ? 'block' : 'none';
+    }
+    
     // --- Аутентификация через код ---
     function setupCodeForm() {
       const submitButton = document.getElementById('submit-code');
       const codeInput = document.getElementById('access-code');
       
-      // Разрешаем только цифры
       codeInput.addEventListener('input', function() {
         this.value = this.value.replace(/[^0-9]/g, '');
       });
       
-      // Обработчик отправки
       submitButton.addEventListener('click', verifyCode);
-      
-      // Обработчик нажатия Enter
       codeInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') verifyCode();
       });
@@ -876,7 +910,7 @@
       }
       
       showLoader(true);
-      log('🔄 Проверка кода доступа...');
+      log('🔄 Проверка кода доступа: ' + code);
       
       try {
         const response = await fetch(`${CONFIG.API_URL}/api/verify-code`, {
@@ -887,21 +921,23 @@
           body: JSON.stringify({ code })
         });
         
+        const responseText = await response.text();
+        log('📡 Ответ от API: ' + responseText);
+        
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = JSON.parse(responseText);
           throw new Error(errorData.error || 'Неверный код');
         }
         
-        const { accessToken: token, expiresIn } = await response.json();
+        const data = JSON.parse(responseText);
+        log('✅ Код подтвержден: ' + JSON.stringify(data));
         
         // Сохраняем токен
-        accessToken = token;
-        localStorage.setItem('access_token', token);
+        accessToken = data.accessToken;
+        localStorage.setItem('access_token', data.accessToken);
         
         // Скрываем форму ввода кода
         document.getElementById('code-container').style.display = 'none';
-        
-        log('✅ Код подтвержден, токен получен');
         
         // Инициализируем карту
         initMaplibre();
@@ -948,9 +984,7 @@
       }
     }
     
-    // Периодическая проверка токена
     function startTokenRefresh() {
-      // Проверяем токен каждые 15 минут
       setInterval(async () => {
         const isValid = await checkAccessToken();
         
@@ -959,7 +993,6 @@
           accessToken = null;
           localStorage.removeItem('access_token');
           
-          // Показываем форму ввода кода
           document.getElementById('code-container').style.display = 'flex';
           setupCodeForm();
           
@@ -979,15 +1012,11 @@
           attributionControl: false
         });
         
-        // Добавляем элементы управления
         map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
         
-        // Обработчики событий карты
         map.on('load', () => {
           log('🗺️ Карта MapLibre загружена');
           document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
-          
-          // Загружаем данные после инициализации карты
           updateVisibleTiles();
         });
         
@@ -996,7 +1025,7 @@
       } catch (error) {
         log(`⚠️ Ошибка инициализации карты: ${error.message}`, true);
         document.getElementById('map-status').textContent = 'Карта: 🔴 Ошибка';
-        showToast('Ошибка инициализации карта', 'error');
+        showToast('Ошибка инициализации карты', 'error');
       }
     }
     
@@ -1008,7 +1037,6 @@
         const bounds = map.getBounds();
         visibleTiles.clear();
         
-        // Фильтруем тайлы в пределах видимой области
         tileData.forEach(tile => {
           if (bounds.contains([tile.lng, tile.lat])) {
             visibleTiles.add(tile.id);
@@ -1017,20 +1045,18 @@
         
         renderTiles();
         
-        // При первой загрузке не запрашиваем данные снова, они уже загружены
         if (isInitialLoad) {
             isInitialLoad = false;
             return;
         }
         
-        // Добавлен debounce для предотвращения частых запросов
         if (debounceTimer) {
           clearTimeout(debounceTimer);
         }
         
         debounceTimer = setTimeout(() => {
           loadData();
-        }, 500); // Запрос данных через 500мс после последнего движения карты
+        }, 500);
       } catch (error) {
         log(`⚠️ Ошибка обновления видимых тайлов: ${error.message}`, true);
       }
@@ -1060,13 +1086,11 @@
           });
 
         if (map.getSource('tiles-source')) {
-          // Обновляем существующий источник
           map.getSource('tiles-source').setData({
             type: 'FeatureCollection',
             features: features
           });
         } else {
-          // Создаём источник и слой, если их нет
           map.addSource('tiles-source', {
             type: 'geojson',
             data: {
@@ -1075,7 +1099,6 @@
             }
           });
           
-          // Добавляем слой для отображение
           map.addLayer({
             id: 'tiles-layer',
             type: 'circle',
@@ -1106,7 +1129,6 @@
             }
           });
           
-          // Добавляем всплывающие подсказки
           map.on('click', 'tiles-layer', (e) => {
             if (e.features.length > 0) {
               const tileId = e.features[0].properties.id;
@@ -1114,7 +1136,6 @@
             }
           });
           
-          // Изменение курсора при наведении
           map.on('mouseenter', 'tiles-layer', () => {
             map.getCanvas().style.cursor = 'pointer';
           });
@@ -1155,7 +1176,6 @@
         .setHTML(popupContent)
         .addTo(map);
       
-      // Добавляем обработчики событий после отображения popup
       setTimeout(() => {
         document.querySelectorAll('.mark-btn').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -1208,8 +1228,6 @@
     }
     
     function loadUserMarks() {
-      // Получаем ID пользователя из токена (в реальном приложении нужно расшифровать токен)
-      // Для упрощения мы получаем метки через API с токеном в заголовке
       return fetch(`${CONFIG.API_URL}/api/marks/${currentUser.id}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
@@ -1244,7 +1262,6 @@
     }
     
     function loadTileData() {
-      // Добавлен AbortController для отмены предыдущих запросов
       if (currentAbortController) {
         currentAbortController.abort();
       }
@@ -1278,7 +1295,6 @@
       })
       .then(result => {
         if (result.tiles && Array.isArray(result.tiles)) {
-          // Строгая валидация данных от API
           tileData = result.tiles
             .filter(tile => {
               const id = parseInt(tile.id);
@@ -1312,7 +1328,6 @@
           return;
       }
       
-      // Добавлены состояния загрузки для кнопок
       const markButtons = document.querySelectorAll(`.mark-btn[data-id="${tileId}"]`);
       markButtons.forEach(btn => {
         btn.disabled = true;
@@ -1357,7 +1372,6 @@
         showToast('Ошибка сохранения метки', 'error');
       })
       .finally(() => {
-        // Восстанавливаем кнопки
         markButtons.forEach(btn => {
           btn.disabled = false;
           const type = btn.dataset.type;
@@ -1383,7 +1397,7 @@
       }
       favorites.forEach(id => {
         const tile = tileData.find(t => t.id === id);
-        if (tile) { // Показываем только если тайл видим
+        if (tile) {
             const item = document.createElement('div');
             item.className = 'favorite-item';
             item.innerHTML = `
@@ -1400,7 +1414,7 @@
             favList.appendChild(item);
         }
       });
-      // Добавляем обработчики событий
+      
       document.querySelectorAll('.favorite-btn[data-action="goto"]').forEach(btn => {
         btn.addEventListener('click', () => {
           const tileId = parseInt(btn.dataset.id);
@@ -1420,22 +1434,6 @@
           saveMark(tileId, 'clear');
         });
       });
-    }
-    
-    // Показ уведомления
-    function showToast(message, type = 'info') {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.className = `toast ${type ? 'toast-' + type : ''}`;
-      toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3000);
-    }
-    
-    // Показать/скрыть лоадер
-    function showLoader(visible) {
-      document.getElementById('loader').style.display = visible ? 'block' : 'none';
     }
     
     // Инициализация обработчиков событий
@@ -1478,7 +1476,6 @@
       
       // Снимок
       document.getElementById('screenshot-btn').addEventListener('click', () => {
-        // В реальном приложении здесь будет код для создания скриншота
         showToast('Снимок карты сохранен', 'success');
       });
       
@@ -1542,20 +1539,62 @@
       }
     }
     
+    // Функция тестирования API
+    function setupTestAPIButton() {
+      const testButton = document.createElement('button');
+      testButton.id = 'test-api-btn';
+      testButton.textContent = 'Тест API';
+      
+      testButton.addEventListener('click', async () => {
+        try {
+          log('🧪 Начинаем тест соединения с API...');
+          
+          // Тест сохранения кода
+          const testCode = '123456';
+          log('1. Тестируем сохранение кода...');
+          
+          const saveResponse = await fetch(`${CONFIG.API_URL}/api/save-code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: testCode, userId: 999999 })
+          });
+          
+          const saveResult = await saveResponse.text();
+          log('Результат сохранения: ' + saveResult);
+          
+          // Тест проверки кода
+          log('2. Тестируем проверку кода...');
+          
+          const verifyResponse = await fetch(`${CONFIG.API_URL}/api/verify-code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: testCode })
+          });
+          
+          const verifyResult = await verifyResponse.text();
+          log('Результат проверки: ' + verifyResult);
+          
+          showToast('Тест завершен, проверьте логи', 'success');
+        } catch (error) {
+          log('❌ Ошибка теста: ' + error.message, true);
+          showToast('Ошибка теста: ' + error.message, 'error');
+        }
+      });
+      
+      document.body.appendChild(testButton);
+    }
+    
     // Запуск приложения
     document.addEventListener('DOMContentLoaded', () => {
       // Проверяем, есть ли активный токен
       if (accessToken) {
-        // Проверяем валидность токена
         checkAccessToken().then(isValid => {
           if (isValid) {
-            // Токен валиден, показываем карту
             document.getElementById('code-container').style.display = 'none';
             initMaplibre();
             loadData();
             startTokenRefresh();
           } else {
-            // Токен недействителен, показываем форму ввода кода
             accessToken = null;
             localStorage.removeItem('access_token');
             document.getElementById('code-container').style.display = 'flex';
@@ -1563,13 +1602,15 @@
           }
         });
       } else {
-        // Показываем форму ввода кода
         document.getElementById('code-container').style.display = 'flex';
         setupCodeForm();
       }
       
       // Инициализация обработчиков событий
       initEventListeners();
+      
+      // Добавляем кнопку тестирования API
+      setupTestAPIButton();
     });
   </script>
 </body>
