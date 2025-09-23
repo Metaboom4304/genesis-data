@@ -826,9 +826,11 @@
   </div>
   
   <script>
-    // Конфигурация приложения
+    // Конфигурация приложения - ОБНОВЛЕНО для соответствия API
     const CONFIG = {
-      API_URL: 'https://genesis-map-api.onrender.com', // Замените на ваш URL API
+      API_URL: window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://genesis-map-api.onrender.com',
       MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
       INITIAL_VIEW: {
         center: [32, 54],
@@ -839,7 +841,7 @@
     
     // Глобальные переменные
     let map;
-    let currentUser = { id: 1 };
+    let currentUser = { id: 1 }; // Будет установлен после аутентификации
     let accessToken = localStorage.getItem('access_token');
     let tileData = [];
     let userMarks = {};
@@ -925,16 +927,29 @@
         log('📡 Ответ от API: ' + responseText);
         
         if (!response.ok) {
-          const errorData = JSON.parse(responseText);
-          throw new Error(errorData.error || 'Неверный код');
+          let errorMessage = 'Неверный код';
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            errorMessage = `Ошибка сервера: ${response.status}`;
+          }
+          throw new Error(errorMessage);
         }
         
         const data = JSON.parse(responseText);
         log('✅ Код подтвержден: ' + JSON.stringify(data));
         
+        if (!data.accessToken) {
+          throw new Error('Токен не получен от сервера');
+        }
+        
         // Сохраняем токен
         accessToken = data.accessToken;
         localStorage.setItem('access_token', data.accessToken);
+        
+        // Устанавливаем ID пользователя из токена (будет использоваться в запросах)
+        currentUser.id = await getUserIdFromToken();
         
         // Скрываем форму ввода кода
         document.getElementById('code-container').style.display = 'none';
@@ -956,6 +971,31 @@
       }
     }
     
+    // Получение ID пользователя из токена через API
+    async function getUserIdFromToken() {
+      if (!accessToken) return 1; // fallback
+      
+      try {
+        const response = await fetch(`${CONFIG.API_URL}/api/check-access`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ accessToken })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          // В реальном приложении API должен возвращать user_id
+          return data.userId || 1;
+        }
+      } catch (error) {
+        log('⚠️ Ошибка получения ID пользователя: ' + error.message, true);
+      }
+      
+      return 1; // fallback
+    }
+    
     async function checkAccessToken() {
       if (!accessToken) {
         return false;
@@ -971,8 +1011,7 @@
         });
         
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Токен недействителен');
+          return false;
         }
         
         const { valid } = await response.json();
@@ -1539,7 +1578,7 @@
       }
     }
     
-    // Функция тестирования API
+    // Функция тестирования API - ОБНОВЛЕНА
     function setupTestAPIButton() {
       const testButton = document.createElement('button');
       testButton.id = 'test-api-btn';
@@ -1549,22 +1588,28 @@
         try {
           log('🧪 Начинаем тест соединения с API...');
           
-          // Тест сохранения кода
+          // Тест доступности API
+          log('1. Тестируем доступность API...');
+          const healthResponse = await fetch(`${CONFIG.API_URL}/health`);
+          const healthText = await healthResponse.text();
+          log('Статус API: ' + healthResponse.status + ' - ' + healthText);
+          
+          // Тест сохранения кода (имитация бота)
           const testCode = '123456';
-          log('1. Тестируем сохранение кода...');
+          const testUserId = 999999;
+          log('2. Тестируем сохранение кода...');
           
           const saveResponse = await fetch(`${CONFIG.API_URL}/api/save-code`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: testCode, userId: 999999 })
+            body: JSON.stringify({ code: testCode, userId: testUserId })
           });
           
           const saveResult = await saveResponse.text();
-          log('Результат сохранения: ' + saveResult);
+          log('Результат сохранения: ' + saveResponse.status + ' - ' + saveResult);
           
           // Тест проверки кода
-          log('2. Тестируем проверку кода...');
-          
+          log('3. Тестируем проверку кода...');
           const verifyResponse = await fetch(`${CONFIG.API_URL}/api/verify-code`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1572,7 +1617,7 @@
           });
           
           const verifyResult = await verifyResponse.text();
-          log('Результат проверки: ' + verifyResult);
+          log('Результат проверки: ' + verifyResponse.status + ' - ' + verifyResult);
           
           showToast('Тест завершен, проверьте логи', 'success');
         } catch (error) {
@@ -1586,6 +1631,9 @@
     
     // Запуск приложения
     document.addEventListener('DOMContentLoaded', () => {
+      log('🚀 Запуск GENESIS WAR MAP');
+      log('🔧 Конфигурация: ' + JSON.stringify(CONFIG));
+      
       // Проверяем, есть ли активный токен
       if (accessToken) {
         checkAccessToken().then(isValid => {
