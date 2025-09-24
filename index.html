@@ -826,7 +826,7 @@
   </div>
   
   <script>
-    // Конфигурация приложения - ОБНОВЛЕНО для соответствия API
+    // Конфигурация приложения - ОБНОВЛЕНО для CORS
     const CONFIG = {
       API_URL: window.location.hostname === 'localhost' 
         ? 'http://localhost:3000' 
@@ -841,7 +841,7 @@
     
     // Глобальные переменные
     let map;
-    let currentUser = { id: 1 }; // Будет установлен после аутентификации
+    let currentUser = { id: 1 };
     let accessToken = localStorage.getItem('access_token');
     let tileData = [];
     let userMarks = {};
@@ -902,6 +902,7 @@
       });
     }
     
+    // ИСПРАВЛЕННАЯ ФУНКЦИЯ: verifyCode
     async function verifyCode() {
       const codeInput = document.getElementById('access-code');
       const code = codeInput.value.trim();
@@ -915,6 +916,7 @@
       log('🔄 Проверка кода доступа: ' + code);
       
       try {
+        // Упрощенный запрос - доверяем настройкам CORS на сервере
         const response = await fetch(`${CONFIG.API_URL}/api/verify-code`, {
           method: 'POST',
           headers: {
@@ -944,23 +946,17 @@
           throw new Error('Токен не получен от сервера');
         }
         
-        // Сохраняем токен
         accessToken = data.accessToken;
         localStorage.setItem('access_token', data.accessToken);
         
-        // Устанавливаем ID пользователя из токена (будет использоваться в запросах)
         currentUser.id = await getUserIdFromToken();
         
-        // Скрываем форму ввода кода
         document.getElementById('code-container').style.display = 'none';
         
-        // Инициализируем карту
         initMaplibre();
         
-        // Загружаем данные
         loadData();
         
-        // Запускаем проверку токена
         startTokenRefresh();
         
       } catch (error) {
@@ -971,9 +967,8 @@
       }
     }
     
-    // Получение ID пользователя из токена через API
     async function getUserIdFromToken() {
-      if (!accessToken) return 1; // fallback
+      if (!accessToken) return 1;
       
       try {
         const response = await fetch(`${CONFIG.API_URL}/api/check-access`, {
@@ -986,14 +981,13 @@
         
         if (response.ok) {
           const data = await response.json();
-          // В реальном приложении API должен возвращать user_id
           return data.userId || 1;
         }
       } catch (error) {
         log('⚠️ Ошибка получения ID пользователя: ' + error.message, true);
       }
       
-      return 1; // fallback
+      return 1;
     }
     
     async function checkAccessToken() {
@@ -1578,7 +1572,7 @@
       }
     }
     
-    // Функция тестирования API - ОБНОВЛЕНА
+    // Функция тестирования API
     function setupTestAPIButton() {
       const testButton = document.createElement('button');
       testButton.id = 'test-api-btn';
