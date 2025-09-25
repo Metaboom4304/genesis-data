@@ -655,6 +655,18 @@
       background: #5d2a0b;
     }
     
+    /* Сетка тайлов */
+    .grid-line {
+      stroke: rgba(139, 69, 19, 0.2);
+      stroke-width: 0.5;
+    }
+    
+    /* Улучшение видимости тайлов */
+    .maplibregl-marker {
+      pointer-events: all;
+      cursor: pointer;
+    }
+    
     /* Адаптация под мобильные */
     @media (max-width: 768px) {
       .control-panel {
@@ -784,6 +796,10 @@
           <i class="material-icons">map</i>
           Загрузить сетку тайлов
         </button>
+        <button class="btn btn-secondary" id="toggle-grid" style="grid-column: 1 / -1;">
+          <i class="material-icons">grid_on</i>
+          Переключить сетку
+        </button>
       </div>
       
       <div class="favorites-section">
@@ -856,6 +872,7 @@
     let isInitialLoad = true;
     let debounceTimer = null;
     let currentAbortController = null;
+    let gridVisible = false;
     
     // --- Вспомогательные функции ---
     function createSafeCoordinate(latitude, longitude) {
@@ -895,7 +912,7 @@
     
     // --- Функции для работы с координатами тайлов ---
     
-    // Преобразование plotId в географические координаты (основано на официальной карте)
+    // ИСПРАВЛЕННАЯ функция преобразования plotId в географические координаты
     function plotIdToGeo(plotId) {
       // Всего тайлов: 256x256 = 65536
       const totalTiles = CONFIG.TOTAL_TILES;
@@ -907,13 +924,10 @@
       const x = (normalizedId - 1) % 256;
       const y = Math.floor((normalizedId - 1) / 256);
       
-      // Преобразуем в географические координаты
-      // Официальная карта использует диапазон приблизительно:
-      // Широта: от -85° до +85°
-      // Долгота: от -180° до +180°
-      
+      // ИСПРАВЛЕННОЕ преобразование в географические координаты
+      // Правильное соответствие игровой карте Genesis
       const lng = -180 + (x + 0.5) * (360 / 256);
-      const lat = 85 - (y + 0.5) * (170 / 256);
+      const lat = 85 - (y + 0.5) * (170 / 256); // Исправленный расчет широты
       
       return { lng, lat, x, y };
     }
@@ -967,6 +981,7 @@
         log(`✅ Преобразовано ${tileData.length} тайлов с координатами`);
         document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length} загружено`;
         renderTiles();
+        renderGrid(); // Отрисовываем сетку после загрузки тайлов
         
         return apiResponse;
       })
@@ -1021,6 +1036,7 @@
       log(`✅ Создано ${tileData.length} демо-тайлов`);
       document.getElementById('tiles-status').textContent = `Тайлы: 🧪 ${tileData.length} демо`;
       renderTiles();
+      renderGrid(); // Отрисовываем сетку для демо-тайлов
     }
     
     // Создание полной сетки 256x256 тайлов
@@ -1062,9 +1078,95 @@
         log(`✅ Создана полная сетка из ${tileData.length} тайлов`);
         document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length} (полная сетка)`;
         renderTiles();
+        renderGrid(); // Отрисовываем сетку для полной сетки
         showLoader(false);
         showToast(`Загружена полная сетка из ${tileData.length} тайлов`, 'success');
       }, 100);
+    }
+    
+    // --- Функция отрисовки сетки ---
+    function renderGrid() {
+      if (!map || !map.isStyleLoaded()) {
+        setTimeout(renderGrid, 100);
+        return;
+      }
+      
+      // Удаляем старую сетку если есть
+      if (map.getSource('grid-source')) {
+        map.removeLayer('grid-layer');
+        map.removeSource('grid-source');
+      }
+      
+      const gridFeatures = [];
+      
+      // Создаем вертикальные линии сетки
+      for (let x = 0; x <= 256; x++) {
+        const lng = -180 + x * (360 / 256);
+        gridFeatures.push({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [lng, -85],
+              [lng, 85]
+            ]
+          }
+        });
+      }
+      
+      // Создаем горизонтальные линии сетки
+      for (let y = 0; y <= 256; y++) {
+        const lat = 85 - y * (170 / 256);
+        gridFeatures.push({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [-180, lat],
+              [180, lat]
+            ]
+          }
+        });
+      }
+      
+      map.addSource('grid-source', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: gridFeatures
+        }
+      });
+      
+      map.addLayer({
+        id: 'grid-layer',
+        type: 'line',
+        source: 'grid-source',
+        paint: {
+          'line-color': 'rgba(139, 69, 19, 0.2)',
+          'line-width': 1,
+          'line-dasharray': [2, 2]
+        }
+      });
+      
+      // Сначала скрываем сетку
+      map.setLayoutProperty('grid-layer', 'visibility', 'none');
+      gridVisible = false;
+      
+      log('✅ Сетка тайлов создана');
+    }
+    
+    // --- Функция переключения видимости сетки ---
+    function toggleGrid() {
+      if (!map || !map.getLayer('grid-layer')) {
+        showToast('Сетка еще не загружена', 'warning');
+        return;
+      }
+      
+      gridVisible = !gridVisible;
+      map.setLayoutProperty('grid-layer', 'visibility', gridVisible ? 'visible' : 'none');
+      
+      showToast(`Сетка ${gridVisible ? 'включена' : 'выключена'}`, 'success');
+      log(`🔲 Сетка ${gridVisible ? 'показана' : 'скрыта'}`);
     }
     
     // --- Аутентификация через код ---
@@ -1127,14 +1229,13 @@
         accessToken = data.accessToken;
         localStorage.setItem('access_token', data.accessToken);
         
-        currentUser.id = await getUserIdFromToken();
+        currentUser.id = data.userId || await getUserIdFromToken();
         
         document.getElementById('code-container').style.display = 'none';
+        document.getElementById('user-status').textContent = `Пользователь: ✅ ID ${currentUser.id}`;
         
         initMaplibre();
-        
         loadData();
-        
         startTokenRefresh();
         
       } catch (error) {
@@ -1205,6 +1306,7 @@
           localStorage.removeItem('access_token');
           
           document.getElementById('code-container').style.display = 'flex';
+          document.getElementById('user-status').textContent = 'Пользователь: 🔴 Не авторизован';
           setupCodeForm();
           
           showToast('Время сессии истекло. Введите новый код доступа.', 'warning');
@@ -1267,14 +1369,13 @@
         
         debounceTimer = setTimeout(() => {
           // При движении карты можем подгружать дополнительные данные
-          // Пока просто обновляем видимые тайлы
         }, 500);
       } catch (error) {
         log(`⚠️ Ошибка обновления видимых тайлов: ${error.message}`, true);
       }
     }
     
-    // Визуализация тайлов - ОБНОВЛЕНА для сетки
+    // Визуализация тайлов
     function renderTiles() {
       try {
         if (!map || !map.isStyleLoaded()) {
@@ -1379,7 +1480,7 @@
       }
     }
     
-    // Показ всплывающего окна тайла - ОБНОВЛЕНО
+    // Показ всплывающего окна тайла
     function showTilePopup(tileId, lngLat) {
       const tile = tileData.find(t => t.id === tileId);
       if (!tile) return;
@@ -1458,7 +1559,7 @@
       
       Promise.all([
         loadUserMarks(),
-        loadTileData() // Загружаем тайлы с официального API
+        loadTileData()
       ])
       .then(() => {
         document.getElementById('api-status').textContent = 'API: ✅ Работает';
@@ -1506,72 +1607,99 @@
         log(`📌 Загружено ${marks.length} пользовательских меток`);
         renderFavorites();
         return marks;
+      })
+      .catch(error => {
+        log(`⚠️ Ошибка загрузки меток: ${error.message}`, true);
+        userMarks = {};
+        favorites = [];
+        return [];
       });
     }
     
-    // Сохранение метки
-    function saveMark(tileId, markType, comment = null) {
+    // ИСПРАВЛЕННАЯ функция сохранения метки
+    async function saveMark(tileId, markType, comment = null) {
       if (!accessToken) {
-          showToast('Ошибка: Требуется авторизация', 'error');
-          return;
+        showToast('Ошибка: Требуется авторизация', 'error');
+        return;
       }
       
       const markButtons = document.querySelectorAll(`.mark-btn[data-id="${tileId}"]`);
       markButtons.forEach(btn => {
         btn.disabled = true;
-        btn.innerHTML = '<i class="material-icons">hourglass_empty</i>';
+        btn.innerHTML = '⏳';
       });
       
-      fetch(`${CONFIG.API_URL}/api/marks`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
+      try {
+        const requestBody = {
           user_id: currentUser.id,
-          tile_id: tileId,
+          tile_id: parseInt(tileId),
           mark_type: markType,
           comment: comment
-        })
-      })
-      .then(response => {
-        if (!response.ok) throw new Error('Не удалось сохранить метку');
-        return response.json();
-      })
-      .then(() => {
+        };
+
+        log(`💾 Сохранение метки: ${JSON.stringify(requestBody)}`);
+
+        const response = await fetch(`${CONFIG.API_URL}/api/marks`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        log(`📥 Ответ сервера: ${response.status} ${response.statusText}`);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          log(`❌ Ошибка HTTP: ${errorText}`);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json();
+        log(`✅ Метка успешно сохранена: ${JSON.stringify(result)}`);
+
+        // Обновляем локальные данные
         if (!userMarks[tileId]) userMarks[tileId] = {};
+        
         if (markType === 'clear') {
           delete userMarks[tileId];
-          favorites = favorites.filter(favId => favId !== tileId);
+          favorites = favorites.filter(favId => favId != tileId);
         } else {
-          userMarks[tileId][markType] = comment || true;
-          if (markType === 'favorite' && !favorites.includes(tileId)) {
-            favorites.push(tileId);
+          // Удаляем все предыдущие метки для этого тайла
+          userMarks[tileId] = { [markType]: comment || true };
+          
+          if (markType === 'favorite') {
+            if (!favorites.includes(tileId)) {
+              favorites.push(tileId);
+            }
+          } else {
+            // Удаляем из избранного если ставим другую метку
+            favorites = favorites.filter(favId => favId != tileId);
           }
         }
+
         renderTiles();
         renderFavorites();
-        log(`💾 Метка сохранена: ${tileId} (${markType})`);
         showToast('Метка сохранена', 'success');
-      })
-      .catch(error => {
-        log(`⚠️ Ошибка сохранения метки: ${error.message}`, true);
-        showToast('Ошибка сохранения метки', 'error');
-      })
-      .finally(() => {
+
+      } catch (error) {
+        log(`❌ Ошибка сохранения метки: ${error.message}`, true);
+        showToast(`Ошибка: ${error.message}`, 'error');
+      } finally {
+        // Восстанавливаем кнопки
         markButtons.forEach(btn => {
           btn.disabled = false;
           const type = btn.dataset.type;
           const icons = {
-            'ally': '🟩',
-            'enemy': '🟥',
-            'favorite': '⭐',
-            'clear': '⚪'
+            'ally': '🟩 Союзник',
+            'enemy': '🟥 Враг',
+            'favorite': '⭐ Избранное',
+            'clear': '⚪ Сброс'
           };
-          btn.innerHTML = `${icons[type] || ''} ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+          btn.textContent = icons[type] || type;
         });
-      });
+      }
     }
     
     // Отрисовка избранного
@@ -1685,6 +1813,11 @@
         createFullTileGrid();
       });
       
+      // Переключение сетки
+      document.getElementById('toggle-grid').addEventListener('click', () => {
+        toggleGrid();
+      });
+      
       // Сворачивание панели
       document.getElementById('toggle-panel').addEventListener('click', () => {
         const panel = document.getElementById('control-panel');
@@ -1761,30 +1894,11 @@
           const healthText = await healthResponse.text();
           log('Статус API: ' + healthResponse.status + ' - ' + healthText);
           
-          // Тест сохранения кода (имитация бота)
-          const testCode = '123456';
-          const testUserId = 999999;
-          log('2. Тестируем сохранение кода...');
-          
-          const saveResponse = await fetch(`${CONFIG.API_URL}/api/save-code`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: testCode, userId: testUserId })
-          });
-          
-          const saveResult = await saveResponse.text();
-          log('Результат сохранения: ' + saveResponse.status + ' - ' + saveResult);
-          
-          // Тест проверки кода
-          log('3. Тестируем проверку кода...');
-          const verifyResponse = await fetch(`${CONFIG.API_URL}/api/verify-code`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: testCode })
-          });
-          
-          const verifyResult = await verifyResponse.text();
-          log('Результат проверки: ' + verifyResponse.status + ' - ' + verifyResult);
+          // Тест debug endpoint
+          log('2. Тестируем debug endpoint...');
+          const debugResponse = await fetch(`${CONFIG.API_URL}/api/debug`);
+          const debugData = await debugResponse.json();
+          log('Debug endpoint: ' + JSON.stringify(debugData));
           
           showToast('Тест завершен, проверьте логи', 'success');
         } catch (error) {
@@ -1806,6 +1920,7 @@
         checkAccessToken().then(isValid => {
           if (isValid) {
             document.getElementById('code-container').style.display = 'none';
+            document.getElementById('user-status').textContent = 'Пользователь: ✅ Авторизован';
             initMaplibre();
             loadData();
             startTokenRefresh();
@@ -1813,11 +1928,13 @@
             accessToken = null;
             localStorage.removeItem('access_token');
             document.getElementById('code-container').style.display = 'flex';
+            document.getElementById('user-status').textContent = 'Пользователь: 🔴 Не авторизован';
             setupCodeForm();
           }
         });
       } else {
         document.getElementById('code-container').style.display = 'flex';
+        document.getElementById('user-status').textContent = 'Пользователь: 🔴 Не авторизован';
         setupCodeForm();
       }
       
@@ -1826,6 +1943,8 @@
       
       // Добавляем кнопку тестирования API
       setupTestAPIButton();
+      
+      log('✅ Приложение инициализировано');
     });
   </script>
 </body>
