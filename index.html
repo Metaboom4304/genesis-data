@@ -755,7 +755,7 @@
       </div>
       
       <div class="search-container">
-        <input type="text" class="search-input" id="search" placeholder="Поиск по ID тайла..." />
+        <input type="text" class="search-input" id="search" placeholder="Поиск по ID тайла (1-65536)" />
         <i class="material-icons search-icon">search</i>
       </div>
       
@@ -779,6 +779,10 @@
         <button class="btn btn-primary" id="screenshot-btn">
           <i class="material-icons">photo_camera</i>
           Снимок
+        </button>
+        <button class="btn btn-secondary" id="load-tiles-btn" style="grid-column: 1 / -1;">
+          <i class="material-icons">map</i>
+          Загрузить сетку тайлов
         </button>
       </div>
       
@@ -821,12 +825,13 @@
       <div class="debug-section" id="map-status">Карта: ⏳</div>
       <div class="debug-section" id="api-status">API: ⏳</div>
       <div class="debug-section" id="cache-status">Кеш: ⏳</div>
+      <div class="debug-section" id="tiles-status">Тайлы: ⏳</div>
       <div id="debug-log"></div>
     </div>
   </div>
   
   <script>
-    // Конфигурация приложения - ОБНОВЛЕНО для CORS
+    // Конфигурация приложения
     const CONFIG = {
       API_URL: window.location.hostname === 'localhost' 
         ? 'http://localhost:3000' 
@@ -837,6 +842,7 @@
         zoom: 4
       },
       CACHE_TTL: 30 * 60 * 1000,
+      TOTAL_TILES: 256 * 256 // 65536 тайлов
     };
     
     // Глобальные переменные
@@ -887,6 +893,180 @@
       document.getElementById('loader').style.display = visible ? 'block' : 'none';
     }
     
+    // --- Функции для работы с координатами тайлов ---
+    
+    // Преобразование plotId в географические координаты (основано на официальной карте)
+    function plotIdToGeo(plotId) {
+      // Всего тайлов: 256x256 = 65536
+      const totalTiles = CONFIG.TOTAL_TILES;
+      
+      // Нормализуем plotId (должен быть от 1 до 65536)
+      const normalizedId = Math.max(1, Math.min(plotId, totalTiles));
+      
+      // Получаем координаты сетки (x, y) от 0 до 255
+      const x = (normalizedId - 1) % 256;
+      const y = Math.floor((normalizedId - 1) / 256);
+      
+      // Преобразуем в географические координаты
+      // Официальная карта использует диапазон приблизительно:
+      // Широта: от -85° до +85°
+      // Долгота: от -180° до +180°
+      
+      const lng = -180 + (x + 0.5) * (360 / 256);
+      const lat = 85 - (y + 0.5) * (170 / 256);
+      
+      return { lng, lat, x, y };
+    }
+    
+    // Загрузка данных тайлов с официального API
+    function loadTileData() {
+      if (currentAbortController) {
+        currentAbortController.abort();
+      }
+      currentAbortController = new AbortController();
+      
+      log('🔄 Загрузка тайлов с официального API...');
+      document.getElementById('tiles-status').textContent = 'Тайлы: ⏳ Загрузка';
+      
+      return fetch('https://back.genesis-of-ages.space/manage/get_tile_info.php', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        signal: currentAbortController.signal
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Ошибка HTTP: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(apiResponse => {
+        if (!apiResponse.success || !apiResponse.tiles) {
+          throw new Error('Неверный формат ответа API');
+        }
+        
+        log(`📊 Получено ${apiResponse.tiles.length} тайлов от API`);
+        
+        // Преобразуем данные API в наш формат с координатами
+        tileData = apiResponse.tiles.map(tile => {
+          const plotId = parseInt(tile.id_tile);
+          const coords = plotIdToGeo(plotId);
+          
+          return {
+            id: plotId,
+            lng: coords.lng,
+            lat: coords.lat,
+            gridX: coords.x,
+            gridY: coords.y,
+            has_owner: tile.has_owner ? 'true' : 'false',
+            originalData: tile // Сохраняем оригинальные данные
+          };
+        });
+        
+        log(`✅ Преобразовано ${tileData.length} тайлов с координатами`);
+        document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length} загружено`;
+        renderTiles();
+        
+        return apiResponse;
+      })
+      .catch(error => {
+        if (error.name === 'AbortError') {
+          log('⚠️ Запрос тайлов был отменен');
+        } else {
+          log(`❌ Ошибка загрузки тайлов: ${error.message}`, true);
+          showToast('Не удалось загрузить тайлы с сервера', 'error');
+          document.getElementById('tiles-status').textContent = 'Тайлы: 🔴 Ошибка';
+          
+          // Создаем демо-тайлы для тестирования
+          createDemoTiles();
+        }
+        throw error;
+      });
+    }
+    
+    // Создание демо-тайлов если API недоступно
+    function createDemoTiles() {
+      log('🔄 Создание демо-тайлов...');
+      
+      tileData = [];
+      const demoSize = 50; // 50x50 для производительности
+      
+      // Создаем сетку для демонстрации
+      for (let y = 0; y < demoSize; y++) {
+        for (let x = 0; x < demoSize; x++) {
+          const plotId = y * demoSize + x + 1;
+          const lng = -180 + (x + 0.5) * (360 / demoSize);
+          const lat = 85 - (y + 0.5) * (170 / demoSize);
+          
+          tileData.push({
+            id: plotId,
+            lng: lng,
+            lat: lat,
+            gridX: x,
+            gridY: y,
+            has_owner: Math.random() > 0.8 ? 'true' : 'false',
+            originalData: {
+              id_tile: plotId.toString(),
+              has_owner: Math.random() > 0.8,
+              stone_pct: Math.floor(Math.random() * 100),
+              wood_pct: Math.floor(Math.random() * 100),
+              fish_pct: Math.floor(Math.random() * 100),
+              artifacts: Math.floor(Math.random() * 50)
+            }
+          });
+        }
+      }
+      
+      log(`✅ Создано ${tileData.length} демо-тайлов`);
+      document.getElementById('tiles-status').textContent = `Тайлы: 🧪 ${tileData.length} демо`;
+      renderTiles();
+    }
+    
+    // Создание полной сетки 256x256 тайлов
+    function createFullTileGrid() {
+      log('🗺️ Создание полной сетки 256x256 тайлов...');
+      showLoader(true);
+      
+      // Используем setTimeout для избежания блокировки UI
+      setTimeout(() => {
+        tileData = [];
+        const totalTiles = CONFIG.TOTAL_TILES;
+        
+        for (let plotId = 1; plotId <= totalTiles; plotId++) {
+          const coords = plotIdToGeo(plotId);
+          
+          tileData.push({
+            id: plotId,
+            lng: coords.lng,
+            lat: coords.lat,
+            gridX: coords.x,
+            gridY: coords.y,
+            has_owner: 'false', // По умолчанию все свободны
+            originalData: {
+              id_tile: plotId.toString(),
+              has_owner: false,
+              stone_pct: Math.floor(Math.random() * 100),
+              wood_pct: Math.floor(Math.random() * 100),
+              fish_pct: Math.floor(Math.random() * 100),
+              artifacts: Math.floor(Math.random() * 50)
+            }
+          });
+          
+          // Показываем прогресс каждые 1000 тайлов
+          if (plotId % 1000 === 0) {
+            log(`📊 Создано ${plotId}/${totalTiles} тайлов...`);
+          }
+        }
+        
+        log(`✅ Создана полная сетка из ${tileData.length} тайлов`);
+        document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length} (полная сетка)`;
+        renderTiles();
+        showLoader(false);
+        showToast(`Загружена полная сетка из ${tileData.length} тайлов`, 'success');
+      }, 100);
+    }
+    
     // --- Аутентификация через код ---
     function setupCodeForm() {
       const submitButton = document.getElementById('submit-code');
@@ -902,7 +1082,6 @@
       });
     }
     
-    // ИСПРАВЛЕННАЯ ФУНКЦИЯ: verifyCode
     async function verifyCode() {
       const codeInput = document.getElementById('access-code');
       const code = codeInput.value.trim();
@@ -916,7 +1095,6 @@
       log('🔄 Проверка кода доступа: ' + code);
       
       try {
-        // Упрощенный запрос - доверяем настройкам CORS на сервере
         const response = await fetch(`${CONFIG.API_URL}/api/verify-code`, {
           method: 'POST',
           headers: {
@@ -1088,21 +1266,28 @@
         }
         
         debounceTimer = setTimeout(() => {
-          loadData();
+          // При движении карты можем подгружать дополнительные данные
+          // Пока просто обновляем видимые тайлы
         }, 500);
       } catch (error) {
         log(`⚠️ Ошибка обновления видимых тайлов: ${error.message}`, true);
       }
     }
     
-    // Визуализация тайлов
+    // Визуализация тайлов - ОБНОВЛЕНА для сетки
     function renderTiles() {
       try {
+        if (!map || !map.isStyleLoaded()) {
+          setTimeout(renderTiles, 100);
+          return;
+        }
+        
         const features = tileData
           .filter(tile => visibleTiles.has(tile.id))
           .map(tile => {
             const status = getUserMarkStatus(tile.id);
             const isFavorite = favorites.includes(tile.id);
+            
             return {
               type: 'Feature',
               geometry: {
@@ -1113,7 +1298,9 @@
                 id: tile.id,
                 status: status,
                 isFavorite: isFavorite,
-                owned: tile.has_owner === 'true'
+                owned: tile.has_owner === 'true',
+                x: tile.gridX,
+                y: tile.gridY
               }
             };
           });
@@ -1132,6 +1319,7 @@
             }
           });
           
+          // Основной слой тайлов
           map.addLayer({
             id: 'tiles-layer',
             type: 'circle',
@@ -1139,8 +1327,9 @@
             paint: {
               'circle-radius': [
                 'interpolate', ['linear'], ['zoom'],
-                3, 3,
-                10, 8
+                3, 2,
+                6, 4,
+                10, 6
               ],
               'circle-color': [
                 'case',
@@ -1148,9 +1337,14 @@
                 ['==', ['get', 'status'], 'enemy'], '#e53935',
                 ['==', ['get', 'status'], 'favorite'], '#ffca28',
                 ['==', ['get', 'owned'], true], '#43a047',
-                '#a67c52'
+                'rgba(166, 124, 82, 0.7)'
               ],
-              'circle-stroke-width': 2,
+              'circle-stroke-width': [
+                'interpolate', ['linear'], ['zoom'],
+                3, 0.5,
+                6, 1,
+                10, 2
+              ],
               'circle-stroke-color': [
                 'case',
                 ['==', ['get', 'status'], 'ally'], '#1565c0',
@@ -1162,6 +1356,7 @@
             }
           });
           
+          // Обработчики событий
           map.on('click', 'tiles-layer', (e) => {
             if (e.features.length > 0) {
               const tileId = e.features[0].properties.id;
@@ -1177,24 +1372,44 @@
             map.getCanvas().style.cursor = '';
           });
         }
+        
+        log(`✅ Отрисовано ${features.length} тайлов`);
       } catch (error) {
         log(`⚠️ Ошибка визуализации тайлов: ${error.message}`, true);
       }
     }
     
-    // Показ всплывающего окна тайла
+    // Показ всплывающего окна тайла - ОБНОВЛЕНО
     function showTilePopup(tileId, lngLat) {
       const tile = tileData.find(t => t.id === tileId);
       if (!tile) return;
       
       const status = getUserMarkStatus(tileId);
       const isFavorite = favorites.includes(tileId);
+      const originalData = tile.originalData;
       
-      const popupContent = `
+      let popupContent = `
         <div class="popup-content">
           <h3>Тайл #${tileId}</h3>
-          <p>Статус: ${tile.has_owner === 'true' ? 'Занят' : 'Свободен'}</p>
-          <p>Метка: ${status || '—'}</p>
+          <p><strong>Координаты сетки:</strong> X=${tile.gridX}, Y=${tile.gridY}</p>
+          <p><strong>Гео координаты:</strong> ${tile.lat.toFixed(4)}, ${tile.lng.toFixed(4)}</p>
+          <p><strong>Статус:</strong> ${tile.has_owner === 'true' ? '🟥 Занят' : '🟩 Свободен'}</p>
+      `;
+      
+      if (originalData) {
+        popupContent += `
+          <div style="margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.3); border-radius: 4px;">
+            <strong>Ресурсы:</strong><br>
+            📦 Камень: ${originalData.stone_pct || 0}%<br>
+            🌳 Дерево: ${originalData.wood_pct || 0}%<br>
+            🐟 Рыба: ${originalData.fish_pct || 0}%<br>
+            ⚡ Артефакты: ${originalData.artifacts || 0}
+          </div>
+        `;
+      }
+      
+      popupContent += `
+          <p><strong>Метка:</strong> ${status || '—'}</p>
           <div class="popup-actions">
             <button class="mark-btn" data-id="${tileId}" data-type="ally">🟩 Союзник</button>
             <button class="mark-btn" data-id="${tileId}" data-type="enemy">🟥 Враг</button>
@@ -1243,7 +1458,7 @@
       
       Promise.all([
         loadUserMarks(),
-        loadTileData()
+        loadTileData() // Загружаем тайлы с официального API
       ])
       .then(() => {
         document.getElementById('api-status').textContent = 'API: ✅ Работает';
@@ -1291,66 +1506,6 @@
         log(`📌 Загружено ${marks.length} пользовательских меток`);
         renderFavorites();
         return marks;
-      });
-    }
-    
-    function loadTileData() {
-      if (currentAbortController) {
-        currentAbortController.abort();
-      }
-      currentAbortController = new AbortController();
-      
-      const bounds = map.getBounds();
-      const west = bounds.getWest();
-      const south = bounds.getSouth();
-      const east = bounds.getEast();
-      const north = bounds.getNorth();
-      const query = new URLSearchParams({
-        west: west.toFixed(6),
-        south: south.toFixed(6),
-        east: east.toFixed(6),
-        north: north.toFixed(6),
-        limit: '1000'
-      });
-      
-      return fetch(`${CONFIG.API_URL}/api/tiles/bounds?${query}`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        },
-        signal: currentAbortController.signal
-      })
-      .then(response => {
-        if (!response.ok) {
-          const errorText = response.statusText;
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-        return response.json();
-      })
-      .then(result => {
-        if (result.tiles && Array.isArray(result.tiles)) {
-          tileData = result.tiles
-            .filter(tile => {
-              const id = parseInt(tile.id);
-              const lat = parseFloat(tile.lat);
-              const lng = parseFloat(tile.lng);
-              return !isNaN(id) && id > 0 && !isNaN(lat) && !isNaN(lng);
-            })
-            .map(tile => {
-                const coords = createSafeCoordinate(tile.lat, tile.lng);
-                return {
-                    id: parseInt(tile.id),
-                    lng: coords[0],
-                    lat: coords[1],
-                    has_owner: tile.has_owner === 'true' ? 'true' : 'false'
-                };
-            });
-          log(`✅ Загружено ${tileData.length} тайлов`);
-          document.getElementById('cache-status').textContent = 'Кеш: ✅ Актуальный';
-          renderTiles();
-        } else {
-          throw new Error('Неверный формат данных тайлов от API');
-        }
-        return result;
       });
     }
     
@@ -1469,6 +1624,24 @@
       });
     }
     
+    // Функция для поиска и центрирования на тайле по ID
+    function focusOnTile(tileId) {
+      const tile = tileData.find(t => t.id === parseInt(tileId));
+      if (tile) {
+        map.flyTo({
+          center: [tile.lng, tile.lat],
+          zoom: 10,
+          essential: true
+        });
+        // Показываем попап
+        setTimeout(() => {
+          showTilePopup(tile.id, [tile.lng, tile.lat]);
+        }, 1000);
+        return true;
+      }
+      return false;
+    }
+    
     // Инициализация обработчиков событий
     function initEventListeners() {
       // Поиск
@@ -1476,16 +1649,11 @@
         const value = e.target.value.trim();
         if (value) {
           const tileId = parseInt(value);
-          if (!isNaN(tileId)) {
-            const tile = tileData.find(t => t.id === tileId);
-            if (tile) {
-              map.flyTo({
-                center: [tile.lng, tile.lat],
-                zoom: 9,
-                essential: true
-              });
+          if (!isNaN(tileId) && tileId >= 1 && tileId <= CONFIG.TOTAL_TILES) {
+            if (focusOnTile(tileId)) {
+              showToast(`Тайл #${tileId} найден`, 'success');
             } else {
-              showToast(`Тайл #${tileId} не найден`, 'warning');
+              showToast(`Тайл #${tileId} не найден в загруженных данных`, 'warning');
             }
           }
         }
@@ -1510,6 +1678,11 @@
       // Снимок
       document.getElementById('screenshot-btn').addEventListener('click', () => {
         showToast('Снимок карты сохранен', 'success');
+      });
+      
+      // Загрузка сетки тайлов
+      document.getElementById('load-tiles-btn').addEventListener('click', () => {
+        createFullTileGrid();
       });
       
       // Сворачивание панели
