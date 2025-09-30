@@ -7,6 +7,8 @@
   <!-- MapLibre GL JS -->
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
@@ -810,7 +812,6 @@
           <i class="material-icons">photo_camera</i>
           Снимок
         </button>
-        <!-- Кнопка "Загрузить сетку тайлов" УДАЛЕНА отсюда -->
       </div>
     </div>
     <!-- Управление картой -->
@@ -824,7 +825,6 @@
       <button class="control-btn" id="locate-me">
         <i class="material-icons">my_location</i>
       </button>
-      <!-- Новая кнопка переключения слоев -->
       <button class="control-btn" id="toggle-layers">
         <i class="material-icons">layers</i>
       </button>
@@ -865,34 +865,34 @@
       <div class="debug-section" id="tiles-status">Тайлы:  ⏳ </div>
       <div id="debug-log"></div>
     </div>
-    <!-- Кнопка тестирования API - ПЕРЕМЕЩЕНА ВНИЗ ВЛЕВО и ВПРАВО -->
+    <!-- Кнопка тестирования API -->
     <button id="test-api-btn">Тест API</button>
   </div>
   <script>
+    // Supabase config
+    const supabase = supabase.createClient(
+      'https://vbcnhpsavynwzopvdqcw.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiY25ocHNhdnlud3pvcHZkcWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxODM2OTMsImV4cCI6MjA3NDc1OTY5M30.84WBqv1cEpasCrxoqzNpC5FPhciRHphPGJxhFIcMCmE'
+    );
+
     // Конфигурация приложения
     const CONFIG = {
-      API_URL: window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000' 
-        : 'https://genesis-map-api.onrender.com',
       MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
-      INITIAL_VIEW: {
-        center: [32, 54],
-        zoom: 4
-      },
-      CACHE_TTL: 5 * 60 * 1000, // 5 минут для тайлов
-      TOTAL_TILES: 256 * 256 // 65536 тайлов
+      INITIAL_VIEW: { center: [32, 54], zoom: 4 },
+      CACHE_TTL: 5 * 60 * 1000, // 5 минут
+      TOTAL_TILES: 256 * 256
     };
-    // Стили карты для переключения слоев
+
     const MAP_STYLES = {
       standard: 'https://demotiles.maplibre.org/style.json',
       satellite: 'https://api.maptiler.com/maps/satellite/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL',
       dark: 'https://api.maptiler.com/maps/dark-matter/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL',
       basic: 'https://api.maptiler.com/maps/basic/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL'
     };
+
     // Глобальные переменные
     let map;
-    let currentUser = { id: 1 };
-    let accessToken = localStorage.getItem('access_token');
+    let currentUser = { id: null };
     let tileData = [];
     let userMarks = {};
     let favorites = [];
@@ -904,13 +904,8 @@
     let tilesVisible = true;
     let gridVisible = false;
     let currentMapStyle = 'standard';
+
     // --- Вспомогательные функции ---
-    function createSafeCoordinate(latitude, longitude) {
-      const clampedLat = Math.max(-89.999999, Math.min(89.999999, parseFloat(latitude) || 0));
-      let clampedLng = parseFloat(longitude) || 0;
-      clampedLng = ((clampedLng % 360) + 540) % 360 - 180;
-      return [clampedLng, clampedLat];
-    }
     function log(message, isError = false) {
       const now = new Date();
       const timestamp = `[${now.toLocaleTimeString()}]`;
@@ -928,13 +923,12 @@
       toast.textContent = message;
       toast.className = `toast ${type ? 'toast-' + type : ''}`;
       toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 3000);
+      setTimeout(() => toast.classList.remove('show'), 3000);
     }
     function showLoader(visible) {
       document.getElementById('loader').style.display = visible ? 'block' : 'none';
     }
+
     // --- Функции для работы с координатами тайлов ---
     function plotIdToGeo(plotId) {
       const totalTiles = CONFIG.TOTAL_TILES;
@@ -945,29 +939,26 @@
       const lat = 85 - (y + 0.5) * (170 / 256) + 0.3;
       return { lng, lat, x, y };
     }
+
     // Загрузка данных тайлов с кешированием
     function loadTileData() {
       const CACHE_KEY = 'tileDataCache';
-      const CACHE_TTL = CONFIG.CACHE_TTL; // 5 минут
-
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CACHE_TTL) {
-          log(' 🗃️  Данные тайлов загружены из кеша');
+        if (Date.now() - timestamp < CONFIG.CACHE_TTL) {
+          log(' 🗃️  Данные тайлов из кеша');
           tileData = data;
-          document.getElementById('tiles-status').textContent = `Тайлы:  💾  ${tileData.length} (из кеша)`;
+          document.getElementById('tiles-status').textContent = `Тайлы: 💾 ${tileData.length} (кеш)`;
           renderTiles();
-          return Promise.resolve({ success: true, tiles: data });
+          return Promise.resolve();
         }
       }
 
-      if (currentAbortController) {
-        currentAbortController.abort();
-      }
+      if (currentAbortController) currentAbortController.abort();
       currentAbortController = new AbortController();
-      log(' 🔄  Загрузка тайлов с официального API...');
-      document.getElementById('tiles-status').textContent = 'Тайлы:  ⏳  Загрузка';
+      log(' 🔄  Загрузка тайлов с API GoA...');
+      document.getElementById('tiles-status').textContent = 'Тайлы: ⏳ Загрузка';
 
       return fetch('https://back.genesis-of-ages.space/manage/get_tile_info.php', {
         method: 'GET',
@@ -975,14 +966,11 @@
         signal: currentAbortController.signal
       })
       .then(response => {
-        if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       })
       .then(apiResponse => {
-        if (!apiResponse.success || !apiResponse.tiles) {
-          throw new Error('Неверный формат ответа API');
-        }
-        log(` 📊  Получено ${apiResponse.tiles.length} тайлов от API`);
+        if (!apiResponse.success || !apiResponse.tiles) throw new Error('Неверный формат API');
         tileData = apiResponse.tiles.map(tile => {
           const plotId = parseInt(tile.id_tile);
           const coords = plotIdToGeo(plotId);
@@ -997,31 +985,19 @@
             originalData: tile
           };
         });
-        // Сохраняем в кеш
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-          data: tileData,
-          timestamp: Date.now()
-        }));
-        log(` ✅  Преобразовано ${tileData.length} тайлов`);
-        document.getElementById('tiles-status').textContent = `Тайлы:  ✅  ${tileData.length} загружено`;
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: tileData, timestamp: Date.now() }));
+        document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length}`;
         renderTiles();
-        return apiResponse;
       })
       .catch(error => {
-        if (error.name === 'AbortError') {
-          log(' ⚠️  Запрос тайлов был отменен');
-        } else {
-          log(` ❌  Ошибка загрузки тайлов: ${error.message}`, true);
-          showToast('Не удалось загрузить тайлы', 'error');
-          document.getElementById('tiles-status').textContent = 'Тайлы:  🔴  Ошибка';
-          createDemoTiles();
-        }
-        throw error;
+        log(` ❌  Ошибка загрузки тайлов: ${error.message}`, true);
+        showToast('Не удалось загрузить тайлы', 'error');
+        document.getElementById('tiles-status').textContent = 'Тайлы: 🔴 Ошибка';
+        createDemoTiles();
       });
     }
-    // Создание демо-тайлов если API недоступно
+
     function createDemoTiles() {
-      log(' 🔄  Создание демо-тайлов...');
       tileData = [];
       const demoSize = 50;
       for (let y = 0; y < demoSize; y++) {
@@ -1047,114 +1023,58 @@
           });
         }
       }
-      log(` ✅  Создано ${tileData.length} демо-тайлов`);
-      document.getElementById('tiles-status').textContent = `Тайлы:  🧪  ${tileData.length} демо`;
+      document.getElementById('tiles-status').textContent = `Тайлы: 🧪 ${tileData.length} демо`;
       renderTiles();
     }
+
     // --- Аутентификация через код ---
+    async function verifyAccessCode(code) {
+      const { data, error } = await supabase
+        .from('access_codes')
+        .select('user_id, created_at, used')
+        .eq('code', code)
+        .single();
+
+      if (error || !data) {
+        showToast('Неверный код', 'error');
+        return false;
+      }
+
+      const now = new Date();
+      const age = now - new Date(data.created_at);
+      if (age > 5 * 60 * 1000) {
+        await supabase.from('access_codes').delete().eq('code', code);
+        showToast('Код устарел', 'error');
+        return false;
+      }
+      if (data.used) {
+        showToast('Код уже использован', 'error');
+        return false;
+      }
+
+      await supabase.from('access_codes').update({ used: true }).eq('code', code);
+      currentUser.id = data.user_id;
+      document.getElementById('code-container').style.display = 'none';
+      initMaplibre();
+      loadUserMarks();
+      return true;
+    }
+
     function setupCodeForm() {
       const submitButton = document.getElementById('submit-code');
       const codeInput = document.getElementById('access-code');
-      codeInput.addEventListener('input', function() {
-        this.value = this.value.replace(/[^0-9]/g, '');
+      codeInput.addEventListener('input', () => {
+        codeInput.value = codeInput.value.replace(/[^0-9]/g, '');
       });
-      submitButton.addEventListener('click', verifyCode);
-      codeInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') verifyCode();
+      submitButton.addEventListener('click', () => {
+        const code = codeInput.value.trim();
+        if (code.length === 6) verifyAccessCode(code);
+      });
+      codeInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') verifyAccessCode(codeInput.value.trim());
       });
     }
-    async function verifyCode() {
-      const codeInput = document.getElementById('access-code');
-      const code = codeInput.value.trim();
-      if (!code || code.length !== 6) {
-        showToast('Пожалуйста, введите 6-значный код', 'warning');
-        return;
-      }
-      showLoader(true);
-      log(' 🔄  Проверка кода доступа: ' + code);
-      try {
-        const response = await fetch(`${CONFIG.API_URL}/api/verify-code`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code })
-        });
-        const responseText = await response.text();
-        log(' 📡  Ответ от API: ' + responseText);
-        if (!response.ok) {
-          let errorMessage = 'Неверный код';
-          try {
-            const errorData = JSON.parse(responseText);
-            errorMessage = errorData.error || errorMessage;
-          } catch (e) {
-            errorMessage = `Ошибка сервера: ${response.status}`;
-          }
-          throw new Error(errorMessage);
-        }
-        const data = JSON.parse(responseText);
-        log(' ✅  Код подтвержден: ' + JSON.stringify(data));
-        if (!data.accessToken) {
-          throw new Error('Токен не получен от сервера');
-        }
-        accessToken = data.accessToken;
-        localStorage.setItem('access_token', data.accessToken);
-        currentUser.id = await getUserIdFromToken();
-        document.getElementById('code-container').style.display = 'none';
-        initMaplibre();
-        loadData();
-        startTokenRefresh();
-      } catch (error) {
-        log(` ⚠️  Ошибка проверки кода: ${error.message}`, true);
-        showToast(error.message || 'Ошибка проверки кода', 'error');
-      } finally {
-        showLoader(false);
-      }
-    }
-    async function getUserIdFromToken() {
-      if (!accessToken) return 1;
-      try {
-        const response = await fetch(`${CONFIG.API_URL}/api/check-access`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accessToken })
-        });
-        if (response.ok) {
-          const data = await response.json();
-          return data.userId || 1;
-        }
-      } catch (error) {
-        log(' ⚠️  Ошибка получения ID пользователя: ' + error.message, true);
-      }
-      return 1;
-    }
-    async function checkAccessToken() {
-      if (!accessToken) return false;
-      try {
-        const response = await fetch(`${CONFIG.API_URL}/api/check-access`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accessToken })
-        });
-        if (!response.ok) return false;
-        const { valid } = await response.json();
-        return valid;
-      } catch (error) {
-        log(` ⚠️  Ошибка проверки токена: ${error.message}`, true);
-        return false;
-      }
-    }
-    function startTokenRefresh() {
-      setInterval(async () => {
-        const isValid = await checkAccessToken();
-        if (!isValid) {
-          log(' ⚠️  Токен устарел, требуется новый код доступа');
-          accessToken = null;
-          localStorage.removeItem('access_token');
-          document.getElementById('code-container').style.display = 'flex';
-          setupCodeForm();
-          showToast('Время сессии истекло. Введите новый код доступа.', 'warning');
-        }
-      }, 15 * 60 * 1000);
-    }
+
     // --- Инициализация MapLibre ---
     function initMaplibre() {
       try {
@@ -1166,8 +1086,8 @@
           attributionControl: false
         });
         map.on('load', () => {
-          log(' 🗺️  Карта MapLibre загружена');
-          document.getElementById('map-status').textContent = 'Карта:  ✅  Загружена';
+          log(' 🗺️  Карта загружена');
+          document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
           updateVisibleTiles();
           addGridLayer();
         });
@@ -1175,148 +1095,88 @@
         map.on('zoomend', updateVisibleTiles);
       } catch (error) {
         log(` ⚠️  Ошибка инициализации карты: ${error.message}`, true);
-        document.getElementById('map-status').textContent = 'Карта:  🔴  Ошибка';
+        document.getElementById('map-status').textContent = 'Карта: 🔴 Ошибка';
         showToast('Ошибка инициализации карты', 'error');
       }
     }
+
     function addGridLayer() {
       if (!map.getSource('grid-source')) {
         const gridFeatures = [];
         for (let x = 0; x <= 256; x++) {
           const lng = -180 + x * (360 / 256);
-          gridFeatures.push({
-            type: 'Feature',
-            geometry: {
-              type: 'LineString',
-              coordinates: [[lng, -85], [lng, 85]]
-            },
-            properties: { type: 'vertical', x: x }
-          });
+          gridFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[lng, -85], [lng, 85]] }, properties: { type: 'vertical', x } });
         }
         for (let y = 0; y <= 256; y++) {
           const lat = 85 - y * (170 / 256);
-          gridFeatures.push({
-            type: 'Feature',
-            geometry: {
-              type: 'LineString',
-              coordinates: [[-180, lat], [180, lat]]
-            },
-            properties: { type: 'horizontal', y: y }
-          });
+          gridFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[-180, lat], [180, lat]] }, properties: { type: 'horizontal', y } });
         }
-        map.addSource('grid-source', {
-          type: 'geojson',
-          data: { type: 'FeatureCollection', features: gridFeatures }
-        });
-        map.addLayer({
-          id: 'grid-layer',
-          type: 'line',
-          source: 'grid-source',
-          paint: {
-            'line-color': '#8b4513',
-            'line-width': 1,
-            'line-opacity': 0.3
-          }
-        });
+        map.addSource('grid-source', { type: 'geojson', data: { type: 'FeatureCollection', features: gridFeatures } });
+        map.addLayer({ id: 'grid-layer', type: 'line', source: 'grid-source', paint: { 'line-color': '#8b4513', 'line-width': 1, 'line-opacity': 0.3 } });
         map.setLayoutProperty('grid-layer', 'visibility', 'none');
       }
     }
+
     function updateVisibleTiles() {
       if (!map || !tileData.length) return;
-      try {
-        const bounds = map.getBounds();
-        visibleTiles.clear();
-        tileData.forEach(tile => {
-          if (bounds.contains([tile.lng, tile.lat])) {
-            visibleTiles.add(tile.id);
+      const bounds = map.getBounds();
+      visibleTiles.clear();
+      tileData.forEach(tile => {
+        if (bounds.contains([tile.lng, tile.lat])) visibleTiles.add(tile.id);
+      });
+      renderTiles();
+      if (isInitialLoad) { isInitialLoad = false; return; }
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {}, 500);
+    }
+
+    function renderTiles() {
+      if (!map || !map.isStyleLoaded()) return setTimeout(renderTiles, 100);
+      const features = tileData
+        .filter(tile => visibleTiles.has(tile.id))
+        .map(tile => {
+          const status = getUserMarkStatus(tile.id);
+          const isFavorite = favorites.includes(tile.id);
+          const hasComment = getUserMarkComment(tile.id);
+          return {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [tile.lng, tile.lat] },
+            properties: {
+              id: tile.id,
+              status: status,
+              isFavorite: isFavorite,
+              owned: tile.has_owner === 'true',
+              hasComment: !!hasComment,
+              owner: tile.owner_name || null,
+              x: tile.gridX,
+              y: tile.gridY
+            }
+          };
+        });
+      if (map.getSource('tiles-source')) {
+        map.getSource('tiles-source').setData({ type: 'FeatureCollection', features });
+      } else {
+        map.addSource('tiles-source', { type: 'geojson', data: { type: 'FeatureCollection', features } });
+        map.addLayer({
+          id: 'tiles-layer',
+          type: 'circle',
+          source: 'tiles-source',
+          paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 2, 6, 4, 10, 6],
+            'circle-color': ['case', ['==', ['get', 'status'], 'ally'], '#1e88e5', ['==', ['get', 'status'], 'enemy'], '#e53935', ['==', ['get', 'status'], 'favorite'], '#ffca28', ['==', ['get', 'hasComment'], true], '#9c27b0', ['==', ['get', 'owned'], true], '#43a047', 'rgba(166, 124, 82, 0.7)'],
+            'circle-stroke-color': ['case', ['==', ['get', 'status'], 'ally'], '#1565c0', ['==', ['get', 'status'], 'enemy'], '#c62828', ['==', ['get', 'status'], 'favorite'], '#f57f17', ['==', ['get', 'hasComment'], true], '#7b1fa2', ['==', ['get', 'owned'], true], '#2e7d32', '#5d4037'],
+            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 3, 0.5, 6, 1, 10, 2]
           }
         });
-        renderTiles();
-        if (isInitialLoad) {
-            isInitialLoad = false;
-            return;
-        }
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {}, 500);
-      } catch (error) {
-        log(` ⚠️  Ошибка обновления видимых тайлов: ${error.message}`, true);
+        map.on('click', 'tiles-layer', (e) => {
+          if (e.features.length > 0) showTilePopup(e.features[0].properties.id, e.lngLat);
+        });
+        map.on('mouseenter', 'tiles-layer', () => map.getCanvas().style.cursor = 'pointer');
+        map.on('mouseleave', 'tiles-layer', () => map.getCanvas().style.cursor = '');
       }
     }
-    function renderTiles() {
-      try {
-        if (!map || !map.isStyleLoaded()) {
-          setTimeout(renderTiles, 100);
-          return;
-        }
-        const features = tileData
-          .filter(tile => visibleTiles.has(tile.id))
-          .map(tile => {
-            const status = getUserMarkStatus(tile.id);
-            const isFavorite = favorites.includes(tile.id);
-            const hasComment = getUserMarkComment(tile.id);
-            return {
-              type: 'Feature',
-              geometry: { type: 'Point', coordinates: [tile.lng, tile.lat] },
-              properties: {
-                id: tile.id,
-                status: status,
-                isFavorite: isFavorite,
-                owned: tile.has_owner === 'true',
-                hasComment: !!hasComment,
-                owner: tile.owner_name || null,
-                x: tile.gridX,
-                y: tile.gridY
-              }
-            };
-          });
-        if (map.getSource('tiles-source')) {
-          map.getSource('tiles-source').setData({ type: 'FeatureCollection', features });
-        } else {
-          map.addSource('tiles-source', {
-            type: 'geojson',
-            data: { type: 'FeatureCollection', features }
-          });
-          map.addLayer({
-            id: 'tiles-layer',
-            type: 'circle',
-            source: 'tiles-source',
-            paint: {
-              'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 2, 6, 4, 10, 6],
-              'circle-color': [
-                'case',
-                ['==', ['get', 'status'], 'ally'], '#1e88e5',
-                ['==', ['get', 'status'], 'enemy'], '#e53935',
-                ['==', ['get', 'status'], 'favorite'], '#ffca28',
-                ['==', ['get', 'hasComment'], true], '#9c27b0',
-                ['==', ['get', 'owned'], true], '#43a047',
-                'rgba(166, 124, 82, 0.7)'
-              ],
-              'circle-stroke-color': [
-                'case',
-                ['==', ['get', 'status'], 'ally'], '#1565c0',
-                ['==', ['get', 'status'], 'enemy'], '#c62828',
-                ['==', ['get', 'status'], 'favorite'], '#f57f17',
-                ['==', ['get', 'hasComment'], true], '#7b1fa2',
-                ['==', ['get', 'owned'], true], '#2e7d32',
-                '#5d4037'
-              ],
-              'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 3, 0.5, 6, 1, 10, 2]
-            }
-          });
-          map.on('click', 'tiles-layer', (e) => {
-            if (e.features.length > 0) {
-              const tileId = e.features[0].properties.id;
-              showTilePopup(tileId, e.lngLat);
-            }
-          });
-          map.on('mouseenter', 'tiles-layer', () => map.getCanvas().style.cursor = 'pointer');
-          map.on('mouseleave', 'tiles-layer', () => map.getCanvas().style.cursor = '');
-        }
-        log(` ✅  Отрисовано ${features.length} тайлов`);
-      } catch (error) {
-        log(` ⚠️  Ошибка визуализации тайлов: ${error.message}`, true);
-      }
-    }
+
+    // --- Работа с метками ---
     function getUserMarkComment(tileId) {
       const marks = userMarks[tileId] || {};
       for (const type in marks) {
@@ -1326,6 +1186,98 @@
       }
       return null;
     }
+
+    function getUserMarkStatus(tileId) {
+      const marks = userMarks[tileId] || {};
+      if (marks.ally) return 'ally';
+      if (marks.enemy) return 'enemy';
+      if (marks.favorite) return 'favorite';
+      if (marks.comment) return 'comment';
+      return '';
+    }
+
+    async function loadUserMarks() {
+      if (!currentUser.id) return;
+      const { data, error } = await supabase
+        .from('user_marks')
+        .select('tile_id, mark_type, comment')
+        .eq('user_id', currentUser.id);
+      if (error) {
+        log(' ❌  Ошибка загрузки меток: ' + error.message, true);
+        return;
+      }
+      userMarks = {};
+      favorites = [];
+      data.forEach(mark => {
+        if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
+        userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
+        if (mark.mark_type === 'favorite') favorites.push(mark.tile_id);
+      });
+      updateFavoritesDropdown();
+      log(` ✅  Загружено ${data.length} меток`);
+    }
+
+    function updateFavoritesDropdown() {
+      const dropdown = document.getElementById('favorites-dropdown');
+      if (!dropdown) return;
+      const currentValue = dropdown.value;
+      dropdown.innerHTML = '<option value="">Выберите избранный тайл</option>';
+      favorites.forEach(tileId => {
+        const option = document.createElement('option');
+        option.value = tileId;
+        option.textContent = `Тайл #${tileId}`;
+        dropdown.appendChild(option);
+      });
+      if (currentValue && dropdown.querySelector(`option[value="${currentValue}"]`)) {
+        dropdown.value = currentValue;
+      }
+    }
+
+    async function saveMark(tileId, markType, comment = null) {
+      if (!currentUser.id) {
+        showToast('Ошибка: Требуется авторизация', 'error');
+        return;
+      }
+      try {
+        if (markType === 'clear') {
+          await supabase
+            .from('user_marks')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('tile_id', tileId);
+        } else {
+          await supabase
+            .from('user_marks')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('tile_id', tileId);
+          await supabase
+            .from('user_marks')
+            .insert({
+              user_id: currentUser.id,
+              tile_id: tileId,
+              mark_type: markType,
+              comment: comment || null
+            });
+        }
+        if (markType === 'clear') {
+          delete userMarks[tileId];
+          favorites = favorites.filter(id => id !== tileId);
+        } else {
+          if (!userMarks[tileId]) userMarks[tileId] = {};
+          userMarks[tileId][markType] = comment || true;
+          if (markType === 'favorite') favorites.push(tileId);
+        }
+        renderTiles();
+        updateFavoritesDropdown();
+        showToast('Метка сохранена', 'success');
+      } catch (error) {
+        log(' ❌  Ошибка сохранения метки: ' + error.message, true);
+        showToast('Ошибка сохранения метки', 'error');
+      }
+    }
+
+    // --- Попап и модальное окно ---
     function showTilePopup(tileId, lngLat) {
       const tile = tileData.find(t => t.id === tileId);
       if (!tile) return;
@@ -1383,6 +1335,7 @@
         });
       }, 100);
     }
+
     function showCommentModal(tileId) {
       currentTileForComment = tileId;
       const comment = getUserMarkComment(tileId) || '';
@@ -1390,157 +1343,20 @@
       document.getElementById('comment-text').value = comment;
       document.getElementById('comment-modal').style.display = 'flex';
     }
+
     function hideCommentModal() {
       document.getElementById('comment-modal').style.display = 'none';
       currentTileForComment = null;
     }
+
     function saveComment() {
       if (!currentTileForComment) return;
       const commentText = document.getElementById('comment-text').value.trim();
       saveMark(currentTileForComment, 'comment', commentText);
       hideCommentModal();
     }
-    function getUserMarkStatus(tileId) {
-      const marks = userMarks[tileId] || {};
-      if (marks.ally) return 'ally';
-      if (marks.enemy) return 'enemy';
-      if (marks.favorite) return 'favorite';
-      if (marks.comment) return 'comment';
-      return '';
-    }
-    // Загрузка данных с кешированием тайлов
-    function loadData() {
-      if (!accessToken) {
-        log(' ⚠️  Токен отсутствует', true);
-        return;
-      }
-      showLoader(true);
-      log(' 🔄  Загрузка данных...');
-      document.getElementById('api-status').textContent = 'API:  ⏳  Загрузка';
-      Promise.all([
-        loadUserMarks(),
-        loadTileData() // Теперь использует кеш
-      ])
-      .then(() => {
-        document.getElementById('api-status').textContent = 'API:  ✅  Работает';
-        log(' ✅  Все данные успешно загружены');
-        showToast('Данные успешно загружены', 'success');
-      })
-      .catch(error => {
-        document.getElementById('api-status').textContent = 'API:  🔴  Ошибка';
-        log(` ⚠️  Ошибка загрузки данных: ${error.message}`, true);
-        showToast('Ошибка загрузки данных', 'error');
-      })
-      .finally(() => {
-        showLoader(false);
-      });
-    }
-    function loadUserMarks() {
-      return fetch(`${CONFIG.API_URL}/api/marks/${currentUser.id}`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      })
-      .then(response => {
-        if (!response.ok) {
-          if (response.status === 404) {
-            log(` 📌  У пользователя ${currentUser.id} пока нет меток.`);
-            userMarks = {};
-            favorites = [];
-            updateFavoritesDropdown();
-            return [];
-          }
-          throw new Error('Не удалось загрузить метки');
-        }
-        return response.json();
-      })
-      .then(marks => {
-        userMarks = {};
-        favorites = [];
-        marks.forEach(mark => {
-          if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
-          userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
-          if (mark.mark_type === 'favorite') favorites.push(mark.tile_id);
-        });
-        log(` 📌  Загружено ${marks.length} пользовательских меток`);
-        updateFavoritesDropdown();
-        return marks;
-      });
-    }
-    function updateFavoritesDropdown() {
-      const dropdown = document.getElementById('favorites-dropdown');
-      if (!dropdown) return;
-      const currentValue = dropdown.value;
-      dropdown.innerHTML = '<option value="">Выберите избранный тайл</option>';
-      favorites.forEach(tileId => {
-        const option = document.createElement('option');
-        option.value = tileId;
-        option.textContent = `Тайл #${tileId}`;
-        dropdown.appendChild(option);
-      });
-      if (currentValue && dropdown.querySelector(`option[value="${currentValue}"]`)) {
-        dropdown.value = currentValue;
-      }
-    }
-    function saveMark(tileId, markType, comment = null) {
-      if (!accessToken) {
-          showToast('Ошибка: Требуется авторизация', 'error');
-          return;
-      }
-      const markButtons = document.querySelectorAll(`.mark-btn[data-id="${tileId}"]`);
-      markButtons.forEach(btn => {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="material-icons">hourglass_empty</i>';
-      });
-      fetch(`${CONFIG.API_URL}/api/marks`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          user_id: currentUser.id,
-          tile_id: tileId,
-          mark_type: markType,
-          comment: comment
-        })
-      })
-      .then(response => {
-        if (!response.ok) throw new Error('Не удалось сохранить метку');
-        return response.json();
-      })
-      .then(() => {
-        if (!userMarks[tileId]) userMarks[tileId] = {};
-        if (markType === 'clear') {
-          delete userMarks[tileId];
-          favorites = favorites.filter(favId => favId !== tileId);
-        } else {
-          userMarks[tileId][markType] = comment || true;
-          if (markType === 'favorite' && !favorites.includes(tileId)) {
-            favorites.push(tileId);
-          }
-        }
-        renderTiles();
-        updateFavoritesDropdown();
-        log(` 💾  Метка сохранена: ${tileId} (${markType})`);
-        showToast('Метка сохранена', 'success');
-      })
-      .catch(error => {
-        log(` ⚠️  Ошибка сохранения метки: ${error.message}`, true);
-        showToast('Ошибка сохранения метки', 'error');
-      })
-      .finally(() => {
-        markButtons.forEach(btn => {
-          btn.disabled = false;
-          const type = btn.dataset.type;
-          const icons = {
-            'ally': ' 🟩 ',
-            'enemy': ' 🟥 ',
-            'favorite': ' ⭐ ',
-            'clear': ' ⚪ '
-          };
-          btn.innerHTML = `${icons[type] || ''} ${type.charAt(0).toUpperCase() + type.slice(1)}`;
-        });
-      });
-    }
+
+    // --- Прочие функции (поиск, сброс, тема и т.д.) ---
     function focusOnTile(tileId) {
       const tile = tileData.find(t => t.id === parseInt(tileId));
       if (tile) {
@@ -1550,6 +1366,7 @@
       }
       return false;
     }
+
     function toggleTilesVisibility() {
       tilesVisible = !tilesVisible;
       if (map.getLayer('tiles-layer')) {
@@ -1558,6 +1375,7 @@
       document.getElementById('load-tiles-btn').classList.toggle('active', tilesVisible);
       showToast(tilesVisible ? 'Тайлы показаны' : 'Тайлы скрыты', 'info');
     }
+
     function toggleGridVisibility() {
       gridVisible = !gridVisible;
       if (map.getLayer('grid-layer')) {
@@ -1566,6 +1384,7 @@
       document.getElementById('toggle-grid-btn').classList.toggle('active', gridVisible);
       showToast(gridVisible ? 'Сетка тайлов показана' : 'Сетка тайлов скрыта', 'info');
     }
+
     function toggleMapStyle() {
       const styles = Object.keys(MAP_STYLES);
       const currentIndex = styles.indexOf(currentMapStyle);
@@ -1581,6 +1400,7 @@
       });
       showToast(`Стиль карты: ${currentMapStyle}`, 'info');
     }
+
     function toggleTheme() {
       const isDark = document.body.classList.contains('dark-theme');
       document.body.classList.toggle('dark-theme', !isDark);
@@ -1589,6 +1409,7 @@
       icon.textContent = isDark ? 'brightness_4' : 'brightness_7';
       showToast(isDark ? 'Светлая тема активирована' : 'Темная тема активирована', 'success');
     }
+
     function initEventListeners() {
       document.getElementById('search').addEventListener('input', (e) => {
         const value = e.target.value.trim();
@@ -1598,11 +1419,12 @@
             if (focusOnTile(tileId)) {
               showToast(`Тайл #${tileId} найден`, 'success');
             } else {
-              showToast(`Тайл #${tileId} не найден в загруженных данных`, 'warning');
+              showToast(`Тайл #${tileId} не найден`, 'warning');
             }
           }
         }
       });
+
       document.getElementById('status-filter').addEventListener('change', (e) => {
         const filterValue = e.target.value;
         if (filterValue === 'comment') {
@@ -1622,6 +1444,7 @@
           updateVisibleTiles();
         }
       });
+
       document.getElementById('favorites-dropdown').addEventListener('change', (e) => {
         const tileId = parseInt(e.target.value);
         if (tileId) {
@@ -1629,15 +1452,18 @@
           e.target.value = '';
         }
       });
+
       document.getElementById('reset').addEventListener('click', () => {
         document.getElementById('search').value = '';
         document.getElementById('status-filter').value = '';
         document.getElementById('favorites-dropdown').value = '';
         map.flyTo({ center: CONFIG.INITIAL_VIEW.center, zoom: CONFIG.INITIAL_VIEW.zoom, essential: true });
       });
+
       document.getElementById('screenshot-btn').addEventListener('click', () => {
         showToast('Снимок карты сохранен', 'success');
       });
+
       document.getElementById('load-tiles-btn').addEventListener('click', () => toggleTilesVisibility());
       document.getElementById('toggle-grid-btn').addEventListener('click', () => toggleGridVisibility());
       document.getElementById('toggle-layers').addEventListener('click', () => toggleMapStyle());
@@ -1679,69 +1505,28 @@
         document.querySelector('#theme-toggle i').textContent = 'brightness_7';
       }
     }
+
     // Функция тестирования API — скрыта в продакшене
     function setupTestAPIButton() {
       const testButton = document.getElementById('test-api-btn');
       if (window.location.hostname !== 'localhost') {
-        testButton.style.display = 'none'; // Скрываем в продакшене
+        testButton.style.display = 'none';
         return;
       }
       testButton.addEventListener('click', async () => {
-        try {
-          log(' 🧪  Начинаем тест соединения с API...');
-          log('1. Тестируем доступность API...');
-          const healthResponse = await fetch(`${CONFIG.API_URL}/health`);
-          const healthText = await healthResponse.text();
-          log('Статус API: ' + healthResponse.status + ' - ' + healthText);
-          const testCode = '123456';
-          const testUserId = 999999;
-          log('2. Тестируем сохранение кода...');
-          const saveResponse = await fetch(`${CONFIG.API_URL}/api/save-code`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: testCode, userId: testUserId })
-          });
-          const saveResult = await saveResponse.text();
-          log('Результат сохранения: ' + saveResponse.status + ' - ' + saveResult);
-          log('3. Тестируем проверку кода...');
-          const verifyResponse = await fetch(`${CONFIG.API_URL}/api/verify-code`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: testCode })
-          });
-          const verifyResult = await verifyResponse.text();
-          log('Результат проверки: ' + verifyResponse.status + ' - ' + verifyResult);
-          showToast('Тест завершен, проверьте логи', 'success');
-        } catch (error) {
-          log(' ❌  Ошибка теста: ' + error.message, true);
-          showToast('Ошибка теста: ' + error.message, 'error');
-        }
+        showToast('Тест API недоступен в новой архитектуре', 'warning');
       });
     }
-    // Запуск приложения
+
+    // --- Запуск приложения ---
     document.addEventListener('DOMContentLoaded', () => {
-      log(' 🚀  Запуск GENESIS WAR MAP');
-      log(' 🔧  Конфигурация: ' + JSON.stringify(CONFIG));
-      if (accessToken) {
-        checkAccessToken().then(isValid => {
-          if (isValid) {
-            document.getElementById('code-container').style.display = 'none';
-            initMaplibre();
-            loadData();
-            startTokenRefresh();
-          } else {
-            accessToken = null;
-            localStorage.removeItem('access_token');
-            document.getElementById('code-container').style.display = 'flex';
-            setupCodeForm();
-          }
-        });
-      } else {
-        document.getElementById('code-container').style.display = 'flex';
-        setupCodeForm();
-      }
+      log(' 🚀  Запуск GENESIS WAR MAP на Supabase');
+      document.getElementById('code-container').style.display = 'flex';
+      setupCodeForm();
       initEventListeners();
       setupTestAPIButton();
+      // Загружаем тайлы сразу (для демо)
+      loadTileData();
     });
   </script>
 </body>
