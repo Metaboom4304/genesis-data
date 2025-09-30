@@ -879,7 +879,7 @@
     const CONFIG = {
       MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
       INITIAL_VIEW: { center: [32, 54], zoom: 4 },
-      CACHE_TTL: 5 * 60 * 1000, // 5 минут
+      CACHE_TTL: 5 * 60 * 1000,
       TOTAL_TILES: 256 * 256
     };
 
@@ -1111,7 +1111,7 @@
           const lat = 85 - y * (170 / 256);
           gridFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[-180, lat], [180, lat]] }, properties: { type: 'horizontal', y } });
         }
-        map.addSource('grid-source', { type: 'geojson', data: { type: 'FeatureCollection', features: gridFeatures } });
+        map.addSource('grid-source', { type: 'geojson',  { type: 'FeatureCollection', features: gridFeatures } });
         map.addLayer({ id: 'grid-layer', type: 'line', source: 'grid-source', paint: { 'line-color': '#8b4513', 'line-width': 1, 'line-opacity': 0.3 } });
         map.setLayoutProperty('grid-layer', 'visibility', 'none');
       }
@@ -1156,7 +1156,7 @@
       if (map.getSource('tiles-source')) {
         map.getSource('tiles-source').setData({ type: 'FeatureCollection', features });
       } else {
-        map.addSource('tiles-source', { type: 'geojson', data: { type: 'FeatureCollection', features } });
+        map.addSource('tiles-source', { type: 'geojson',  { type: 'FeatureCollection', features } });
         map.addLayer({
           id: 'tiles-layer',
           type: 'circle',
@@ -1513,7 +1513,7 @@
         testButton.style.display = 'none';
         return;
       }
-      testButton.addEventListener('click', async () => {
+      testButton.addEventListener('click', () => {
         showToast('Тест API недоступен в новой архитектуре', 'warning');
       });
     }
@@ -1525,7 +1525,6 @@
       setupCodeForm();
       initEventListeners();
       setupTestAPIButton();
-      // Загружаем тайлы сразу (для демо)
       loadTileData();
     });
   </script>
