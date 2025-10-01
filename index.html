@@ -879,8 +879,8 @@
     const CONFIG = {
       MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
       INITIAL_VIEW: { center: [32, 54], zoom: 4 },
-      CACHE_TTL: 5 * 60 * 1000,
-      TOTAL_TILES: 256 * 256
+      CACHE_TTL: 5 * 60 * 1000, // 5 минут
+      TOTAL_TILES: 256 * 256 // 65536 тайлов
     };
 
     const MAP_STYLES = {
@@ -985,7 +985,7 @@
             originalData: tile
           };
         });
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: tileData, timestamp: Date.now() }));
+        localStorage.setItem(CACHE_KEY, JSON.stringify({  tileData, timestamp: Date.now() }));
         document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length}`;
         renderTiles();
       })
