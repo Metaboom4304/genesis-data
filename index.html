@@ -869,8 +869,8 @@
     <button id="test-api-btn">Тест API</button>
   </div>
   <script>
-    // Supabase config
-    const supabase = supabase.createClient(
+    // ИНИЦИАЛИЗАЦИЯ SUPABASE ПЕРЕМЕЩЕНА В САМОЕ НАЧАЛО
+    const supabaseClient = supabase.createClient(
       'https://vbcnhpsavynwzopvdqcw.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiY25ocHNhdnlud3pvcHZkcWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxODM2OTMsImV4cCI6MjA3NDc1OTY5M30.84WBqv1cEpasCrxoqzNpC5FPhciRHphPGJxhFIcMCmE'
     );
@@ -1029,7 +1029,7 @@
 
     // --- Аутентификация через код ---
     async function verifyAccessCode(code) {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('access_codes')
         .select('user_id, created_at, used')
         .eq('code', code)
@@ -1043,7 +1043,7 @@
       const now = new Date();
       const age = now - new Date(data.created_at);
       if (age > 5 * 60 * 1000) {
-        await supabase.from('access_codes').delete().eq('code', code);
+        await supabaseClient.from('access_codes').delete().eq('code', code);
         showToast('Код устарел', 'error');
         return false;
       }
@@ -1052,7 +1052,7 @@
         return false;
       }
 
-      await supabase.from('access_codes').update({ used: true }).eq('code', code);
+      await supabaseClient.from('access_codes').update({ used: true }).eq('code', code);
       currentUser.id = data.user_id;
       document.getElementById('code-container').style.display = 'none';
       initMaplibre();
@@ -1126,7 +1126,6 @@
           });
         }
         
-        // ИСПРАВЛЕННАЯ СТРОКА - добавлено data:
         map.addSource('grid-source', { 
           type: 'geojson', 
           data: { type: 'FeatureCollection', features: gridFeatures } 
@@ -1185,7 +1184,6 @@
       if (map.getSource('tiles-source')) {
         map.getSource('tiles-source').setData({ type: 'FeatureCollection', features });
       } else {
-        // ИСПРАВЛЕННАЯ СТРОКА - добавлено data:
         map.addSource('tiles-source', { 
           type: 'geojson', 
           data: { type: 'FeatureCollection', features } 
@@ -1243,7 +1241,7 @@
 
     async function loadUserMarks() {
       if (!currentUser.id) return;
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('user_marks')
         .select('tile_id, mark_type, comment')
         .eq('user_id', currentUser.id);
@@ -1285,18 +1283,18 @@
       }
       try {
         if (markType === 'clear') {
-          await supabase
+          await supabaseClient
             .from('user_marks')
             .delete()
             .eq('user_id', currentUser.id)
             .eq('tile_id', tileId);
         } else {
-          await supabase
+          await supabaseClient
             .from('user_marks')
             .delete()
             .eq('user_id', currentUser.id)
             .eq('tile_id', tileId);
-          await supabase
+          await supabaseClient
             .from('user_marks')
             .insert({
               user_id: currentUser.id,
@@ -1437,9 +1435,7 @@
       currentMapStyle = styles[nextIndex];
       map.setStyle(MAP_STYLES[currentMapStyle]);
       
-      // Улучшенная логика переключения стилей
       map.once('styledata', () => {
-        // Пересоздаем слои после смены стиля
         if (map.getSource('tiles-source')) {
           renderTiles();
         }
@@ -1447,7 +1443,6 @@
           addGridLayer();
         }
         
-        // Восстанавливаем видимость слоев
         if (map.getLayer('tiles-layer')) {
           map.setLayoutProperty('tiles-layer', 'visibility', tilesVisible ? 'visible' : 'none');
         }
