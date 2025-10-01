@@ -1046,14 +1046,18 @@
           return false;
         }
 
-        // ДЕБАГ: выводим информацию о коде
-        console.log('Код найден:', data);
-        console.log('Время создания:', new Date(data.created_at));
-        console.log('Текущее время:', new Date());
-
+        // ВАЖНОЕ ИСПРАВЛЕНИЕ: Supabase возвращает время в UTC, но без указания смещения
+        // Добавляем 'Z' чтобы явно указать что это UTC время
+        const created = new Date(data.created_at + 'Z');
         const now = new Date();
-        const created = new Date(data.created_at);
         
+        // Расширенная отладка времени
+        console.log('Код найден:', data);
+        console.log('Время создания (UTC):', created.toUTCString());
+        console.log('Время создания (локальное):', created.toLocaleString());
+        console.log('Текущее время (UTC):', now.toUTCString());
+        console.log('Текущее время (локальное):', now.toLocaleString());
+
         // Проверяем разницу во времени (в минутах)
         const ageInMinutes = (now - created) / (1000 * 60);
         console.log('Возраст кода (минут):', ageInMinutes);
