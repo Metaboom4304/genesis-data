@@ -670,7 +670,7 @@
     #test-api-btn {
       position: fixed;
       bottom: 10px;
-      left: 120px; /* Сдвинуто вправо */
+      left: 120px;
       z-index: 10000;
       padding: 8px 12px;
       background: #8b4513;
@@ -985,7 +985,7 @@
             originalData: tile
           };
         });
-        localStorage.setItem(CACHE_KEY, JSON.stringify({  tileData, timestamp: Date.now() }));
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: tileData, timestamp: Date.now() }));
         document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length}`;
         renderTiles();
       })
@@ -1105,14 +1105,43 @@
         const gridFeatures = [];
         for (let x = 0; x <= 256; x++) {
           const lng = -180 + x * (360 / 256);
-          gridFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[lng, -85], [lng, 85]] }, properties: { type: 'vertical', x } });
+          gridFeatures.push({ 
+            type: 'Feature', 
+            geometry: { 
+              type: 'LineString', 
+              coordinates: [[lng, -85], [lng, 85]] 
+            }, 
+            properties: { type: 'vertical', x } 
+          });
         }
         for (let y = 0; y <= 256; y++) {
           const lat = 85 - y * (170 / 256);
-          gridFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[-180, lat], [180, lat]] }, properties: { type: 'horizontal', y } });
+          gridFeatures.push({ 
+            type: 'Feature', 
+            geometry: { 
+              type: 'LineString', 
+              coordinates: [[-180, lat], [180, lat]] 
+            }, 
+            properties: { type: 'horizontal', y } 
+          });
         }
-        map.addSource('grid-source', { type: 'geojson',  { type: 'FeatureCollection', features: gridFeatures } });
-        map.addLayer({ id: 'grid-layer', type: 'line', source: 'grid-source', paint: { 'line-color': '#8b4513', 'line-width': 1, 'line-opacity': 0.3 } });
+        
+        // ИСПРАВЛЕННАЯ СТРОКА - добавлено data:
+        map.addSource('grid-source', { 
+          type: 'geojson', 
+          data: { type: 'FeatureCollection', features: gridFeatures } 
+        });
+        
+        map.addLayer({ 
+          id: 'grid-layer', 
+          type: 'line', 
+          source: 'grid-source', 
+          paint: { 
+            'line-color': '#8b4513', 
+            'line-width': 1, 
+            'line-opacity': 0.3 
+          } 
+        });
         map.setLayoutProperty('grid-layer', 'visibility', 'none');
       }
     }
@@ -1156,15 +1185,31 @@
       if (map.getSource('tiles-source')) {
         map.getSource('tiles-source').setData({ type: 'FeatureCollection', features });
       } else {
-        map.addSource('tiles-source', { type: 'geojson',  { type: 'FeatureCollection', features } });
+        // ИСПРАВЛЕННАЯ СТРОКА - добавлено data:
+        map.addSource('tiles-source', { 
+          type: 'geojson', 
+          data: { type: 'FeatureCollection', features } 
+        });
         map.addLayer({
           id: 'tiles-layer',
           type: 'circle',
           source: 'tiles-source',
           paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 2, 6, 4, 10, 6],
-            'circle-color': ['case', ['==', ['get', 'status'], 'ally'], '#1e88e5', ['==', ['get', 'status'], 'enemy'], '#e53935', ['==', ['get', 'status'], 'favorite'], '#ffca28', ['==', ['get', 'hasComment'], true], '#9c27b0', ['==', ['get', 'owned'], true], '#43a047', 'rgba(166, 124, 82, 0.7)'],
-            'circle-stroke-color': ['case', ['==', ['get', 'status'], 'ally'], '#1565c0', ['==', ['get', 'status'], 'enemy'], '#c62828', ['==', ['get', 'status'], 'favorite'], '#f57f17', ['==', ['get', 'hasComment'], true], '#7b1fa2', ['==', ['get', 'owned'], true], '#2e7d32', '#5d4037'],
+            'circle-color': ['case', 
+              ['==', ['get', 'status'], 'ally'], '#1e88e5',
+              ['==', ['get', 'status'], 'enemy'], '#e53935', 
+              ['==', ['get', 'status'], 'favorite'], '#ffca28',
+              ['==', ['get', 'hasComment'], true], '#9c27b0',
+              ['==', ['get', 'owned'], true], '#43a047',
+              'rgba(166, 124, 82, 0.7)'],
+            'circle-stroke-color': ['case',
+              ['==', ['get', 'status'], 'ally'], '#1565c0',
+              ['==', ['get', 'status'], 'enemy'], '#c62828',
+              ['==', ['get', 'status'], 'favorite'], '#f57f17',
+              ['==', ['get', 'hasComment'], true], '#7b1fa2',
+              ['==', ['get', 'owned'], true], '#2e7d32',
+              '#5d4037'],
             'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 3, 0.5, 6, 1, 10, 2]
           }
         });
@@ -1391,14 +1436,27 @@
       const nextIndex = (currentIndex + 1) % styles.length;
       currentMapStyle = styles[nextIndex];
       map.setStyle(MAP_STYLES[currentMapStyle]);
+      
+      // Улучшенная логика переключения стилей
       map.once('styledata', () => {
-        if (map.getSource('tiles-source')) renderTiles();
+        // Пересоздаем слои после смены стиля
+        if (map.getSource('tiles-source')) {
+          renderTiles();
+        }
         if (map.getSource('grid-source')) {
           addGridLayer();
+        }
+        
+        // Восстанавливаем видимость слоев
+        if (map.getLayer('tiles-layer')) {
+          map.setLayoutProperty('tiles-layer', 'visibility', tilesVisible ? 'visible' : 'none');
+        }
+        if (map.getLayer('grid-layer')) {
           map.setLayoutProperty('grid-layer', 'visibility', gridVisible ? 'visible' : 'none');
         }
+        
+        showToast(`Стиль карты: ${currentMapStyle}`, 'info');
       });
-      showToast(`Стиль карты: ${currentMapStyle}`, 'info');
     }
 
     function toggleTheme() {
