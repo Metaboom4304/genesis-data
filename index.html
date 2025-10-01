@@ -943,17 +943,19 @@
     // Загрузка данных тайлов с кешированием
     function loadTileData() {
       const CACHE_KEY = 'tileDataCache';
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CONFIG.CACHE_TTL) {
-          log(' 🗃️  Данные тайлов из кеша');
-          tileData = data;
-          document.getElementById('tiles-status').textContent = `Тайлы: 💾 ${tileData.length} (кеш)`;
-          renderTiles();
-          return Promise.resolve();
-        }
-      }
+      
+      // УБРАН КЕШ - данные слишком большие для localStorage
+      // const cached = localStorage.getItem(CACHE_KEY);
+      // if (cached) {
+      //   const { data, timestamp } = JSON.parse(cached);
+      //   if (Date.now() - timestamp < CONFIG.CACHE_TTL) {
+      //     log(' 🗃️  Данные тайлов из кеша');
+      //     tileData = data;
+      //     document.getElementById('tiles-status').textContent = `Тайлы: 💾 ${tileData.length} (кеш)`;
+      //     renderTiles();
+      //     return Promise.resolve();
+      //   }
+      // }
 
       if (currentAbortController) currentAbortController.abort();
       currentAbortController = new AbortController();
@@ -985,7 +987,10 @@
             originalData: tile
           };
         });
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: tileData, timestamp: Date.now() }));
+        
+        // УБРАНО СОХРАНЕНИЕ В LOCALSTORAGE - данные слишком большие
+        // localStorage.setItem(CACHE_KEY, JSON.stringify({ data: tileData, timestamp: Date.now() }));
+        
         document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length}`;
         renderTiles();
       })
@@ -999,7 +1004,7 @@
 
     function createDemoTiles() {
       tileData = [];
-      const demoSize = 50;
+      const demoSize = 50; // Уменьшено для экономии памяти
       for (let y = 0; y < demoSize; y++) {
         for (let x = 0; x < demoSize; x++) {
           const plotId = y * demoSize + x + 1;
