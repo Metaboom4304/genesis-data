@@ -1034,35 +1034,65 @@
 
     // --- Аутентификация через код ---
     async function verifyAccessCode(code) {
-      const { data, error } = await supabaseClient
-        .from('access_codes')
-        .select('user_id, created_at, used')
-        .eq('code', code)
-        .single();
+      try {
+        const { data, error } = await supabaseClient
+          .from('access_codes')
+          .select('user_id, created_at, used')
+          .eq('code', code)
+          .single();
 
-      if (error || !data) {
-        showToast('Неверный код', 'error');
+        if (error || !data) {
+          showToast('Неверный код', 'error');
+          return false;
+        }
+
+        // ДЕБАГ: выводим информацию о коде
+        console.log('Код найден:', data);
+        console.log('Время создания:', new Date(data.created_at));
+        console.log('Текущее время:', new Date());
+
+        const now = new Date();
+        const created = new Date(data.created_at);
+        
+        // Проверяем разницу во времени (в минутах)
+        const ageInMinutes = (now - created) / (1000 * 60);
+        console.log('Возраст кода (минут):', ageInMinutes);
+
+        // УВЕЛИЧИВАЕМ ВРЕМЯ ДЕЙСТВИЯ КОДА ДО 60 МИНУТ ДЛЯ ТЕСТИРОВАНИЯ
+        if (ageInMinutes > 60) {
+          await supabaseClient.from('access_codes').delete().eq('code', code);
+          showToast('Код устарел', 'error');
+          return false;
+        }
+
+        if (data.used) {
+          showToast('Код уже использован', 'error');
+          return false;
+        }
+
+        // Помечаем код как использованный
+        const { error: updateError } = await supabaseClient
+          .from('access_codes')
+          .update({ used: true })
+          .eq('code', code);
+
+        if (updateError) {
+          console.error('Ошибка обновления кода:', updateError);
+          showToast('Ошибка сервера', 'error');
+          return false;
+        }
+
+        currentUser.id = data.user_id;
+        document.getElementById('code-container').style.display = 'none';
+        initMaplibre();
+        loadUserMarks();
+        showToast('Успешный вход!', 'success');
+        return true;
+      } catch (error) {
+        console.error('Ошибка проверки кода:', error);
+        showToast('Ошибка проверки кода', 'error');
         return false;
       }
-
-      const now = new Date();
-      const age = now - new Date(data.created_at);
-      if (age > 5 * 60 * 1000) {
-        await supabaseClient.from('access_codes').delete().eq('code', code);
-        showToast('Код устарел', 'error');
-        return false;
-      }
-      if (data.used) {
-        showToast('Код уже использован', 'error');
-        return false;
-      }
-
-      await supabaseClient.from('access_codes').update({ used: true }).eq('code', code);
-      currentUser.id = data.user_id;
-      document.getElementById('code-container').style.display = 'none';
-      initMaplibre();
-      loadUserMarks();
-      return true;
     }
 
     function setupCodeForm() {
@@ -1073,10 +1103,21 @@
       });
       submitButton.addEventListener('click', () => {
         const code = codeInput.value.trim();
-        if (code.length === 6) verifyAccessCode(code);
+        if (code.length === 6) {
+          verifyAccessCode(code);
+        } else {
+          showToast('Код должен содержать 6 цифр', 'error');
+        }
       });
       codeInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') verifyAccessCode(codeInput.value.trim());
+        if (e.key === 'Enter') {
+          const code = codeInput.value.trim();
+          if (code.length === 6) {
+            verifyAccessCode(code);
+          } else {
+            showToast('Код должен содержать 6 цифр', 'error');
+          }
+        }
       });
     }
 
@@ -1475,7 +1516,7 @@
           const tileId = parseInt(value);
           if (!isNaN(tileId) && tileId >= 1 && tileId <= CONFIG.TOTAL_TILES) {
             if (focusOnTile(tileId)) {
-              showToast(`Тайл #${tileId} найден`, 'success');
+              showToast(`Тайл #${tileId} найден', 'success`);
             } else {
               showToast(`Тайл #${tileId} не найден`, 'warning');
             }
