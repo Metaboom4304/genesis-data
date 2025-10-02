@@ -32,6 +32,7 @@
       --marker-enemy: #e53935;
       --marker-favorite: #ffca28;
       --marker-owned: #43a047;
+      --marker-clear: #9e9e9e; /* Новый цвет для свободных */
     }
     /* Темная тема */
     .dark-theme {
@@ -295,6 +296,13 @@
       margin-bottom: 16px;
     }
     .favorites-dropdown {
+      width: 100%;
+    }
+    /* Фильтр по меткам - выпадающий список */
+    .filtered-tiles-dropdown-section {
+      margin-bottom: 16px;
+    }
+    .filtered-tiles-dropdown {
       width: 100%;
     }
     /* Управление картой */
@@ -823,6 +831,14 @@
           <option value="clear"> ⚪  Без метки</option>
         </select>
       </div>
+      <!-- Список тайлов по фильтру -->
+      <div class="filtered-tiles-dropdown-section">
+        <label class="filter-label">Тайлы по фильтру</label>
+        <select class="filter-select filtered-tiles-dropdown" id="filtered-tiles-dropdown">
+          <option value="">Выберите тайл</option>
+          <!-- Динамически заполняется -->
+        </select>
+      </div>
       <div class="action-buttons">
         <button class="btn btn-secondary" id="reset">
           <i class="material-icons">refresh</i>
@@ -912,6 +928,8 @@
     let currentTileForComment = null;
     let tilesVisible = true;
     let gridVisible = false;
+    let currentPopup = null; // Ссылка на активный попап
+
     // --- Вспомогательные функции ---
     function log(message, isError = false) {
       const now = new Date();
@@ -935,6 +953,7 @@
     function showLoader(visible) {
       document.getElementById('loader').style.display = visible ? 'block' : 'none';
     }
+
     // --- Функции для работы с координатами тайлов ---
     function plotIdToGeo(plotId) {
       const totalTiles = CONFIG.TOTAL_TILES;
@@ -952,6 +971,7 @@
       const lat = 80 - (y + 0.5) * (160 / 256);
       return { lng, lat, x, y };
     }
+
     // Загрузка данных тайлов с кешированием
     function loadTileData() {
       const CACHE_KEY = 'tileDataCache';
@@ -1031,6 +1051,7 @@
       document.getElementById('tiles-status').textContent = `Тайлы: 🧪 ${tileData.length} демо`;
       renderTiles();
     }
+
     // --- Аутентификация через код ---
     async function verifyAccessCode(code) {
       try {
@@ -1113,6 +1134,7 @@
         }
       });
     }
+
     // --- Инициализация MapLibre ---
     function initMaplibre() {
       try {
@@ -1168,7 +1190,7 @@
         }
         map.addSource('grid-source', { 
           type: 'geojson', 
-          data: { type: 'FeatureCollection', features: gridFeatures } 
+           { type: 'FeatureCollection', features: gridFeatures } 
         });
         map.addLayer({ 
           id: 'grid-layer', 
@@ -1183,6 +1205,7 @@
         map.setLayoutProperty('grid-layer', 'visibility', 'none');
       }
     }
+
     function updateVisibleTiles() {
       if (!map || !tileData.length) return;
       const bounds = map.getBounds();
@@ -1192,16 +1215,19 @@
       });
       renderTiles();
       if (isInitialLoad) { isInitialLoad = false; return; }
-      // Убран setTimeout и debounceTimer
     }
+
     function renderTiles() {
       if (!map || !map.isStyleLoaded()) return requestAnimationFrame(renderTiles); // Используем rAF
-      // Увеличиваем размер точек при приближении и скрываем при отдалении
+
       const zoom = map.getZoom();
       let visibility = 'visible';
-      // Адаптивный размер точек в зависимости от зума
-      const minRadius = Math.max(2, zoom * 1.5);
-      const maxRadius = Math.max(6, zoom * 2);
+
+      // Скрываем точки при низком зуме
+      if (zoom < 5) {
+        visibility = 'none';
+      }
+
       const features = tileData
         .filter(tile => visibleTiles.has(tile.id))
         .map(tile => {
@@ -1224,20 +1250,21 @@
             }
           };
         });
+
       if (map.getSource('tiles-source')) {
         map.getSource('tiles-source').setData({ type: 'FeatureCollection', features });
         map.setLayoutProperty('tiles-layer', 'visibility', visibility);
       } else {
         map.addSource('tiles-source', { 
           type: 'geojson', 
-          data: { type: 'FeatureCollection', features } 
+           { type: 'FeatureCollection', features } 
         });
         map.addLayer({
           id: 'tiles-layer',
           type: 'circle',
           source: 'tiles-source',
           paint: {
-            // Увеличиваем размер точек и делаем адаптивными
+            // Минимальный и максимальный зум для отображения точек
             'circle-radius': [
               'interpolate', ['linear'], ['zoom'],
               3, 4,    // При zoom 3 - радиус 4
@@ -1251,8 +1278,8 @@
               ['==', ['get', 'status'], 'favorite'], '#ffca28',
               ['==', ['get', 'hasComment'], true], '#9c27b0',
               // Разные цвета для занятых и свободных тайлов
-              ['==', ['get', 'owned'], true], '#43a047',
-              'rgba(166, 124, 82, 0.7)'
+              ['==', ['get', 'owned'], true], '#1e88e5', // Синий для занятых
+              '#9e9e9e' // Серый для свободных
             ],
             'circle-stroke-color': [
               'case',
@@ -1260,8 +1287,8 @@
               ['==', ['get', 'status'], 'enemy'], '#c62828',
               ['==', ['get', 'status'], 'favorite'], '#f57f17',
               ['==', ['get', 'hasComment'], true], '#7b1fa2',
-              ['==', ['get', 'owned'], true], '#2e7d32',
-              '#5d4037'
+              ['==', ['get', 'owned'], true], '#1565c0', // Синий обводка для занятых
+              '#757575' // Темно-серый обводка для свободных
             ],
             'circle-stroke-width': [
               'interpolate', ['linear'], ['zoom'], 
@@ -1269,6 +1296,10 @@
               6, 1.5, 
               10, 2
             ]
+          },
+          layout: {
+            // Скрываем слой при низком зуме
+            'visibility': visibility
           }
         });
         map.setLayoutProperty('tiles-layer', 'visibility', visibility);
@@ -1279,6 +1310,7 @@
         map.on('mouseleave', 'tiles-layer', () => map.getCanvas().style.cursor = '');
       }
     }
+
     // --- Работа с метками ---
     function getUserMarkComment(tileId) {
       const marks = userMarks[tileId] || {};
@@ -1316,6 +1348,7 @@
         if (mark.mark_type === 'favorite') favorites.push(Number(mark.tile_id));
       });
       updateFavoritesDropdown();
+      updateFilteredTilesDropdown(); // Обновляем список по фильтру
       log(` ✅  Загружено ${data.length} меток`);
     }
     function updateFavoritesDropdown() {
@@ -1329,6 +1362,49 @@
         option.textContent = `Тайл #${tileId}`;
         dropdown.appendChild(option);
       });
+      if (currentValue && dropdown.querySelector(`option[value="${currentValue}"]`)) {
+        dropdown.value = currentValue;
+      }
+    }
+    function updateFilteredTilesDropdown() {
+      const filterSelect = document.getElementById('status-filter');
+      const dropdown = document.getElementById('filtered-tiles-dropdown');
+      if (!dropdown) return;
+
+      const currentValue = dropdown.value;
+      const selectedFilter = filterSelect.value;
+
+      dropdown.innerHTML = '<option value="">Выберите тайл</option>';
+
+      let filteredTiles = [];
+
+      if (selectedFilter === 'ally') {
+        filteredTiles = tileData.filter(tile => getUserMarkStatus(tile.id) === 'ally');
+      } else if (selectedFilter === 'enemy') {
+        filteredTiles = tileData.filter(tile => getUserMarkStatus(tile.id) === 'enemy');
+      } else if (selectedFilter === 'favorite') {
+        filteredTiles = tileData.filter(tile => favorites.includes(tile.id));
+      } else if (selectedFilter === 'owned') {
+        filteredTiles = tileData.filter(tile => tile.has_owner === 'true');
+      } else if (selectedFilter === 'comment') {
+        filteredTiles = tileData.filter(tile => {
+          const comment = getUserMarkComment(tile.id);
+          return comment && comment.trim() !== '';
+        });
+      } else if (selectedFilter === 'clear') {
+        filteredTiles = tileData.filter(tile => getUserMarkStatus(tile.id) === '');
+      } else {
+        // Все тайлы
+        filteredTiles = tileData;
+      }
+
+      filteredTiles.forEach(tile => {
+        const option = document.createElement('option');
+        option.value = tile.id;
+        option.textContent = `Тайл #${tile.id}`;
+        dropdown.appendChild(option);
+      });
+
       if (currentValue && dropdown.querySelector(`option[value="${currentValue}"]`)) {
         dropdown.value = currentValue;
       }
@@ -1370,15 +1446,15 @@
         }
         renderTiles();
         updateFavoritesDropdown();
+        updateFilteredTilesDropdown(); // Обновляем список по фильтру
         showToast('Метка сохранена', 'success');
       } catch (error) {
         log(' ❌  Ошибка сохранения метки: ' + error.message, true);
         showToast('Ошибка сохранения метки', 'error');
       }
     }
-    // --- Попап и модальное окно ---
-    let currentPopup = null; // Ссылка на активный попап
 
+    // --- Попап и модальное окно ---
     function showTilePopup(tileId, lngLat) {
       // Удаляем предыдущий попап, если он есть
       if (currentPopup) {
@@ -1410,9 +1486,15 @@
       pGeo.textContent = `Гео координаты: ${tile.lat.toFixed(4)}, ${tile.lng.toFixed(4)}`;
       popupContentElement.appendChild(pGeo);
 
+      // --- ИСПРАВЛЕНИЕ: Цвет статуса ---
       const pStatus = document.createElement('p');
-      pStatus.textContent = `Статус: ${tile.has_owner === 'true' ? ' 🟥  Занят' : ' 🟩  Свободен'}`;
+      pStatus.textContent = `Статус: `;
+      const statusSpan = document.createElement('span');
+      statusSpan.textContent = tile.has_owner === 'true' ? ' Занят' : ' Свободен';
+      statusSpan.style.color = tile.has_owner === 'true' ? '#1e88e5' : '#9e9e9e'; // Синий для занятого, серый для свободного
+      pStatus.appendChild(statusSpan);
       popupContentElement.appendChild(pStatus);
+      // --- /ИСПРАВЛЕНИЕ ---
 
       if (tile.owner_name) {
         const pOwner = document.createElement('p');
@@ -1538,6 +1620,7 @@
       saveMark(currentTileForComment, 'comment', commentText);
       hideCommentModal();
     }
+
     // --- Прочие функции (поиск, сброс, тема и т.д.) ---
     function focusOnTile(tileId) {
       const parsedId = Number(tileId);
@@ -1622,8 +1705,16 @@
         } else {
           updateVisibleTiles();
         }
+        updateFilteredTilesDropdown(); // Обновляем список по фильтру
       });
       document.getElementById('favorites-dropdown').addEventListener('change', (e) => {
+        const tileId = Number(e.target.value);
+        if (Number.isInteger(tileId) && tileId >= 1 && tileId <= CONFIG.TOTAL_TILES) {
+          focusOnTile(tileId);
+          e.target.value = ''; // Сбрасываем значение
+        }
+      });
+      document.getElementById('filtered-tiles-dropdown').addEventListener('change', (e) => {
         const tileId = Number(e.target.value);
         if (Number.isInteger(tileId) && tileId >= 1 && tileId <= CONFIG.TOTAL_TILES) {
           focusOnTile(tileId);
@@ -1634,6 +1725,7 @@
         document.getElementById('search').value = '';
         document.getElementById('status-filter').value = '';
         document.getElementById('favorites-dropdown').value = '';
+        document.getElementById('filtered-tiles-dropdown').value = '';
         map.flyTo({ center: CONFIG.INITIAL_VIEW.center, zoom: CONFIG.INITIAL_VIEW.zoom, essential: true });
       });
       document.getElementById('screenshot-btn').addEventListener('click', () => {
