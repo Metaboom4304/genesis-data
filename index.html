@@ -1188,10 +1188,12 @@
             properties: { type: 'horizontal', y: correctedY } 
           });
         }
+        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
         map.addSource('grid-source', { 
           type: 'geojson', 
-           { type: 'FeatureCollection', features: gridFeatures } 
+          data: { type: 'FeatureCollection', features: gridFeatures } 
         });
+        // --- /ИСПРАВЛЕНИЕ ---
         map.addLayer({ 
           id: 'grid-layer', 
           type: 'line', 
@@ -1252,13 +1254,17 @@
         });
 
       if (map.getSource('tiles-source')) {
-        map.getSource('tiles-source').setData({ type: 'FeatureCollection', features });
+        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
+        map.getSource('tiles-source').setData({ type: 'FeatureCollection', features: features });
+        // --- /ИСПРАВЛЕНИЕ ---
         map.setLayoutProperty('tiles-layer', 'visibility', visibility);
       } else {
+        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
         map.addSource('tiles-source', { 
           type: 'geojson', 
-           { type: 'FeatureCollection', features } 
+          data: { type: 'FeatureCollection', features: features } 
         });
+        // --- /ИСПРАВЛЕНИЕ ---
         map.addLayer({
           id: 'tiles-layer',
           type: 'circle',
