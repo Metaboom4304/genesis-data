@@ -845,9 +845,6 @@
       <button class="control-btn" id="locate-me">
         <i class="material-icons">my_location</i>
       </button>
-      <button class="control-btn" id="toggle-layers">
-        <i class="material-icons">layers</i>
-      </button>
     </div>
     <!-- Кнопки управления сеткой внизу карты -->
     <div class="grid-controls">
@@ -897,19 +894,10 @@
 
     // Конфигурация приложения
     const CONFIG = {
-      // Используем бесплатные стили карт без API ключа
-      MAP_STYLE: 'https://tileserver.s3.amazonaws.com/geography-class.json',
-      INITIAL_VIEW: { center: [0, 25], zoom: 2, pitch: 45, bearing: -10 }, // Изменен начальный вид
+      MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
+      INITIAL_VIEW: { center: [32, 54], zoom: 4 },
       CACHE_TTL: 5 * 60 * 1000, // 5 минут
       TOTAL_TILES: 256 * 256 // 65536 тайлов
-    };
-
-    // Бесплатные стили карт без API ключа
-    const MAP_STYLES = {
-      standard: 'https://tileserver.s3.amazonaws.com/geography-class.json',
-      satellite: 'https://demotiles.maplibre.org/style.json',
-      dark: 'https://tileserver.s3.amazonaws.com/dark-matter.json',
-      basic: 'https://tileserver.s3.amazonaws.com/positron.json'
     };
 
     // Глобальные переменные
@@ -925,7 +913,6 @@
     let currentTileForComment = null;
     let tilesVisible = true;
     let gridVisible = false;
-    let currentMapStyle = 'standard';
 
     // --- Вспомогательные функции ---
     function log(message, isError = false) {
@@ -958,8 +945,8 @@
       const x = (normalizedId - 1) % 256;
       const y = Math.floor((normalizedId - 1) / 256);
       const lng = -180 + (x + 0.5) * (360 / 256);
-      // ПОДНИМАЕМ СЕТКУ ТАЙЛОВ ВЫШЕ - увеличиваем lat на 15 градусов
-      const lat = 85 - (y + 0.5) * (170 / 256) + 15;
+      // ПОДНИМАЕМ СЕТКУ ТАЙЛОВ ВЫШЕ - увеличиваем lat на 10 градусов и уменьшаем диапазон
+      const lat = 80 - (y + 0.5) * (160 / 256) + 10;
       return { lng, lat, x, y };
     }
 
@@ -1140,8 +1127,6 @@
           style: CONFIG.MAP_STYLE,
           center: CONFIG.INITIAL_VIEW.center,
           zoom: CONFIG.INITIAL_VIEW.zoom,
-          pitch: CONFIG.INITIAL_VIEW.pitch,
-          bearing: CONFIG.INITIAL_VIEW.bearing,
           attributionControl: false
         });
         map.on('load', () => {
@@ -1174,7 +1159,7 @@
           });
         }
         for (let y = 0; y <= 256; y++) {
-          const lat = 85 - y * (170 / 256) + 15; // Учитываем смещение
+          const lat = 80 - y * (160 / 256) + 10; // Учитываем смещение
           gridFeatures.push({ 
             type: 'Feature', 
             geometry: { 
@@ -1222,23 +1207,18 @@
       
       // Увеличиваем размер точек при приближении и скрываем при отдалении
       const zoom = map.getZoom();
-      let minRadius, maxRadius, visibility;
+      let visibility = 'visible';
       
-      if (zoom < 3) {
-        visibility = 'none';
-      } else {
-        visibility = 'visible';
-        // Адаптивный размер точек в зависимости от зума
-        minRadius = Math.max(2, zoom * 1.5);
-        maxRadius = Math.max(6, zoom * 2);
-      }
+      // Адаптивный размер точек в зависимости от зума
+      const minRadius = Math.max(2, zoom * 1.5);
+      const maxRadius = Math.max(6, zoom * 2);
       
       const features = tileData
         .filter(tile => visibleTiles.has(tile.id))
         .map(tile => {
           const status = getUserMarkStatus(tile.id);
-          const isFavorite = favorites.includes(tileId);
-          const comment = getUserMarkComment(tileId);
+          const isFavorite = favorites.includes(tile.id);
+          const comment = getUserMarkComment(tile.id);
           const isOwned = tile.has_owner === 'true';
           
           return {
@@ -1252,9 +1232,7 @@
               hasComment: !!comment,
               owner: tile.owner_name || null,
               x: tile.gridX,
-              y: tile.gridY,
-              // Добавляем тип для разных иконок
-              type: isOwned ? 'owned' : 'free'
+              y: tile.gridY
             }
           };
         });
@@ -1527,38 +1505,6 @@
       showToast(gridVisible ? 'Сетка тайлов показана' : 'Сетка тайлов скрыта', 'info');
     }
 
-    function toggleMapStyle() {
-      const styles = Object.keys(MAP_STYLES);
-      const currentIndex = styles.indexOf(currentMapStyle);
-      const nextIndex = (currentIndex + 1) % styles.length;
-      currentMapStyle = styles[nextIndex];
-      
-      try {
-        map.setStyle(MAP_STYLES[currentMapStyle]);
-        
-        map.once('styledata', () => {
-          if (map.getSource('tiles-source')) {
-            renderTiles();
-          }
-          if (map.getSource('grid-source')) {
-            addGridLayer();
-          }
-          
-          if (map.getLayer('tiles-layer')) {
-            map.setLayoutProperty('tiles-layer', 'visibility', tilesVisible ? 'visible' : 'none');
-          }
-          if (map.getLayer('grid-layer')) {
-            map.setLayoutProperty('grid-layer', 'visibility', gridVisible ? 'visible' : 'none');
-          }
-          
-          showToast(`Стиль карты: ${currentMapStyle}`, 'info');
-        });
-      } catch (error) {
-        console.error('Ошибка смены стиля карты:', error);
-        showToast('Ошибка смены стиля карты', 'error');
-      }
-    }
-
     function toggleTheme() {
       const isDark = document.body.classList.contains('dark-theme');
       document.body.classList.toggle('dark-theme', !isDark);
@@ -1625,13 +1571,7 @@
         document.getElementById('search').value = '';
         document.getElementById('status-filter').value = '';
         document.getElementById('favorites-dropdown').value = '';
-        map.flyTo({ 
-          center: CONFIG.INITIAL_VIEW.center, 
-          zoom: CONFIG.INITIAL_VIEW.zoom, 
-          pitch: CONFIG.INITIAL_VIEW.pitch,
-          bearing: CONFIG.INITIAL_VIEW.bearing,
-          essential: true 
-        });
+        map.flyTo({ center: CONFIG.INITIAL_VIEW.center, zoom: CONFIG.INITIAL_VIEW.zoom, essential: true });
       });
 
       document.getElementById('screenshot-btn').addEventListener('click', () => {
@@ -1640,7 +1580,6 @@
 
       document.getElementById('load-tiles-btn').addEventListener('click', () => toggleTilesVisibility());
       document.getElementById('toggle-grid-btn').addEventListener('click', () => toggleGridVisibility());
-      document.getElementById('toggle-layers').addEventListener('click', () => toggleMapStyle());
       document.getElementById('theme-toggle').addEventListener('click', () => toggleTheme());
       document.getElementById('toggle-panel').addEventListener('click', () => {
         const panel = document.getElementById('control-panel');
