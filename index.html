@@ -1,1803 +1,1716 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>GENESIS WAR MAP - Древние Земли</title>
-    <!-- MapLibre GL JS -->
-    <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
-    <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
-    <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        :root {
-            --primary: #8b4513;
-            --primary-dark: #5d2a0b;
-            --secondary: #a0522d;
-            --accent: #d2691e;
-            --text: #2c1a0a;
-            --background: #f5e6d3;
-            --paper: #e6d3b8;
-            --dark-paper: #d4c0a0;
-            --border: #a67c52;
-            --highlight: #f4a460;
-            --marker-ally: #1e88e5;
-            --marker-enemy: #e53935;
-            --marker-favorite: #ffca28;
-            --marker-owned: #43a047;
-        }
-
-        /* Темная тема */
-        .dark-theme {
-            --text: #e0d6c8;
-            --background: #1a140d;
-            --paper: #2a2218;
-            --dark-paper: #3a3024;
-            --border: #5d4a32;
-            --highlight: #8b6b46;
-        }
-
-        body {
-            font-family: 'Cinzel', 'Times New Roman', serif;
-            background: var(--background);
-            color: var(--text);
-            overflow: hidden;
-            height: 100vh;
-            position: relative;
-            background-attachment: fixed;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        #app {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Заголовок с винтажным стилем */
-        .header {
-            background: var(--paper);
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid var(--border);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            z-index: 10;
-            transition: all 0.3s;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            font-size: 24px;
-            color: var(--primary);
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-        }
-
-        .logo-text {
-            font-weight: 700;
-            font-size: 18px;
-            font-family: 'Cinzel', serif;
-            color: var(--primary-dark);
-            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
-            letter-spacing: 1px;
-            position: relative;
-        }
-
-        .header-controls {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        /* Контейнер карты */
-        #map {
-            flex: 1;
-            width: 100%;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-
-        /* Панель управления */
-        .control-panel {
-            position: absolute;
-            top: 80px;
-            left: 20px;
-            background: var(--paper);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            width: 320px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            z-index: 9;
-            transition: all 0.3s ease;
-            font-family: 'Cinzel', serif;
-        }
-
-        .panel-collapsed {
-            height: 50px;
-            overflow: hidden;
-            padding: 8px;
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 1px dashed var(--border);
-            height: 40px;
-        }
-
-        .panel-collapsed .panel-header {
-            margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
-            justify-content: center;
-        }
-
-        .panel-title {
-            font-weight: 600;
-            font-size: 16px;
-            color: var(--primary-dark);
-        }
-
-        .panel-collapsed .panel-title {
-            font-size: 14px;
-            transform: none;
-            writing-mode: horizontal-tb;
-            text-align: center;
-            line-height: 1.2;
-        }
-
-        .toggle-panel {
-            background: none;
-            border: 1px solid var(--border);
-            color: var(--primary);
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 4px;
-            transition: all 0.2s;
-            font-family: 'Cinzel', serif;
-            font-size: 14px;
-        }
-
-        .panel-collapsed .toggle-panel {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .toggle-panel:hover {
-            background: rgba(139, 69, 19, 0.1);
-        }
-
-        /* Поиск */
-        .search-container {
-            position: relative;
-            margin-bottom: 16px;
-            display: flex;
-            gap: 8px;
-        }
-
-        .search-input {
-            flex: 1;
-            padding: 10px 40px 10px 12px;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text);
-            font-size: 14px;
-            font-family: 'Cinzel', serif;
-        }
-
-        .dark-theme .search-input {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text);
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.3);
-        }
-
-        .search-icon {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--border);
-        }
-
-        .search-button {
-            padding: 10px 16px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Cinzel', serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .search-button:hover {
-            background: var(--primary-dark);
-        }
-
-        /* Фильтр */
-        .filter-section {
-            margin-bottom: 16px;
-        }
-
-        .filter-label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: var(--primary-dark);
-            font-family: 'Cinzel', serif;
-        }
-
-        .filter-select {
-            width: 100%;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text);
-            font-size: 14px;
-            font-family: 'Cinzel', serif;
-        }
-
-        .dark-theme .filter-select {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text);
-        }
-
-        /* Кнопки */
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .btn {
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-weight: 500;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-family: 'Cinzel', serif;
-            background: rgba(255, 255, 255, 0.7);
-        }
-
-        .dark-theme .btn {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary-dark);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.7);
-            color: var(--primary);
-            border-color: var(--border);
-        }
-
-        .dark-theme .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(139, 69, 19, 0.1);
-        }
-
-        /* Избранное - выпадающий список */
-        .favorites-dropdown-section {
-            margin-bottom: 16px;
-        }
-
-        .favorites-dropdown {
-            width: 100%;
-        }
-
-        /* Управление картой */
-        .map-controls {
-            position: absolute;
-            right: 20px;
-            bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 9;
-        }
-
-        .control-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            background: var(--paper);
-            border: 1px solid var(--border);
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .control-btn:hover {
-            background: rgba(139, 69, 19, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .control-btn:active {
-            transform: translateY(0);
-        }
-
-        /* Кнопки управления сеткой внизу карты */
-        .grid-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            gap: 10px;
-            z-index: 9;
-        }
-
-        .grid-control-btn {
-            width: 35px;
-            height: 35px;
-            border-radius: 6px;
-            background: var(--paper);
-            border: 1px solid var(--border);
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            font-size: 18px;
-        }
-
-        .grid-control-btn:hover {
-            background: rgba(139, 69, 19, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .grid-control-btn.active {
-            background: var(--primary);
-            color: white;
-        }
-
-        /* Скрыть стандартные кнопки масштаба */
-        .maplibregl-ctrl-top-right {
-            display: none !important;
-        }
-
-        /* Слой сетки */
-        .grid-line {
-            stroke: #8b4513;
-            stroke-width: 1;
-            stroke-opacity: 0.3;
-            fill: none;
-        }
-
-        /* Эффекты для маркеров */
-        .maplibregl-marker.ally {
-            filter: drop-shadow(0 0 2px rgba(30, 136, 229, 0.3));
-        }
-
-        .maplibregl-marker.enemy {
-            filter: drop-shadow(0 0 2px rgba(229, 57, 53, 0.3));
-        }
-
-        .maplibregl-marker.favorite {
-            filter: drop-shadow(0 0 2px rgba(255, 202, 40, 0.3));
-        }
-
-        .maplibregl-marker.owned {
-            filter: drop-shadow(0 0 2px rgba(67, 160, 71, 0.3));
-        }
-
-        .maplibregl-marker.has-comment {
-            filter: drop-shadow(0 0 2px rgba(156, 39, 176, 0.3));
-        }
-
-        /* Всплывающие окна */
-        .maplibregl-popup {
-            max-width: 300px;
-            font-family: 'Cinzel', serif;
-        }
-
-        .maplibregl-popup-content {
-            background: var(--paper);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .maplibregl-popup-content h3 {
-            margin-bottom: 8px;
-            color: var(--primary-dark);
-            font-size: 16px;
-            border-bottom: 1px dashed var(--border);
-            padding-bottom: 6px;
-        }
-
-        .maplibregl-popup-content p {
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: var(--text);
-        }
-
-        .popup-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            margin-top: 10px;
-        }
-
-        .popup-actions button {
-            padding: 6px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .dark-theme .popup-actions button {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .popup-actions button:hover {
-            background: rgba(139, 69, 19, 0.1);
-        }
-
-        /* Модальное окно для комментария */
-        .comment-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .comment-modal-content {
-            background: var(--paper);
-            padding: 20px;
-            border-radius: 8px;
-            width: 300px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-        }
-
-        .comment-modal h3 {
-            margin-bottom: 15px;
-            color: var(--primary-dark);
-        }
-
-        .comment-textarea {
-            width: 100%;
-            height: 100px;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            margin-bottom: 15px;
-            font-family: 'Cinzel', serif;
-            resize: vertical;
-            background: rgba(255, 255, 255, 0.7);
-            color: var(--text);
-        }
-
-        .dark-theme .comment-textarea {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .comment-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        /* Экран ввода кода */
-        #code-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--paper);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-            transition: opacity 0.3s;
-            text-align: center;
-        }
-
-        #code-container.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .code-card {
-            background: var(--paper);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            padding: 40px;
-            max-width: 450px;
-            width: 100%;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .code-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: var(--primary-dark);
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-            letter-spacing: 2px;
-            font-family: 'Cinzel', serif;
-        }
-
-        .code-subtitle {
-            color: var(--primary);
-            margin-bottom: 30px;
-            font-size: 16px;
-            line-height: 1.5;
-            font-family: 'Cinzel', serif;
-            max-width: 350px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .code-instructions {
-            background: rgba(255, 255, 255, 0.5);
-            border: 1px dashed var(--border);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 25px;
-            text-align: left;
-            font-size: 14px;
-            color: var(--text);
-            font-family: 'Cinzel', serif;
-        }
-
-        .dark-theme .code-instructions {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .code-input-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .code-input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 16px;
-            font-family: monospace;
-            text-align: center;
-            background: rgba(255, 255, 255, 0.7);
-            color: var(--text);
-        }
-
-        .dark-theme .code-input {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .code-button {
-            padding: 0 20px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-family: 'Cinzel', serif;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .code-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
-        }
-
-        .code-button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .code-help {
-            font-size: 14px;
-            color: var(--border);
-            margin-top: 15px;
-        }
-
-        /* Отладка */
-        #debug {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(230, 211, 184, 0.95);
-            color: var(--text);
-            font-size: 12px;
-            padding: 12px;
-            z-index: 1001;
-            max-height: 40vh;
-            overflow: auto;
-            font-family: 'Fira Code', monospace;
-            border-top: 1px solid var(--border);
-            display: none;
-        }
-
-        .dark-theme #debug {
-            background: rgba(42, 34, 24, 0.95);
-        }
-
-        .debug-section {
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text);
-        }
-
-        #debug-log {
-            max-height: 120px;
-            overflow: auto;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed var(--border);
-        }
-
-        /* Загрузчик */
-        .loader {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1002;
-            background: var(--paper);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border);
-        }
-
-        .loader-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-
-        .loader-text {
-            color: var(--text);
-            font-size: 14px;
-            font-family: 'Cinzel', serif;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Уведомления */
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 16px;
-            background: var(--paper);
-            color: var(--text);
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            border-left: 4px solid var(--primary);
-            z-index: 1003;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            font-family: 'Cinzel', serif;
-            border: 1px solid var(--border);
-        }
-
-        .toast.show {
-            transform: translateX(0);
-        }
-
-        .toast-error {
-            border-left-color: var(--marker-enemy);
-        }
-
-        .toast-success {
-            border-left-color: var(--marker-owned);
-        }
-
-        .toast-warning {
-            border-left-color: var(--marker-favorite);
-        }
-
-        /* Кнопка тестирования API - ПЕРЕМЕЩЕНА ВНИЗ ВЛЕВО и ВПРАВО */
-        #test-api-btn {
-            position: fixed;
-            bottom: 10px;
-            left: 120px;
-            z-index: 10000;
-            padding: 8px 12px;
-            background: #8b4513;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: 'Cinzel', serif;
-            font-size: 12px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        #test-api-btn:hover {
-            background: #5d2a0b;
-        }
-
-        /* Адаптация под мобильные */
-        @media (max-width: 768px) {
-            .control-panel {
-                width: calc(100% - 40px);
-                left: 20px;
-                right: 20px;
-            }
-
-            .header {
-                padding: 10px 15px;
-            }
-
-            .logo-text {
-                font-size: 16px;
-            }
-
-            .code-card {
-                padding: 25px;
-                margin: 0 10px;
-            }
-
-            .code-title {
-                font-size: 24px;
-            }
-
-            .map-controls {
-                right: 10px;
-                bottom: 10px;
-            }
-
-            .grid-controls {
-                left: 10px;
-                bottom: 10px;
-            }
-
-            .control-btn {
-                width: 35px;
-                height: 35px;
-            }
-
-            .grid-control-btn {
-                width: 30px;
-                height: 30px;
-                font-size: 16px;
-            }
-
-            .action-buttons {
-                grid-template-columns: 1fr;
-            }
-
-            #test-api-btn {
-                bottom: 5px;
-                left: 100px;
-                padding: 6px 10px;
-                font-size: 10px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GENESIS WAR MAP - Древние Земли</title>
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    :root {
+      --primary: #8b4513;
+      --primary-dark: #5d2a0b;
+      --secondary: #a0522d;
+      --accent: #d2691e;
+      --text: #2c1a0a;
+      --background: #f5e6d3;
+      --paper: #e6d3b8;
+      --dark-paper: #d4c0a0;
+      --border: #a67c52;
+      --highlight: #f4a460;
+      --marker-ally: #1e88e5;
+      --marker-enemy: #e53935;
+      --marker-favorite: #ffca28;
+      --marker-owned: #43a047;
+    }
+    /* Темная тема */
+    .dark-theme {
+      --text: #e0d6c8;
+      --background: #1a140d;
+      --paper: #2a2218;
+      --dark-paper: #3a3024;
+      --border: #5d4a32;
+      --highlight: #8b6b46;
+    }
+    body {
+      font-family: 'Cinzel', 'Times New Roman', serif;
+      background: var(--background);
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      position: relative;
+      background-attachment: fixed;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+    /* Заголовок с винтажным стилем */
+    .header {
+      background: var(--paper);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--border);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+      transition: all 0.3s;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-icon {
+      font-size: 24px;
+      color: var(--primary);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    .logo-text {
+      font-weight: 700;
+      font-size: 18px;
+      font-family: 'Cinzel', serif;
+      color: var(--primary-dark);
+      text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+      letter-spacing: 1px;
+      position: relative;
+    }
+    .header-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    /* Контейнер карты */
+    #map {
+      flex: 1;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    /* Панель управления */
+    .control-panel {
+      position: absolute;
+      top: 80px;
+      left: 20px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      width: 320px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      z-index: 9;
+      transition: all 0.3s ease;
+      font-family: 'Cinzel', serif;
+    }
+    .panel-collapsed {
+      height: 50px;
+      overflow: hidden;
+      padding: 8px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed var(--border);
+      height: 40px;
+    }
+    .panel-collapsed .panel-header {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+      justify-content: center;
+    }
+    .panel-title {
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--primary-dark);
+    }
+    .panel-collapsed .panel-title {
+      font-size: 14px;
+      transform: none;
+      writing-mode: horizontal-tb;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .toggle-panel {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--primary);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+    }
+    .panel-collapsed .toggle-panel {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .toggle-panel:hover {
+      background: rgba(139, 69, 19, 0.1);
+    }
+    /* Поиск */
+    .search-container {
+      position: relative;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 8px;
+    }
+    .search-input {
+      flex: 1;
+      padding: 10px 40px 10px 12px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Cinzel', serif;
+    }
+    .dark-theme .search-input {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.3);
+    }
+    .search-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--border);
+    }
+    .search-button {
+      padding: 10px 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Cinzel', serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .search-button:hover {
+      background: var(--primary-dark);
+    }
+    /* Фильтр */
+    .filter-section {
+      margin-bottom: 16px;
+    }
+    .filter-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--primary-dark);
+      font-family: 'Cinzel', serif;
+    }
+    .filter-select {
+      width: 100%;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Cinzel', serif;
+    }
+    .dark-theme .filter-select {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+    /* Кнопки */
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .btn {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: 'Cinzel', serif;
+      background: rgba(255, 255, 255, 0.7);
+    }
+    .dark-theme .btn {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary-dark);
+    }
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--primary);
+      border-color: var(--border);
+    }
+    .dark-theme .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .btn-secondary:hover {
+      background: rgba(139, 69, 19, 0.1);
+    }
+    /* Избранное - выпадающий список */
+    .favorites-dropdown-section {
+      margin-bottom: 16px;
+    }
+    .favorites-dropdown {
+      width: 100%;
+    }
+    /* Управление картой */
+    .map-controls {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9;
+    }
+    .control-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .control-btn:hover {
+      background: rgba(139, 69, 19, 0.1);
+      transform: translateY(-2px);
+    }
+    .control-btn:active {
+      transform: translateY(0);
+    }
+    /* Кнопки управления сеткой внизу карты */
+    .grid-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 9;
+    }
+    .grid-control-btn {
+      width: 35px;
+      height: 35px;
+      border-radius: 6px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      font-size: 18px;
+    }
+    .grid-control-btn:hover {
+      background: rgba(139, 69, 19, 0.1);
+      transform: translateY(-2px);
+    }
+    .grid-control-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+    /* Скрыть стандартные кнопки масштаба */
+    .maplibregl-ctrl-top-right {
+      display: none !important;
+    }
+    /* Слой сетки */
+    .grid-line {
+      stroke: #8b4513;
+      stroke-width: 1;
+      stroke-opacity: 0.3;
+      fill: none;
+    }
+    /* Эффекты для маркеров */
+    .maplibregl-marker.ally {
+      filter: drop-shadow(0 0 2px rgba(30, 136, 229, 0.3));
+    }
+    .maplibregl-marker.enemy {
+      filter: drop-shadow(0 0 2px rgba(229, 57, 53, 0.3));
+    }
+    .maplibregl-marker.favorite {
+      filter: drop-shadow(0 0 2px rgba(255, 202, 40, 0.3));
+    }
+    .maplibregl-marker.owned {
+      filter: drop-shadow(0 0 2px rgba(67, 160, 71, 0.3));
+    }
+    .maplibregl-marker.has-comment {
+      filter: drop-shadow(0 0 2px rgba(156, 39, 176, 0.3));
+    }
+    /* Всплывающие окна */
+    .maplibregl-popup {
+      max-width: 300px;
+      font-family: 'Cinzel', serif;
+    }
+    .maplibregl-popup-content {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    .maplibregl-popup-content h3 {
+      margin-bottom: 8px;
+      color: var(--primary-dark);
+      font-size: 16px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 6px;
+    }
+    .maplibregl-popup-content p {
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .popup-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .popup-actions button {
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .dark-theme .popup-actions button {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .popup-actions button:hover {
+      background: rgba(139, 69, 19, 0.1);
+    }
+    /* Модальное окно для комментария */
+    .comment-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .comment-modal-content {
+      background: var(--paper);
+      padding: 20px;
+      border-radius: 8px;
+      width: 300px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+    .comment-modal h3 {
+      margin-bottom: 15px;
+      color: var(--primary-dark);
+    }
+    .comment-textarea {
+      width: 100%;
+      height: 100px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 15px;
+      font-family: 'Cinzel', serif;
+      resize: vertical;
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--text);
+    }
+    .dark-theme .comment-textarea {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .comment-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    /* Экран ввода кода */
+    #code-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+      transition: opacity 0.3s;
+      text-align: center;
+    }
+    #code-container.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .code-card {
+      background: var(--paper);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 450px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .code-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--primary-dark);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+      letter-spacing: 2px;
+      font-family: 'Cinzel', serif;
+    }
+    .code-subtitle {
+      color: var(--primary);
+      margin-bottom: 30px;
+      font-size: 16px;
+      line-height: 1.5;
+      font-family: 'Cinzel', serif;
+      max-width: 350px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .code-instructions {
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 25px;
+      text-align: left;
+      font-size: 14px;
+      color: var(--text);
+      font-family: 'Cinzel', serif;
+    }
+    .dark-theme .code-instructions {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .code-input-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .code-input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 16px;
+      font-family: monospace;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--text);
+    }
+    .dark-theme .code-input {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .code-button {
+      padding: 0 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Cinzel', serif;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .code-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+    }
+    .code-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .code-help {
+      font-size: 14px;
+      color: var(--border);
+      margin-top: 15px;
+    }
+    /* Отладка */
+    #debug {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(230, 211, 184, 0.95);
+      color: var(--text);
+      font-size: 12px;
+      padding: 12px;
+      z-index: 1001;
+      max-height: 40vh;
+      overflow: auto;
+      font-family: 'Fira Code', monospace;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+    .dark-theme #debug {
+      background: rgba(42, 34, 24, 0.95);
+    }
+    .debug-section {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+    #debug-log {
+      max-height: 120px;
+      overflow: auto;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+    }
+    /* Загрузчик */
+    .loader {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1002;
+      background: var(--paper);
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+    }
+    .loader-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+    .loader-text {
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Cinzel', serif;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    /* Уведомления */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 16px;
+      background: var(--paper);
+      color: var(--text);
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      border-left: 4px solid var(--primary);
+      z-index: 1003;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      font-family: 'Cinzel', serif;
+      border: 1px solid var(--border);
+    }
+    .toast.show {
+      transform: translateX(0);
+    }
+    .toast-error {
+      border-left-color: var(--marker-enemy);
+    }
+    .toast-success {
+      border-left-color: var(--marker-owned);
+    }
+    .toast-warning {
+      border-left-color: var(--marker-favorite);
+    }
+    /* Кнопка тестирования API - ПЕРЕМЕЩЕНА ВНИЗ ВЛЕВО и ВПРАВО */
+    #test-api-btn {
+      position: fixed;
+      bottom: 10px;
+      left: 120px;
+      z-index: 10000;
+      padding: 8px 12px;
+      background: #8b4513;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    #test-api-btn:hover {
+      background: #5d2a0b;
+    }
+    /* Адаптация под мобильные */
+    @media (max-width: 768px) {
+      .control-panel {
+        width: calc(100% - 40px);
+        left: 20px;
+        right: 20px;
+      }
+      .header {
+        padding: 10px 15px;
+      }
+      .logo-text {
+        font-size: 16px;
+      }
+      .code-card {
+        padding: 25px;
+        margin: 0 10px;
+      }
+      .code-title {
+        font-size: 24px;
+      }
+      .map-controls {
+        right: 10px;
+        bottom: 10px;
+      }
+      .grid-controls {
+        left: 10px;
+        bottom: 10px;
+      }
+      .control-btn {
+        width: 35px;
+        height: 35px;
+      }
+      .grid-control-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 16px;
+      }
+      .action-buttons {
+        grid-template-columns: 1fr;
+      }
+      #test-api-btn {
+        bottom: 5px;
+        left: 100px;
+        padding: 6px 10px;
+        font-size: 10px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Экран ввода кода -->
-        <div id="code-container">
-            <div class="code-card">
-                <h1 class="code-title">GENESIS WAR MAP</h1>
-                <p class="code-subtitle">Стратегическая карта для тактического планирования и координации</p>
-                <div class="code-instructions">
-                    <p>Для доступа к карте введите код, полученный через Telegram бота</p>
-                    <p>Код действителен 5 минут после генерации</p>
-                </div>
-                <div class="code-input-container">
-                    <input type="text" class="code-input" id="access-code" maxlength="6" placeholder="Введите код">
-                    <button class="code-button" id="submit-code">Войти</button>
-                </div>
-                <p class="code-help">
-                    Не получили код? Напишите боту <strong>@Goamap_bot</strong> команду <strong>/code</strong>
-                </p>
-            </div>
+  <div id="app">
+    <!-- Экран ввода кода -->
+    <div id="code-container">
+      <div class="code-card">
+        <h1 class="code-title">GENESIS WAR MAP</h1>
+        <p class="code-subtitle">Стратегическая карта для тактического планирования и координации</p>
+        <div class="code-instructions">
+          <p>Для доступа к карте введите код, полученный через Telegram бота</p>
+          <p>Код действителен 5 минут после генерации</p>
         </div>
-
-        <!-- Заголовок -->
-        <div class="header">
-            <div class="logo">
-                <i class="material-icons logo-icon">public</i>
-                <span class="logo-text">GENESIS WAR MAP</span>
-            </div>
-            <div class="header-controls">
-                <button class="control-btn" id="debug-toggle">
-                    <i class="material-icons">bug_report</i>
-                </button>
-                <button class="control-btn" id="theme-toggle">
-                    <i class="material-icons">brightness_4</i>
-                </button>
-            </div>
+        <div class="code-input-container">
+          <input type="text" class="code-input" id="access-code" maxlength="6" placeholder="Введите код">
+          <button class="code-button" id="submit-code">Войти</button>
         </div>
-
-        <!-- Карта -->
-        <div id="map"></div>
-
-        <!-- Панель управления -->
-        <div class="control-panel" id="control-panel">
-            <div class="panel-header">
-                <h3 class="panel-title">Управление картой</h3>
-                <button class="toggle-panel" id="toggle-panel">
-                    <i class="material-icons">keyboard_arrow_up</i>
-                </button>
-            </div>
-
-            <!-- Избранные тайлы - ВЫПАДАЮЩИЙ СПИСОК ПЕРЕНЕСЕН НАВЕРХ -->
-            <div class="favorites-dropdown-section">
-                <label class="filter-label">Избранные тайлы</label>
-                <select class="filter-select favorites-dropdown" id="favorites-dropdown">
-                    <option value="">Выберите избранный тайл</option>
-                    <!-- Динамически заполняется -->
-                </select>
-            </div>
-
-            <div class="search-container">
-                <input type="text" class="search-input" id="search" placeholder="Поиск по ID тайла (1-65536)" />
-                <button class="search-button" id="search-btn">
-                    <i class="material-icons">search</i>
-                </button>
-            </div>
-
-            <div class="filter-section">
-                <label class="filter-label">Фильтр по меткам</label>
-                <select class="filter-select" id="status-filter">
-                    <option value="">Все тайлы</option>
-                    <option value="ally"> 🟩 Союзники</option>
-                    <option value="enemy"> 🟥 Враги</option>
-                    <option value="favorite"> ⭐ Избранное</option>
-                    <option value="owned"> 🟦 Занято</option>
-                    <option value="comment"> 💬 С комментарием</option>
-                    <option value="clear"> ⚪ Без метки</option>
-                </select>
-            </div>
-
-            <div class="action-buttons">
-                <button class="btn btn-secondary" id="reset">
-                    <i class="material-icons">refresh</i>
-                    Сбросить
-                </button>
-                <button class="btn btn-primary" id="screenshot-btn">
-                    <i class="material-icons">photo_camera</i>
-                    Снимок
-                </button>
-            </div>
-        </div>
-
-        <!-- Управление картой -->
-        <div class="map-controls">
-            <button class="control-btn" id="zoom-in">
-                <i class="material-icons">add</i>
-            </button>
-            <button class="control-btn" id="zoom-out">
-                <i class="material-icons">remove</i>
-            </button>
-            <button class="control-btn" id="locate-me">
-                <i class="material-icons">my_location</i>
-            </button>
-        </div>
-
-        <!-- Кнопки управления сеткой внизу карты -->
-        <div class="grid-controls">
-            <button class="grid-control-btn" id="load-tiles-btn" title="Загрузить/скрыть тайлы">
-                <i class="material-icons">map</i>
-            </button>
-            <button class="grid-control-btn" id="toggle-grid-btn" title="Показать/скрыть сетку">
-                <i class="material-icons">grid_on</i>
-            </button>
-        </div>
-
-        <!-- Модальное окно для комментария -->
-        <div class="comment-modal" id="comment-modal">
-            <div class="comment-modal-content">
-                <h3>Добавить комментарий к тайлу #<span id="comment-tile-id"></span></h3>
-                <textarea class="comment-textarea" id="comment-text" placeholder="Введите ваш комментарий..."></textarea>
-                <div class="comment-buttons">
-                    <button class="btn btn-secondary" id="cancel-comment">Отмена</button>
-                    <button class="btn btn-primary" id="save-comment">Сохранить</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Загрузчик -->
-        <div class="loader" id="loader">
-            <div class="loader-spinner"></div>
-            <div class="loader-text">Загрузка данных...</div>
-        </div>
-
-        <!-- Уведомления -->
-        <div class="toast" id="toast"></div>
-
-        <!-- Отладка -->
-        <div id="debug">
-            <div class="debug-section" id="user-status">Пользователь: ⏳ </div>
-            <div class="debug-section" id="map-status">Карта: ⏳ </div>
-            <div class="debug-section" id="api-status">API: ⏳ </div>
-            <div class="debug-section" id="cache-status">Кеш: ⏳ </div>
-            <div class="debug-section" id="tiles-status">Тайлы: ⏳ </div>
-            <div id="debug-log"></div>
-        </div>
-
-        <!-- Кнопка тестирования API -->
-        <button id="test-api-btn">Тест API</button>
+        <p class="code-help">
+          Не получили код? Напишите боту <strong>@Goamap_bot</strong> команду <strong>/code</strong>
+        </p>
+      </div>
     </div>
+    <!-- Заголовок -->
+    <div class="header">
+      <div class="logo">
+        <i class="material-icons logo-icon">public</i>
+        <span class="logo-text">GENESIS WAR MAP</span>
+      </div>
+      <div class="header-controls">
+        <button class="control-btn" id="debug-toggle">
+          <i class="material-icons">bug_report</i>
+        </button>
+        <button class="control-btn" id="theme-toggle">
+          <i class="material-icons">brightness_4</i>
+        </button>
+      </div>
+    </div>
+    <!-- Карта -->
+    <div id="map"></div>
+    <!-- Панель управления -->
+    <div class="control-panel" id="control-panel">
+      <div class="panel-header">
+        <h3 class="panel-title">Управление картой</h3>
+        <button class="toggle-panel" id="toggle-panel">
+          <i class="material-icons">keyboard_arrow_up</i>
+        </button>
+      </div>
+      <!-- Избранные тайлы - ВЫПАДАЮЩИЙ СПИСОК ПЕРЕНЕСЕН НАВЕРХ -->
+      <div class="favorites-dropdown-section">
+        <label class="filter-label">Избранные тайлы</label>
+        <select class="filter-select favorites-dropdown" id="favorites-dropdown">
+          <option value="">Выберите избранный тайл</option>
+          <!-- Динамически заполняется -->
+        </select>
+      </div>
+      <div class="search-container">
+        <input type="text" class="search-input" id="search" placeholder="Поиск по ID тайла (1-65536)" />
+        <button class="search-button" id="search-btn">
+          <i class="material-icons">search</i>
+        </button>
+      </div>
+      <div class="filter-section">
+        <label class="filter-label">Фильтр по меткам</label>
+        <select class="filter-select" id="status-filter">
+          <option value="">Все тайлы</option>
+          <option value="ally"> 🟩  Союзники</option>
+          <option value="enemy"> 🟥  Враги</option>
+          <option value="favorite"> ⭐  Избранное</option>
+          <option value="owned"> 🟦  Занято</option>
+          <option value="comment"> 💬  С комментарием</option>
+          <option value="clear"> ⚪  Без метки</option>
+        </select>
+      </div>
+      <div class="action-buttons">
+        <button class="btn btn-secondary" id="reset">
+          <i class="material-icons">refresh</i>
+          Сбросить
+        </button>
+        <button class="btn btn-primary" id="screenshot-btn">
+          <i class="material-icons">photo_camera</i>
+          Снимок
+        </button>
+      </div>
+    </div>
+    <!-- Управление картой -->
+    <div class="map-controls">
+      <button class="control-btn" id="zoom-in">
+        <i class="material-icons">add</i>
+      </button>
+      <button class="control-btn" id="zoom-out">
+        <i class="material-icons">remove</i>
+      </button>
+      <button class="control-btn" id="locate-me">
+        <i class="material-icons">my_location</i>
+      </button>
+    </div>
+    <!-- Кнопки управления сеткой внизу карты -->
+    <div class="grid-controls">
+      <button class="grid-control-btn" id="load-tiles-btn" title="Загрузить/скрыть тайлы">
+        <i class="material-icons">map</i>
+      </button>
+      <button class="grid-control-btn" id="toggle-grid-btn" title="Показать/скрыть сетку">
+        <i class="material-icons">grid_on</i>
+      </button>
+    </div>
+    <!-- Модальное окно для комментария -->
+    <div class="comment-modal" id="comment-modal">
+      <div class="comment-modal-content">
+        <h3>Добавить комментарий к тайлу #<span id="comment-tile-id"></span></h3>
+        <textarea class="comment-textarea" id="comment-text" placeholder="Введите ваш комментарий..."></textarea>
+        <div class="comment-buttons">
+          <button class="btn btn-secondary" id="cancel-comment">Отмена</button>
+          <button class="btn btn-primary" id="save-comment">Сохранить</button>
+        </div>
+      </div>
+    </div>
+    <!-- Загрузчик -->
+    <div class="loader" id="loader">
+      <div class="loader-spinner"></div>
+      <div class="loader-text">Загрузка данных...</div>
+    </div>
+    <!-- Уведомления -->
+    <div class="toast" id="toast"></div>
+    <!-- Отладка -->
+    <div id="debug">
+      <div class="debug-section" id="user-status">Пользователь:  ⏳ </div>
+      <div class="debug-section" id="map-status">Карта:  ⏳ </div>
+      <div class="debug-section" id="api-status">API:  ⏳ </div>
+      <div class="debug-section" id="cache-status">Кеш:  ⏳ </div>
+      <div class="debug-section" id="tiles-status">Тайлы:  ⏳ </div>
+      <div id="debug-log"></div>
+    </div>
+    <!-- Кнопка тестирования API -->
+    <button id="test-api-btn">Тест API</button>
+  </div>
+  <script>
+    // ИНИЦИАЛИЗАЦИЯ SUPABASE ПЕРЕМЕЩЕНА В САМОЕ НАЧАЛО
+    const supabaseClient = supabase.createClient(
+      'https://vbcnhpsavynwzopvdqcw.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiY25ocHNhdnlud3pvcHZkcWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxODM2OTMsImV4cCI6MjA3NDc1OTY5M30.84WBqv1cEpasCrxoqzNpC5FPhciRHphPGJxhFIcMCmE'
+    );
+    // Конфигурация приложения
+    const CONFIG = {
+      MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
+      INITIAL_VIEW: { center: [32, 54], zoom: 4 },
+      CACHE_TTL: 5 * 60 * 1000, // 5 минут
+      TOTAL_TILES: 256 * 256 // 65536 тайлов
+    };
+    // --- НОВАЯ КОНФИГУРАЦИЯ ---
+    const GRID_Y_OFFSET = -39; // Смещение Y для выравнивания сетки с официальной картой
+    // Глобальные переменные
+    let map;
+    let currentUser = { id: null };
+    let tileData = [];
+    let userMarks = {};
+    let favorites = [];
+    let visibleTiles = new Set();
+    let isInitialLoad = true;
+    let currentAbortController = null;
+    let currentTileForComment = null;
+    let tilesVisible = true;
+    let gridVisible = false;
+    // --- Вспомогательные функции ---
+    function log(message, isError = false) {
+      const now = new Date();
+      const timestamp = `[${now.toLocaleTimeString()}]`;
+      const debugLog = document.getElementById('debug-log');
+      if (!debugLog) return;
+      const logEntry = document.createElement('div');
+      logEntry.textContent = `${timestamp} ${message}`;
+      if (isError) logEntry.style.color = '#e53935';
+      debugLog.appendChild(logEntry);
+      debugLog.scrollTop = debugLog.scrollHeight;
+      console[isError ? 'error' : 'log'](message);
+    }
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type ? 'toast-' + type : ''}`;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+    function showLoader(visible) {
+      document.getElementById('loader').style.display = visible ? 'block' : 'none';
+    }
+    // --- Функции для работы с координатами тайлов ---
+    function plotIdToGeo(plotId) {
+      const totalTiles = CONFIG.TOTAL_TILES;
+      const normalizedId = Math.max(1, Math.min(plotId, totalTiles));
+      const x = (normalizedId - 1) % 256;
+      let y = Math.floor((normalizedId - 1) / 256);
 
-    <script>
-        // ИНИЦИАЛИЗАЦИЯ SUPABASE
-        const supabaseClient = supabase.createClient(
-            'https://vbcnhpsavynwzopvdqcw.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiY25ocHNhdnlud3pvcHZkcWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxODM2OTMsImV4cCI6MjA3NDc1OTY5M30.84WBqv1cEpasCrxoqzNpC5FPhciRHphPGJxhFIcMCmE'
-        );
+      // --- ИСПРАВЛЕНИЕ: Смещение Y ---
+      y = y + GRID_Y_OFFSET;
+      y = Math.max(0, Math.min(255, y)); // Ограничиваем
+      // --- /ИСПРАВЛЕНИЕ ---
 
-        // Конфигурация приложения
-        const CONFIG = {
-            MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
-            INITIAL_VIEW: { center: [32, 54], zoom: 4 },
-            CACHE_TTL: 5 * 60 * 1000, // 5 минут
-            TOTAL_TILES: 256 * 256 // 65536 тайлов
-        };
-
-        // Глобальные переменные
-        let map;
-        let currentUser = { id: null };
-        let tileData = [];
-        let userMarks = {};
-        let favorites = [];
-        let visibleTiles = new Set();
-        let isInitialLoad = true;
-        let debounceTimer = null;
-        let currentAbortController = null;
-        let currentTileForComment = null;
-        let tilesVisible = true;
-        let gridVisible = false;
-
-        // --- Вспомогательные функции ---
-
-        function log(message, isError = false) {
-            const now = new Date();
-            const timestamp = `[${now.toLocaleTimeString()}]`;
-            const debugLog = document.getElementById('debug-log');
-            if (!debugLog) return;
-            
-            const logEntry = document.createElement('div');
-            logEntry.textContent = `${timestamp} ${message}`;
-            if (isError) logEntry.style.color = '#e53935';
-            debugLog.appendChild(logEntry);
-            debugLog.scrollTop = debugLog.scrollHeight;
-            console[isError ? 'error' : 'log'](message);
+      const lng = -180 + (x + 0.5) * (360 / 256);
+      // Убираем старый хак +10
+      const lat = 80 - (y + 0.5) * (160 / 256);
+      return { lng, lat, x, y };
+    }
+    // Загрузка данных тайлов с кешированием
+    function loadTileData() {
+      const CACHE_KEY = 'tileDataCache';
+      if (currentAbortController) currentAbortController.abort();
+      currentAbortController = new AbortController();
+      log(' 🔄  Загрузка тайлов с API GoA...');
+      document.getElementById('tiles-status').textContent = 'Тайлы: ⏳ Загрузка';
+      return fetch('https://back.genesis-of-ages.space/manage/get_tile_info.php', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: currentAbortController.signal
+      })
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then(apiResponse => {
+        if (!apiResponse.success || !apiResponse.tiles) throw new Error('Неверный формат API');
+        tileData = apiResponse.tiles.map(tile => {
+          const plotId = Number(tile.id_tile);
+          if (!Number.isInteger(plotId) || plotId < 1 || plotId > CONFIG.TOTAL_TILES) {
+              log(` ❌  Неверный ID тайла из API: ${tile.id_tile}`, true);
+              return null; // Пропускаем неверный тайл
+          }
+          const coords = plotIdToGeo(plotId);
+          return {
+            id: plotId,
+            lng: coords.lng,
+            lat: coords.lat,
+            gridX: coords.x,
+            gridY: coords.y,
+            has_owner: tile.has_owner ? 'true' : 'false',
+            owner_name: tile.owner_name || null,
+            originalData: tile
+          };
+        }).filter(tile => tile !== null); // Убираем null тайлы
+        document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length}`;
+        renderTiles();
+      })
+      .catch(error => {
+        if (error.name === 'AbortError') {
+          log(' 🔄  Загрузка тайлов отменена');
+          return; // Не вызываем createDemoTiles
         }
-
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast ${type ? 'toast-' + type : ''}`;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        function showLoader(visible) {
-            document.getElementById('loader').style.display = visible ? 'block' : 'none';
-        }
-
-        // --- Функции для работы с координатами тайлов ---
-
-        function plotIdToGeo(plotId) {
-            const totalTiles = CONFIG.TOTAL_TILES;
-            const normalizedId = Math.max(1, Math.min(plotId, totalTiles));
-            const x = (normalizedId - 1) % 256;
-            const y = Math.floor((normalizedId - 1) / 256);
-            const lng = -180 + (x + 0.5) * (360 / 256);
-            
-            // ИСПРАВЛЕНИЕ: Смещаем тайлы на 22 клетки вверх
-            const lat = 80 - (y + 0.5) * (160 / 256) + 22;
-            
-            return { lng, lat, x, y };
-        }
-
-        // Загрузка данных тайлов с кешированием
-        function loadTileData() {
-            const CACHE_KEY = 'tileDataCache';
-            
-            if (currentAbortController) currentAbortController.abort();
-            currentAbortController = new AbortController();
-            
-            log(' 🔄 Загрузка тайлов с API GoA...');
-            document.getElementById('tiles-status').textContent = 'Тайлы: ⏳ Загрузка';
-            
-            return fetch('https://genesis-data.onrender.com/tiles', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                signal: currentAbortController.signal
-            })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return response.json();
-            })
-            .then(apiResponse => {
-                if (!apiResponse.success || !apiResponse.tiles) throw new Error('Неверный формат API');
-                
-                tileData = apiResponse.tiles.map(tile => {
-                    const plotId = parseInt(tile.id_tile);
-                    const coords = plotIdToGeo(plotId);
-                    return {
-                        id: plotId,
-                        lng: coords.lng,
-                        lat: coords.lat,
-                        gridX: coords.x,
-                        gridY: coords.y,
-                        has_owner: tile.has_owner ? 'true' : 'false',
-                        owner_name: tile.owner_name || null,
-                        originalData: tile
-                    };
-                });
-                
-                document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length}`;
-                renderTiles();
-            })
-            .catch(error => {
-                log(` ❌ Ошибка загрузки тайлов: ${error.message}`, true);
-                showToast('Не удалось загрузить тайлы', 'error');
-                document.getElementById('tiles-status').textContent = 'Тайлы: 🔴 Ошибка';
-                createDemoTiles();
-            });
-        }
-
-        function createDemoTiles() {
-            tileData = [];
-            const demoSize = 50;
-            
-            for (let y = 0; y < demoSize; y++) {
-                for (let x = 0; x < demoSize; x++) {
-                    const plotId = y * demoSize + x + 1;
-                    const coords = plotIdToGeo(plotId);
-                    tileData.push({
-                        id: plotId,
-                        lng: coords.lng,
-                        lat: coords.lat,
-                        gridX: x,
-                        gridY: y,
-                        has_owner: Math.random() > 0.7 ? 'true' : 'false',
-                        owner_name: Math.random() > 0.7 ? 'DemoOwner' : null,
-                        originalData: {
-                            id_tile: plotId.toString(),
-                            has_owner: Math.random() > 0.7,
-                            stone_pct: Math.floor(Math.random() * 100),
-                            wood_pct: Math.floor(Math.random() * 100),
-                            fish_pct: Math.floor(Math.random() * 100),
-                            artifacts: Math.floor(Math.random() * 50)
-                        }
-                    });
-                }
+        log(` ❌  Ошибка загрузки тайлов: ${error.message}`, true);
+        showToast('Не удалось загрузить тайлы', 'error');
+        document.getElementById('tiles-status').textContent = 'Тайлы: 🔴 Ошибка';
+        createDemoTiles();
+      });
+    }
+    function createDemoTiles() {
+      tileData = [];
+      const demoSize = 50;
+      for (let y = 0; y < demoSize; y++) {
+        for (let x = 0; x < demoSize; x++) {
+          const plotId = y * demoSize + x + 1;
+          const coords = plotIdToGeo(plotId);
+          tileData.push({
+            id: plotId,
+            lng: coords.lng,
+            lat: coords.lat,
+            gridX: x,
+            gridY: y,
+            has_owner: Math.random() > 0.7 ? 'true' : 'false',
+            owner_name: Math.random() > 0.7 ? 'DemoOwner' : null,
+            originalData: {
+              id_tile: plotId.toString(),
+              has_owner: Math.random() > 0.7,
+              stone_pct: Math.floor(Math.random() * 100),
+              wood_pct: Math.floor(Math.random() * 100),
+              fish_pct: Math.floor(Math.random() * 100),
+              artifacts: Math.floor(Math.random() * 50)
             }
-            
-            document.getElementById('tiles-status').textContent = `Тайлы: 🧪 ${tileData.length} демо`;
-            renderTiles();
+          });
         }
-
-        // --- Аутентификация через код ---
-
-        async function verifyAccessCode(code) {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('access_codes')
-                    .select('user_id, created_at, used')
-                    .eq('code', code)
-                    .single();
-
-                if (error || !data) {
-                    showToast('Неверный код', 'error');
-                    return false;
-                }
-
-                // ВАЖНОЕ ИСПРАВЛЕНИЕ: Supabase возвращает время в UTC, но без указания смещения
-                // Добавляем 'Z' чтобы явно указать что это UTC время
-                const created = new Date(data.created_at + 'Z');
-                const now = new Date();
-
-                // Проверяем разницу во времени (в минутах)
-                const ageInMinutes = (now - created) / (1000 * 60);
-
-                // УВЕЛИЧИВАЕМ ВРЕМЯ ДЕЙСТВИЯ КОДА ДО 60 МИНУТ ДЛЯ ТЕСТИРОВАНИЯ
-                if (ageInMinutes > 60) {
-                    await supabaseClient.from('access_codes').delete().eq('code', code);
-                    showToast('Код устарел', 'error');
-                    return false;
-                }
-
-                if (data.used) {
-                    showToast('Код уже использован', 'error');
-                    return false;
-                }
-
-                // Помечаем код как использованный
-                const { error: updateError } = await supabaseClient
-                    .from('access_codes')
-                    .update({ used: true })
-                    .eq('code', code);
-
-                if (updateError) {
-                    console.error('Ошибка обновления кода:', updateError);
-                    showToast('Ошибка сервера', 'error');
-                    return false;
-                }
-
-                currentUser.id = data.user_id;
-                document.getElementById('code-container').style.display = 'none';
-                initMaplibre();
-                loadUserMarks();
-                showToast('Успешный вход!', 'success');
-                return true;
-            } catch (error) {
-                console.error('Ошибка проверки кода:', error);
-                showToast('Ошибка проверки кода', 'error');
-                return false;
-            }
+      }
+      document.getElementById('tiles-status').textContent = `Тайлы: 🧪 ${tileData.length} демо`;
+      renderTiles();
+    }
+    // --- Аутентификация через код ---
+    async function verifyAccessCode(code) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('access_codes')
+          .select('user_id, created_at, used')
+          .eq('code', code)
+          .single();
+        if (error || !data) {
+          showToast('Неверный код', 'error');
+          return false;
         }
-
-        function setupCodeForm() {
-            const submitButton = document.getElementById('submit-code');
-            const codeInput = document.getElementById('access-code');
-
-            codeInput.addEventListener('input', () => {
-                codeInput.value = codeInput.value.replace(/[^0-9]/g, '');
-            });
-
-            submitButton.addEventListener('click', () => {
-                const code = codeInput.value.trim();
-                if (code.length === 6) {
-                    verifyAccessCode(code);
-                } else {
-                    showToast('Код должен содержать 6 цифр', 'error');
-                }
-            });
-
-            codeInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    const code = codeInput.value.trim();
-                    if (code.length === 6) {
-                        verifyAccessCode(code);
-                    } else {
-                        showToast('Код должен содержать 6 цифр', 'error');
-                    }
-                }
-            });
+        // ВАЖНОЕ ИСПРАВЛЕНИЕ: Supabase возвращает время в UTC, но без указания смещения
+        // Добавляем 'Z' чтобы явно указать что это UTC время
+        const created = new Date(data.created_at + 'Z');
+        const now = new Date();
+        // Расширенная отладка времени
+        console.log('Код найден:', data);
+        console.log('Время создания (UTC):', created.toUTCString());
+        console.log('Время создания (локальное):', created.toLocaleString());
+        console.log('Текущее время (UTC):', now.toUTCString());
+        console.log('Текущее время (локальное):', now.toLocaleString());
+        // Проверяем разницу во времени (в минутах)
+        const ageInMinutes = (now - created) / (1000 * 60);
+        console.log('Возраст кода (минут):', ageInMinutes);
+        // УВЕЛИЧИВАЕМ ВРЕМЯ ДЕЙСТВИЯ КОДА ДО 60 МИНУТ ДЛЯ ТЕСТИРОВАНИЯ
+        if (ageInMinutes > 60) {
+          await supabaseClient.from('access_codes').delete().eq('code', code);
+          showToast('Код устарел', 'error');
+          return false;
         }
-
-        // --- Инициализация MapLibre ---
-
-        function initMaplibre() {
-            try {
-                map = new maplibregl.Map({
-                    container: 'map',
-                    style: CONFIG.MAP_STYLE,
-                    center: CONFIG.INITIAL_VIEW.center,
-                    zoom: CONFIG.INITIAL_VIEW.zoom,
-                    attributionControl: false
-                });
-
-                map.on('load', () => {
-                    log(' 🗺️ Карта загружена');
-                    document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
-                    updateVisibleTiles();
-                    addGridLayer();
-                });
-
-                map.on('moveend', updateVisibleTiles);
-                map.on('zoomend', updateVisibleTiles);
-            } catch (error) {
-                log(` ⚠️ Ошибка инициализации карты: ${error.message}`, true);
-                document.getElementById('map-status').textContent = 'Карта: 🔴 Ошибка';
-                showToast('Ошибка инициализации карты', 'error');
-            }
+        if (data.used) {
+          showToast('Код уже использован', 'error');
+          return false;
         }
-
-        function addGridLayer() {
-            if (!map.getSource('grid-source')) {
-                const gridFeatures = [];
-                
-                for (let x = 0; x <= 256; x++) {
-                    const lng = -180 + x * (360 / 256);
-                    gridFeatures.push({
-                        type: 'Feature',
-                        geometry: {
-                            type: 'LineString',
-                            coordinates: [[lng, -85], [lng, 85]]
-                        },
-                        properties: { type: 'vertical', x }
-                    });
-                }
-                
-                for (let y = 0; y <= 256; y++) {
-                    // ИСПРАВЛЕНИЕ: Смещаем сетку на 22 клетки вверх
-                    const lat = 80 - y * (160 / 256) + 22;
-                    gridFeatures.push({
-                        type: 'Feature',
-                        geometry: {
-                            type: 'LineString',
-                            coordinates: [[-180, lat], [180, lat]]
-                        },
-                        properties: { type: 'horizontal', y }
-                    });
-                }
-
-                map.addSource('grid-source', {
-                    type: 'geojson',
-                    data: { type: 'FeatureCollection', features: gridFeatures }
-                });
-
-                map.addLayer({
-                    id: 'grid-layer',
-                    type: 'line',
-                    source: 'grid-source',
-                    paint: {
-                        'line-color': '#8b4513',
-                        'line-width': 1,
-                        'line-opacity': 0.3
-                    }
-                });
-
-                map.setLayoutProperty('grid-layer', 'visibility', 'none');
-            }
+        // Помечаем код как использованный
+        const { error: updateError } = await supabaseClient
+          .from('access_codes')
+          .update({ used: true })
+          .eq('code', code);
+        if (updateError) {
+          console.error('Ошибка обновления кода:', updateError);
+          showToast('Ошибка сервера', 'error');
+          return false;
         }
-
-        function updateVisibleTiles() {
-            if (!map || !tileData.length) return;
-            
-            const bounds = map.getBounds();
-            visibleTiles.clear();
-            
-            tileData.forEach(tile => {
-                if (bounds.contains([tile.lng, tile.lat])) visibleTiles.add(tile.id);
-            });
-            
-            renderTiles();
-            
-            if (isInitialLoad) { isInitialLoad = false; return; }
-            
-            if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {}, 500);
+        currentUser.id = data.user_id;
+        document.getElementById('code-container').style.display = 'none';
+        initMaplibre();
+        loadUserMarks();
+        showToast('Успешный вход!', 'success');
+        return true;
+      } catch (error) {
+        console.error('Ошибка проверки кода:', error);
+        showToast('Ошибка проверки кода', 'error');
+        return false;
+      }
+    }
+    function setupCodeForm() {
+      const submitButton = document.getElementById('submit-code');
+      const codeInput = document.getElementById('access-code');
+      codeInput.addEventListener('input', () => {
+        codeInput.value = codeInput.value.replace(/[^0-9]/g, '');
+      });
+      submitButton.addEventListener('click', () => {
+        const code = codeInput.value.trim();
+        if (code.length === 6) {
+          verifyAccessCode(code);
+        } else {
+          showToast('Код должен содержать 6 цифр', 'error');
         }
-
-        function renderTiles() {
-            if (!map || !map.isStyleLoaded()) return setTimeout(renderTiles, 100);
-
-            const features = tileData
-                .filter(tile => visibleTiles.has(tile.id))
-                .map(tile => {
-                    const status = getUserMarkStatus(tile.id);
-                    const isFavorite = favorites.includes(tile.id);
-                    const comment = getUserMarkComment(tile.id);
-                    const isOwned = tile.has_owner === 'true';
-
-                    return {
-                        type: 'Feature',
-                        geometry: { type: 'Point', coordinates: [tile.lng, tile.lat] },
-                        properties: {
-                            id: tile.id,
-                            status: status,
-                            isFavorite: isFavorite,
-                            owned: isOwned,
-                            hasComment: !!comment,
-                            owner: tile.owner_name || null,
-                            x: tile.gridX,
-                            y: tile.gridY
-                        }
-                    };
-                });
-
-            if (map.getSource('tiles-source')) {
-                map.getSource('tiles-source').setData({ type: 'FeatureCollection', features });
-            } else {
-                map.addSource('tiles-source', {
-                    type: 'geojson',
-                    data: { type: 'FeatureCollection', features }
-                });
-
-                map.addLayer({
-                    id: 'tiles-layer',
-                    type: 'circle',
-                    source: 'tiles-source',
-                    paint: {
-                        'circle-radius': 5,
-                        'circle-color': [
-                            'case',
-                            ['==', ['get', 'status'], 'ally'], '#1e88e5',
-                            ['==', ['get', 'status'], 'enemy'], '#e53935',
-                            ['==', ['get', 'status'], 'favorite'], '#ffca28',
-                            ['==', ['get', 'hasComment'], true], '#9c27b0',
-                            ['==', ['get', 'owned'], true], '#43a047',
-                            'rgba(166, 124, 82, 0.7)'
-                        ],
-                        'circle-stroke-color': [
-                            'case',
-                            ['==', ['get', 'status'], 'ally'], '#1565c0',
-                            ['==', ['get', 'status'], 'enemy'], '#c62828',
-                            ['==', ['get', 'status'], 'favorite'], '#f57f17',
-                            ['==', ['get', 'hasComment'], true], '#7b1fa2',
-                            ['==', ['get', 'owned'], true], '#2e7d32',
-                            '#5d4037'
-                        ],
-                        'circle-stroke-width': 1
-                    }
-                });
-
-                map.on('click', 'tiles-layer', (e) => {
-                    if (e.features.length > 0) showTilePopup(e.features[0].properties.id, e.lngLat);
-                });
-
-                map.on('mouseenter', 'tiles-layer', () => map.getCanvas().style.cursor = 'pointer');
-                map.on('mouseleave', 'tiles-layer', () => map.getCanvas().style.cursor = '');
-            }
+      });
+      codeInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const code = codeInput.value.trim();
+          if (code.length === 6) {
+            verifyAccessCode(code);
+          } else {
+            showToast('Код должен содержать 6 цифр', 'error');
+          }
         }
-
-        // --- Работа с метками ---
-
-        function getUserMarkComment(tileId) {
-            const marks = userMarks[tileId] || {};
-            for (const type in marks) {
-                if (marks[type] && typeof marks[type] === 'string' && marks[type].trim() !== '') {
-                    return marks[type];
-                }
-            }
-            return null;
-        }
-
-        function getUserMarkStatus(tileId) {
-            const marks = userMarks[tileId] || {};
-            if (marks.ally) return 'ally';
-            if (marks.enemy) return 'enemy';
-            if (marks.favorite) return 'favorite';
-            if (marks.comment) return 'comment';
-            return '';
-        }
-
-        async function loadUserMarks() {
-            if (!currentUser.id) return;
-
-            const { data, error } = await supabaseClient
-                .from('user_marks')
-                .select('tile_id, mark_type, comment')
-                .eq('user_id', currentUser.id);
-
-            if (error) {
-                log(' ❌ Ошибка загрузки меток: ' + error.message, true);
-                return;
-            }
-
-            userMarks = {};
-            favorites = [];
-            
-            data.forEach(mark => {
-                if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
-                userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
-                if (mark.mark_type === 'favorite') favorites.push(mark.tile_id);
-            });
-
-            updateFavoritesDropdown();
-            log(` ✅ Загружено ${data.length} меток`);
-        }
-
-        function updateFavoritesDropdown() {
-            const dropdown = document.getElementById('favorites-dropdown');
-            if (!dropdown) return;
-            
-            const currentValue = dropdown.value;
-            dropdown.innerHTML = '<option value="">Выберите избранный тайл</option>';
-            
-            favorites.forEach(tileId => {
-                const option = document.createElement('option');
-                option.value = tileId;
-                option.textContent = `Тайл #${tileId}`;
-                dropdown.appendChild(option);
-            });
-            
-            if (currentValue && dropdown.querySelector(`option[value="${currentValue}"]`)) {
-                dropdown.value = currentValue;
-            }
-        }
-
-        async function saveMark(tileId, markType, comment = null) {
-            if (!currentUser.id) {
-                showToast('Ошибка: Требуется авторизация', 'error');
-                return;
-            }
-
-            try {
-                if (markType === 'clear') {
-                    await supabaseClient
-                        .from('user_marks')
-                        .delete()
-                        .eq('user_id', currentUser.id)
-                        .eq('tile_id', tileId);
-                } else {
-                    await supabaseClient
-                        .from('user_marks')
-                        .delete()
-                        .eq('user_id', currentUser.id)
-                        .eq('tile_id', tileId);
-                    
-                    await supabaseClient
-                        .from('user_marks')
-                        .insert({
-                            user_id: currentUser.id,
-                            tile_id: tileId,
-                            mark_type: markType,
-                            comment: comment || null
-                        });
-                }
-
-                if (markType === 'clear') {
-                    delete userMarks[tileId];
-                    favorites = favorites.filter(id => id !== tileId);
-                } else {
-                    if (!userMarks[tileId]) userMarks[tileId] = {};
-                    userMarks[tileId][markType] = comment || true;
-                    if (markType === 'favorite') favorites.push(tileId);
-                }
-
-                renderTiles();
-                updateFavoritesDropdown();
-                showToast('Метка сохранена', 'success');
-            } catch (error) {
-                log(' ❌ Ошибка сохранения метки: ' + error.message, true);
-                showToast('Ошибка сохранения метки', 'error');
-            }
-        }
-
-        // --- Попап и модальное окно ---
-
-        function showTilePopup(tileId, lngLat) {
-            const tile = tileData.find(t => t.id === tileId);
-            if (!tile) return;
-
-            const status = getUserMarkStatus(tileId);
-            const isFavorite = favorites.includes(tileId);
-            const comment = getUserMarkComment(tileId);
-            const originalData = tile.originalData;
-
-            let popupContent = `
-                <div class="popup-content">
-                    <h3>Тайл #${tileId}</h3>
-                    <p><strong>Координаты сетки:</strong> X=${tile.gridX}, Y=${tile.gridY}</p>
-                    <p><strong>Гео координаты:</strong> ${tile.lat.toFixed(4)}, ${tile.lng.toFixed(4)}</p>
-                    <p><strong>Статус:</strong> ${tile.has_owner === 'true' ? ' 🟥 Занят' : ' 🟩 Свободен'}</p>
-            `;
-
-            if (tile.owner_name) popupContent += `<p><strong>Владелец:</strong> ${tile.owner_name}</p>`;
-            if (comment) popupContent += `<p><strong>Комментарий:</strong> ${comment}</p>`;
-
-            if (originalData) {
-                popupContent += `
-                    <div style="margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.3); border-radius: 4px;">
-                        <strong>Ресурсы:</strong><br>
-                        📦 Камень: ${originalData.stone_pct || 0}%<br>
-                        🌳 Дерево: ${originalData.wood_pct || 0}%<br>
-                        🐟 Рыба: ${originalData.fish_pct || 0}%<br>
-                        ⚡ Артефакты: ${originalData.artifacts || 0}
-                    </div>
-                `;
-            }
-
-            popupContent += `
-                <p><strong>Метка:</strong> ${status || '---'}</p>
-                <div class="popup-actions">
-                    <button class="mark-btn" data-id="${tileId}" data-type="ally">🟩 Союзник</button>
-                    <button class="mark-btn" data-id="${tileId}" data-type="enemy">🟥 Враг</button>
-                    <button class="mark-btn" data-id="${tileId}" data-type="favorite"> ⭐ Избранное</button>
-                    <button class="comment-btn" data-id="${tileId}"> 💬 Комментарий</button>
-                    <button class="mark-btn" data-id="${tileId}" data-type="clear">⚪ Сброс</button>
-                </div>
-                </div>
-            `;
-
-            const popup = new maplibregl.Popup().setLngLat(lngLat).setHTML(popupContent).addTo(map);
-
-            setTimeout(() => {
-                document.querySelectorAll('.mark-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.dataset.id;
-                        const type = btn.dataset.type;
-                        saveMark(id, type);
-                        popup.remove();
-                    });
-                });
-
-                document.querySelectorAll('.comment-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.dataset.id;
-                        showCommentModal(id);
-                        popup.remove();
-                    });
-                });
-            }, 100);
-        }
-
-        function showCommentModal(tileId) {
-            currentTileForComment = tileId;
-            const comment = getUserMarkComment(tileId) || '';
-            document.getElementById('comment-tile-id').textContent = tileId;
-            document.getElementById('comment-text').value = comment;
-            document.getElementById('comment-modal').style.display = 'flex';
-        }
-
-        function hideCommentModal() {
-            document.getElementById('comment-modal').style.display = 'none';
-            currentTileForComment = null;
-        }
-
-        function saveComment() {
-            if (!currentTileForComment) return;
-            const commentText = document.getElementById('comment-text').value.trim();
-            saveMark(currentTileForComment, 'comment', commentText);
-            hideCommentModal();
-        }
-
-        // --- Прочие функции (поиск, сброс, тема и т.д.) ---
-
-        function focusOnTile(tileId) {
-            const tile = tileData.find(t => t.id === parseInt(tileId));
-            if (tile) {
-                map.flyTo({ center: [tile.lng, tile.lat], zoom: 10, essential: true });
-                setTimeout(() => showTilePopup(tile.id, [tile.lng, tile.lat]), 1000);
-                return true;
-            }
-            return false;
-        }
-
-        function toggleTilesVisibility() {
-            tilesVisible = !tilesVisible;
-            if (map.getLayer('tiles-layer')) {
-                map.setLayoutProperty('tiles-layer', 'visibility', tilesVisible ? 'visible' : 'none');
-            }
-            document.getElementById('load-tiles-btn').classList.toggle('active', tilesVisible);
-            showToast(tilesVisible ? 'Тайлы показаны' : 'Тайлы скрыты', 'info');
-        }
-
-        function toggleGridVisibility() {
-            gridVisible = !gridVisible;
-            if (map.getLayer('grid-layer')) {
-                map.setLayoutProperty('grid-layer', 'visibility', gridVisible ? 'visible' : 'none');
-            }
-            document.getElementById('toggle-grid-btn').classList.toggle('active', gridVisible);
-            showToast(gridVisible ? 'Сетка тайлов показана' : 'Сетка тайлов скрыта', 'info');
-        }
-
-        function toggleTheme() {
-            const isDark = document.body.classList.contains('dark-theme');
-            document.body.classList.toggle('dark-theme', !isDark);
-            localStorage.setItem('theme', isDark ? 'light' : 'dark');
-            const icon = document.querySelector('#theme-toggle i');
-            icon.textContent = isDark ? 'brightness_4' : 'brightness_7';
-            showToast(isDark ? 'Светлая тема активирована' : 'Темная тема активирована', 'success');
-        }
-
-        function initEventListeners() {
-            // Поиск по кнопке вместо автоматического
-            document.getElementById('search-btn').addEventListener('click', () => {
-                const value = document.getElementById('search').value.trim();
-                if (value) {
-                    const tileId = parseInt(value);
-                    if (!isNaN(tileId) && tileId >= 1 && tileId <= CONFIG.TOTAL_TILES) {
-                        if (focusOnTile(tileId)) {
-                            showToast(`Тайл #${tileId} найден`, 'success');
-                        } else {
-                            showToast(`Тайл #${tileId} не найден`, 'warning');
-                        }
-                    } else {
-                        showToast('Введите корректный ID тайла (1-65536)', 'error');
-                    }
-                }
-            });
-
-            // Поиск по Enter
-            document.getElementById('search').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    document.getElementById('search-btn').click();
-                }
-            });
-
-            document.getElementById('status-filter').addEventListener('change', (e) => {
-                const filterValue = e.target.value;
-                if (filterValue === 'comment') {
-                    const tilesWithComments = tileData.filter(tile => {
-                        const comment = getUserMarkComment(tile.id);
-                        return comment && comment.trim() !== '';
-                    });
-                    
-                    if (tilesWithComments.length > 0) {
-                        const bounds = new maplibregl.LngLatBounds();
-                        tilesWithComments.forEach(tile => bounds.extend([tile.lng, tile.lat]));
-                        map.fitBounds(bounds, { padding: 20 });
-                        showToast(`Найдено ${tilesWithComments.length} тайлов с комментариями`, 'success');
-                    } else {
-                        showToast('Тайлы с комментариями не найдены', 'warning');
-                    }
-                } else {
-                    updateVisibleTiles();
-                }
-            });
-
-            document.getElementById('favorites-dropdown').addEventListener('change', (e) => {
-                const tileId = parseInt(e.target.value);
-                if (tileId) {
-                    focusOnTile(tileId);
-                    e.target.value = '';
-                }
-            });
-
-            document.getElementById('reset').addEventListener('click', () => {
-                document.getElementById('search').value = '';
-                document.getElementById('status-filter').value = '';
-                document.getElementById('favorites-dropdown').value = '';
-                map.flyTo({ center: CONFIG.INITIAL_VIEW.center, zoom: CONFIG.INITIAL_VIEW.zoom, essential: true });
-            });
-
-            document.getElementById('screenshot-btn').addEventListener('click', () => {
-                showToast('Снимок карты сохранен', 'success');
-            });
-
-            document.getElementById('load-tiles-btn').addEventListener('click', () => toggleTilesVisibility());
-            document.getElementById('toggle-grid-btn').addEventListener('click', () => toggleGridVisibility());
-            document.getElementById('theme-toggle').addEventListener('click', () => toggleTheme());
-
-            document.getElementById('toggle-panel').addEventListener('click', () => {
-                const panel = document.getElementById('control-panel');
-                panel.classList.toggle('panel-collapsed');
-                const icon = document.querySelector('#toggle-panel i');
-                icon.textContent = panel.classList.contains('panel-collapsed') ? 'keyboard_arrow_down' : 'keyboard_arrow_up';
-            });
-
-            document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
-            document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
-
-            document.getElementById('locate-me').addEventListener('click', () => {
-                showLoader(true);
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 12, essential: true });
-                        showLoader(false);
-                    },
-                    (err) => {
-                        showLoader(false);
-                        log(' ⚠️ Ошибка геолокации: ' + err.message, true);
-                        showToast('Не удалось определить местоположение', 'error');
-                    }
-                );
-            });
-
-            document.getElementById('cancel-comment').addEventListener('click', hideCommentModal);
-            document.getElementById('save-comment').addEventListener('click', saveComment);
-
-            document.getElementById('comment-modal').addEventListener('click', (e) => {
-                if (e.target.id === 'comment-modal') hideCommentModal();
-            });
-
-            document.getElementById('debug-toggle').addEventListener('click', () => {
-                const debug = document.getElementById('debug');
-                debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
-            });
-
-            // СВЕТЛАЯ ТЕМА ПО УМОЛЧАНИЮ
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark-theme');
-                document.querySelector('#theme-toggle i').textContent = 'brightness_7';
-            } else {
-                document.body.classList.remove('dark-theme');
-                document.querySelector('#theme-toggle i').textContent = 'brightness_4';
-            }
-        }
-
-        // Функция тестирования API --- скрыта в продакшене
-        function setupTestAPIButton() {
-            const testButton = document.getElementById('test-api-btn');
-            if (window.location.hostname !== 'localhost') {
-                testButton.style.display = 'none';
-                return;
-            }
-
-            testButton.addEventListener('click', () => {
-                showToast('Тест API недоступен в новой архитектуре', 'warning');
-            });
-        }
-
-        // --- Запуск приложения ---
-
-        document.addEventListener('DOMContentLoaded', () => {
-            log(' 🚀 Запуск GENESIS WAR MAP на Supabase');
-            document.getElementById('code-container').style.display = 'flex';
-            setupCodeForm();
-            initEventListeners();
-            setupTestAPIButton();
-            loadTileData();
+      });
+    }
+    // --- Инициализация MapLibre ---
+    function initMaplibre() {
+      try {
+        map = new maplibregl.Map({
+          container: 'map',
+          style: CONFIG.MAP_STYLE,
+          center: CONFIG.INITIAL_VIEW.center,
+          zoom: CONFIG.INITIAL_VIEW.zoom,
+          attributionControl: false
         });
-    </script>
+        map.on('load', () => {
+          log(' 🗺️  Карта загружена');
+          document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
+          updateVisibleTiles();
+          addGridLayer();
+        });
+        map.on('moveend', updateVisibleTiles);
+        map.on('zoomend', updateVisibleTiles);
+      } catch (error) {
+        log(` ⚠️  Ошибка инициализации карты: ${error.message}`, true);
+        document.getElementById('map-status').textContent = 'Карта: 🔴 Ошибка';
+        showToast('Ошибка инициализации карты', 'error');
+      }
+    }
+    function addGridLayer() {
+      if (!map.getSource('grid-source')) {
+        const gridFeatures = [];
+        for (let x = 0; x <= 256; x++) {
+          const lng = -180 + x * (360 / 256);
+          gridFeatures.push({ 
+            type: 'Feature', 
+            geometry: { 
+              type: 'LineString', 
+              coordinates: [[lng, -85], [lng, 85]] 
+            }, 
+            properties: { type: 'vertical', x } 
+          });
+        }
+        for (let y = 0; y <= 256; y++) {
+          // --- ИСПРАВЛЕНИЕ: Смещение Y для сетки ---
+          const correctedY = y + GRID_Y_OFFSET;
+          if (correctedY < 0 || correctedY > 255) continue; // Пропускаем невидимые линии
+          const lat = 80 - correctedY * (160 / 256);
+          // --- /ИСПРАВЛЕНИЕ ---
+          gridFeatures.push({ 
+            type: 'Feature', 
+            geometry: { 
+              type: 'LineString', 
+              coordinates: [[-180, lat], [180, lat]] 
+            }, 
+            properties: { type: 'horizontal', y: correctedY } 
+          });
+        }
+        map.addSource('grid-source', { 
+          type: 'geojson', 
+          data: { type: 'FeatureCollection', features: gridFeatures } 
+        });
+        map.addLayer({ 
+          id: 'grid-layer', 
+          type: 'line', 
+          source: 'grid-source', 
+          paint: { 
+            'line-color': '#8b4513', 
+            'line-width': 1, 
+            'line-opacity': 0.3 
+          } 
+        });
+        map.setLayoutProperty('grid-layer', 'visibility', 'none');
+      }
+    }
+    function updateVisibleTiles() {
+      if (!map || !tileData.length) return;
+      const bounds = map.getBounds();
+      visibleTiles.clear();
+      tileData.forEach(tile => {
+        if (bounds.contains([tile.lng, tile.lat])) visibleTiles.add(tile.id);
+      });
+      renderTiles();
+      if (isInitialLoad) { isInitialLoad = false; return; }
+      // Убран setTimeout и debounceTimer
+    }
+    function renderTiles() {
+      if (!map || !map.isStyleLoaded()) return requestAnimationFrame(renderTiles); // Используем rAF
+      // Увеличиваем размер точек при приближении и скрываем при отдалении
+      const zoom = map.getZoom();
+      let visibility = 'visible';
+      // Адаптивный размер точек в зависимости от зума
+      const minRadius = Math.max(2, zoom * 1.5);
+      const maxRadius = Math.max(6, zoom * 2);
+      const features = tileData
+        .filter(tile => visibleTiles.has(tile.id))
+        .map(tile => {
+          const status = getUserMarkStatus(tile.id);
+          const isFavorite = favorites.includes(tile.id);
+          const comment = getUserMarkComment(tile.id);
+          const isOwned = tile.has_owner === 'true';
+          return {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [tile.lng, tile.lat] },
+            properties: {
+              id: tile.id,
+              status: status,
+              isFavorite: isFavorite,
+              owned: isOwned,
+              hasComment: !!comment,
+              owner: tile.owner_name || null,
+              x: tile.gridX,
+              y: tile.gridY
+            }
+          };
+        });
+      if (map.getSource('tiles-source')) {
+        map.getSource('tiles-source').setData({ type: 'FeatureCollection', features });
+        map.setLayoutProperty('tiles-layer', 'visibility', visibility);
+      } else {
+        map.addSource('tiles-source', { 
+          type: 'geojson', 
+          data: { type: 'FeatureCollection', features } 
+        });
+        map.addLayer({
+          id: 'tiles-layer',
+          type: 'circle',
+          source: 'tiles-source',
+          paint: {
+            // Увеличиваем размер точек и делаем адаптивными
+            'circle-radius': [
+              'interpolate', ['linear'], ['zoom'],
+              3, 4,    // При zoom 3 - радиус 4
+              6, 8,    // При zoom 6 - радиус 8  
+              10, 12   // При zoom 10 - радиус 12
+            ],
+            'circle-color': [
+              'case', 
+              ['==', ['get', 'status'], 'ally'], '#1e88e5',
+              ['==', ['get', 'status'], 'enemy'], '#e53935', 
+              ['==', ['get', 'status'], 'favorite'], '#ffca28',
+              ['==', ['get', 'hasComment'], true], '#9c27b0',
+              // Разные цвета для занятых и свободных тайлов
+              ['==', ['get', 'owned'], true], '#43a047',
+              'rgba(166, 124, 82, 0.7)'
+            ],
+            'circle-stroke-color': [
+              'case',
+              ['==', ['get', 'status'], 'ally'], '#1565c0',
+              ['==', ['get', 'status'], 'enemy'], '#c62828',
+              ['==', ['get', 'status'], 'favorite'], '#f57f17',
+              ['==', ['get', 'hasComment'], true], '#7b1fa2',
+              ['==', ['get', 'owned'], true], '#2e7d32',
+              '#5d4037'
+            ],
+            'circle-stroke-width': [
+              'interpolate', ['linear'], ['zoom'], 
+              3, 1, 
+              6, 1.5, 
+              10, 2
+            ]
+          }
+        });
+        map.setLayoutProperty('tiles-layer', 'visibility', visibility);
+        map.on('click', 'tiles-layer', (e) => {
+          if (e.features.length > 0) showTilePopup(e.features[0].properties.id, e.lngLat);
+        });
+        map.on('mouseenter', 'tiles-layer', () => map.getCanvas().style.cursor = 'pointer');
+        map.on('mouseleave', 'tiles-layer', () => map.getCanvas().style.cursor = '');
+      }
+    }
+    // --- Работа с метками ---
+    function getUserMarkComment(tileId) {
+      const marks = userMarks[tileId] || {};
+      for (const type in marks) {
+        // Проверяем, что значение существует и является строкой
+        if (marks[type] && typeof marks[type] === 'string' && marks[type].trim() !== '') {
+          return marks[type];
+        }
+      }
+      return null;
+    }
+    function getUserMarkStatus(tileId) {
+      const marks = userMarks[tileId] || {};
+      if (marks.ally) return 'ally';
+      if (marks.enemy) return 'enemy';
+      if (marks.favorite) return 'favorite';
+      if (marks.comment) return 'comment';
+      return '';
+    }
+    async function loadUserMarks() {
+      if (!currentUser.id) return;
+      const { data, error } = await supabaseClient
+        .from('user_marks')
+        .select('tile_id, mark_type, comment')
+        .eq('user_id', currentUser.id);
+      if (error) {
+        log(' ❌  Ошибка загрузки меток: ' + error.message, true);
+        return;
+      }
+      userMarks = {};
+      favorites = [];
+      data.forEach(mark => {
+        if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
+        userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
+        if (mark.mark_type === 'favorite') favorites.push(Number(mark.tile_id));
+      });
+      updateFavoritesDropdown();
+      log(` ✅  Загружено ${data.length} меток`);
+    }
+    function updateFavoritesDropdown() {
+      const dropdown = document.getElementById('favorites-dropdown');
+      if (!dropdown) return;
+      const currentValue = dropdown.value;
+      dropdown.innerHTML = '<option value="">Выберите избранный тайл</option>';
+      favorites.forEach(tileId => {
+        const option = document.createElement('option');
+        option.value = tileId;
+        option.textContent = `Тайл #${tileId}`;
+        dropdown.appendChild(option);
+      });
+      if (currentValue && dropdown.querySelector(`option[value="${currentValue}"]`)) {
+        dropdown.value = currentValue;
+      }
+    }
+    async function saveMark(tileId, markType, comment = null) {
+      if (!currentUser.id) {
+        showToast('Ошибка: Требуется авторизация', 'error');
+        return;
+      }
+      try {
+        if (markType === 'clear') {
+          await supabaseClient
+            .from('user_marks')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('tile_id', tileId);
+        } else {
+          await supabaseClient
+            .from('user_marks')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('tile_id', tileId);
+          await supabaseClient
+            .from('user_marks')
+            .insert({
+              user_id: currentUser.id,
+              tile_id: tileId,
+              mark_type: markType,
+              comment: comment || null
+            });
+        }
+        if (markType === 'clear') {
+          delete userMarks[tileId];
+          favorites = favorites.filter(id => id !== tileId);
+        } else {
+          if (!userMarks[tileId]) userMarks[tileId] = {};
+          userMarks[tileId][markType] = comment || true;
+          if (markType === 'favorite') favorites.push(tileId);
+        }
+        renderTiles();
+        updateFavoritesDropdown();
+        showToast('Метка сохранена', 'success');
+      } catch (error) {
+        log(' ❌  Ошибка сохранения метки: ' + error.message, true);
+        showToast('Ошибка сохранения метки', 'error');
+      }
+    }
+    // --- Попап и модальное окно ---
+    let currentPopup = null; // Ссылка на активный попап
+
+    function showTilePopup(tileId, lngLat) {
+      // Удаляем предыдущий попап, если он есть
+      if (currentPopup) {
+        currentPopup.remove();
+        currentPopup = null;
+      }
+
+      const tile = tileData.find(t => t.id === tileId);
+      if (!tile) return;
+
+      const status = getUserMarkStatus(tileId);
+      const isFavorite = favorites.includes(tileId);
+      const comment = getUserMarkComment(tileId);
+      const originalData = tile.originalData;
+
+      // --- ИСПРАВЛЕНИЕ: Безопасное отображение данных ---
+      const popupContentElement = document.createElement('div');
+      popupContentElement.className = 'popup-content';
+
+      const h3 = document.createElement('h3');
+      h3.textContent = `Тайл #${tileId}`;
+      popupContentElement.appendChild(h3);
+
+      const pCoords = document.createElement('p');
+      pCoords.textContent = `Координаты сетки: X=${tile.gridX}, Y=${tile.gridY}`;
+      popupContentElement.appendChild(pCoords);
+
+      const pGeo = document.createElement('p');
+      pGeo.textContent = `Гео координаты: ${tile.lat.toFixed(4)}, ${tile.lng.toFixed(4)}`;
+      popupContentElement.appendChild(pGeo);
+
+      const pStatus = document.createElement('p');
+      pStatus.textContent = `Статус: ${tile.has_owner === 'true' ? ' 🟥  Занят' : ' 🟩  Свободен'}`;
+      popupContentElement.appendChild(pStatus);
+
+      if (tile.owner_name) {
+        const pOwner = document.createElement('p');
+        pOwner.textContent = `Владелец: ${tile.owner_name}`;
+        popupContentElement.appendChild(pOwner);
+      }
+
+      if (comment) {
+        const pComment = document.createElement('p');
+        pComment.textContent = `Комментарий: ${comment}`;
+        popupContentElement.appendChild(pComment);
+      }
+
+      if (originalData) {
+        const resourcesDiv = document.createElement('div');
+        resourcesDiv.style.marginTop = '10px';
+        resourcesDiv.style.padding = '8px';
+        resourcesDiv.style.background = 'rgba(255,255,255,0.3)';
+        resourcesDiv.style.borderRadius = '4px';
+        resourcesDiv.innerHTML = `<strong>Ресурсы:</strong><br>
+  📦  Камень: <span>${originalData.stone_pct || 0}%</span><br>
+  🌳  Дерево: <span>${originalData.wood_pct || 0}%</span><br>
+  🐟  Рыба: <span>${originalData.fish_pct || 0}%</span><br>
+  ⚡  Артефакты: <span>${originalData.artifacts || 0}</span>`;
+        popupContentElement.appendChild(resourcesDiv);
+      }
+
+      const pMarkStatus = document.createElement('p');
+      pMarkStatus.textContent = `Метка: ${status || '—'}`;
+      popupContentElement.appendChild(pMarkStatus);
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'popup-actions';
+
+      const btnAlly = document.createElement('button');
+      btnAlly.className = 'mark-btn';
+      btnAlly.dataset.id = tileId;
+      btnAlly.dataset.type = 'ally';
+      btnAlly.textContent = ' 🟩  Союзник';
+      actionsDiv.appendChild(btnAlly);
+
+      const btnEnemy = document.createElement('button');
+      btnEnemy.className = 'mark-btn';
+      btnEnemy.dataset.id = tileId;
+      btnEnemy.dataset.type = 'enemy';
+      btnEnemy.textContent = ' 🟥  Враг';
+      actionsDiv.appendChild(btnEnemy);
+
+      const btnFavorite = document.createElement('button');
+      btnFavorite.className = 'mark-btn';
+      btnFavorite.dataset.id = tileId;
+      btnFavorite.dataset.type = 'favorite';
+      btnFavorite.textContent = ' ⭐  Избранное';
+      actionsDiv.appendChild(btnFavorite);
+
+      const btnComment = document.createElement('button');
+      btnComment.className = 'comment-btn';
+      btnComment.dataset.id = tileId;
+      btnComment.textContent = ' 💬  Комментарий';
+      actionsDiv.appendChild(btnComment);
+
+      const btnClear = document.createElement('button');
+      btnClear.className = 'mark-btn';
+      btnClear.dataset.id = tileId;
+      btnClear.dataset.type = 'clear';
+      btnClear.textContent = ' ⚪  Сброс';
+      actionsDiv.appendChild(btnClear);
+
+      popupContentElement.appendChild(actionsDiv);
+
+      // --- /ИСПРАВЛЕНИЕ ---
+
+      currentPopup = new maplibregl.Popup({ closeOnClick: false })
+        .setLngLat(lngLat)
+        .setDOMContent(popupContentElement)
+        .addTo(map);
+
+      // Обработчики событий добавляем в колбэке open
+      currentPopup.on('open', () => {
+        // Убедимся, что элементы существуют
+        const markButtons = currentPopup.getContainer().querySelectorAll('.mark-btn');
+        const commentButtons = currentPopup.getContainer().querySelectorAll('.comment-btn');
+
+        markButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = Number(btn.dataset.id);
+            const type = btn.dataset.type;
+            if (Number.isInteger(id) && id >= 1 && id <= CONFIG.TOTAL_TILES) {
+                saveMark(id, type);
+                currentPopup.remove();
+                currentPopup = null;
+            }
+          });
+        });
+
+        commentButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = Number(btn.dataset.id);
+            if (Number.isInteger(id) && id >= 1 && id <= CONFIG.TOTAL_TILES) {
+                showCommentModal(id);
+                currentPopup.remove();
+                currentPopup = null;
+            }
+          });
+        });
+      });
+    }
+
+    function showCommentModal(tileId) {
+      currentTileForComment = tileId;
+      const comment = getUserMarkComment(tileId) || '';
+      document.getElementById('comment-tile-id').textContent = tileId;
+      document.getElementById('comment-text').value = comment;
+      document.getElementById('comment-modal').style.display = 'flex';
+    }
+    function hideCommentModal() {
+      document.getElementById('comment-modal').style.display = 'none';
+      currentTileForComment = null;
+    }
+    function saveComment() {
+      if (!currentTileForComment) return;
+      const commentText = document.getElementById('comment-text').value.trim();
+      saveMark(currentTileForComment, 'comment', commentText);
+      hideCommentModal();
+    }
+    // --- Прочие функции (поиск, сброс, тема и т.д.) ---
+    function focusOnTile(tileId) {
+      const parsedId = Number(tileId);
+      if (!Number.isInteger(parsedId) || parsedId < 1 || parsedId > CONFIG.TOTAL_TILES) {
+        log(` ❌  Неверный ID тайла для фокуса: ${tileId}`, true);
+        return false;
+      }
+      const tile = tileData.find(t => t.id === parsedId);
+      if (tile) {
+        map.flyTo({ center: [tile.lng, tile.lat], zoom: 10, essential: true });
+        setTimeout(() => showTilePopup(tile.id, [tile.lng, tile.lat]), 1000);
+        return true;
+      }
+      return false;
+    }
+    function toggleTilesVisibility() {
+      tilesVisible = !tilesVisible;
+      if (map.getLayer('tiles-layer')) {
+        map.setLayoutProperty('tiles-layer', 'visibility', tilesVisible ? 'visible' : 'none');
+      }
+      document.getElementById('load-tiles-btn').classList.toggle('active', tilesVisible);
+      showToast(tilesVisible ? 'Тайлы показаны' : 'Тайлы скрыты', 'info');
+    }
+    function toggleGridVisibility() {
+      gridVisible = !gridVisible;
+      if (map.getLayer('grid-layer')) {
+        map.setLayoutProperty('grid-layer', 'visibility', gridVisible ? 'visible' : 'none');
+      }
+      document.getElementById('toggle-grid-btn').classList.toggle('active', gridVisible);
+      showToast(gridVisible ? 'Сетка тайлов показана' : 'Сетка тайлов скрыта', 'info');
+    }
+    function toggleTheme() {
+      const isDark = document.body.classList.contains('dark-theme');
+      document.body.classList.toggle('dark-theme', !isDark);
+      try {
+          localStorage.setItem('theme', isDark ? 'light' : 'dark');
+      } catch (e) {
+          console.error("Ошибка сохранения темы в localStorage:", e);
+      }
+      const icon = document.querySelector('#theme-toggle i');
+      icon.textContent = isDark ? 'brightness_4' : 'brightness_7';
+      showToast(isDark ? 'Светлая тема активирована' : 'Темная тема активирована', 'success');
+    }
+    function initEventListeners() {
+      // Поиск по кнопке вместо автоматического
+      document.getElementById('search-btn').addEventListener('click', () => {
+        const value = document.getElementById('search').value.trim();
+        if (value) {
+          const tileId = Number(value);
+          if (Number.isInteger(tileId) && tileId >= 1 && tileId <= CONFIG.TOTAL_TILES) {
+            if (focusOnTile(tileId)) {
+              showToast(`Тайл #${tileId} найден`, 'success');
+            } else {
+              showToast(`Тайл #${tileId} не найден`, 'warning');
+            }
+          } else {
+            showToast('Введите корректный ID тайла (1-65536)', 'error');
+          }
+        }
+      });
+      // Поиск по Enter
+      document.getElementById('search').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('search-btn').click();
+        }
+      });
+      document.getElementById('status-filter').addEventListener('change', (e) => {
+        const filterValue = e.target.value;
+        if (filterValue === 'comment') {
+          const tilesWithComments = tileData.filter(tile => {
+            const comment = getUserMarkComment(tile.id);
+            return comment && comment.trim() !== '';
+          });
+          if (tilesWithComments.length > 0) {
+            const bounds = new maplibregl.LngLatBounds();
+            tilesWithComments.forEach(tile => bounds.extend([tile.lng, tile.lat]));
+            map.fitBounds(bounds, { padding: 20 });
+            showToast(`Найдено ${tilesWithComments.length} тайлов с комментариями`, 'success');
+          } else {
+            showToast('Тайлы с комментариями не найдены', 'warning');
+          }
+        } else {
+          updateVisibleTiles();
+        }
+      });
+      document.getElementById('favorites-dropdown').addEventListener('change', (e) => {
+        const tileId = Number(e.target.value);
+        if (Number.isInteger(tileId) && tileId >= 1 && tileId <= CONFIG.TOTAL_TILES) {
+          focusOnTile(tileId);
+          e.target.value = ''; // Сбрасываем значение
+        }
+      });
+      document.getElementById('reset').addEventListener('click', () => {
+        document.getElementById('search').value = '';
+        document.getElementById('status-filter').value = '';
+        document.getElementById('favorites-dropdown').value = '';
+        map.flyTo({ center: CONFIG.INITIAL_VIEW.center, zoom: CONFIG.INITIAL_VIEW.zoom, essential: true });
+      });
+      document.getElementById('screenshot-btn').addEventListener('click', () => {
+        showToast('Снимок карты сохранен', 'success');
+      });
+      document.getElementById('load-tiles-btn').addEventListener('click', () => toggleTilesVisibility());
+      document.getElementById('toggle-grid-btn').addEventListener('click', () => toggleGridVisibility());
+      document.getElementById('theme-toggle').addEventListener('click', () => toggleTheme());
+      document.getElementById('toggle-panel').addEventListener('click', () => {
+        const panel = document.getElementById('control-panel');
+        panel.classList.toggle('panel-collapsed');
+        const icon = document.querySelector('#toggle-panel i');
+        icon.textContent = panel.classList.contains('panel-collapsed') ? 'keyboard_arrow_down' : 'keyboard_arrow_up';
+      });
+      document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
+      document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
+      document.getElementById('locate-me').addEventListener('click', () => {
+        showLoader(true);
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 12, essential: true });
+            showLoader(false);
+          },
+          (err) => {
+            showLoader(false);
+            log(' ⚠️  Ошибка геолокации: ' + err.message, true);
+            showToast('Не удалось определить местоположение', 'error');
+          }
+        );
+      });
+      document.getElementById('cancel-comment').addEventListener('click', hideCommentModal);
+      document.getElementById('save-comment').addEventListener('click', saveComment);
+      document.getElementById('comment-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'comment-modal') hideCommentModal();
+      });
+      document.getElementById('debug-toggle').addEventListener('click', () => {
+        const debug = document.getElementById('debug');
+        debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
+      });
+
+      // --- ИСПРАВЛЕНИЕ: Установка иконки темы ---
+      let savedTheme;
+      try {
+          savedTheme = localStorage.getItem('theme') || 'light';
+      } catch (e) {
+          console.error("Ошибка чтения темы из localStorage:", e);
+          savedTheme = 'light';
+      }
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-theme');
+        document.querySelector('#theme-toggle i').textContent = 'brightness_7';
+      } else {
+        document.body.classList.remove('dark-theme');
+        document.querySelector('#theme-toggle i').textContent = 'brightness_4';
+      }
+      // --- /ИСПРАВЛЕНИЕ ---
+    }
+    // Функция тестирования API — скрыта в продакшене
+    function setupTestAPIButton() {
+      const testButton = document.getElementById('test-api-btn');
+      if (window.location.hostname !== 'localhost') {
+        testButton.style.display = 'none';
+        return;
+      }
+      testButton.addEventListener('click', () => {
+        showToast('Тест API недоступен в новой архитектуре', 'warning');
+      });
+    }
+    // --- Запуск приложения ---
+    document.addEventListener('DOMContentLoaded', () => {
+      log(' 🚀  Запуск GENESIS WAR MAP на Supabase');
+      document.getElementById('code-container').style.display = 'flex';
+      setupCodeForm();
+      initEventListeners();
+      setupTestAPIButton();
+      loadTileData();
+    });
+  </script>
 </body>
 </html>
