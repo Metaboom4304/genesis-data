@@ -864,7 +864,7 @@
     </div>
     <!-- Кнопки управления сеткой внизу карты -->
     <div class="grid-controls">
-      <button class="grid-control-btn" id="load-tiles-btn" title="Загрузить/скрыть тайлы">
+      <button class="grid-control-btn" id="load-tiles-btn" title="Показать/скрыть тайлы">
         <i class="material-icons">map</i>
       </button>
       <button class="grid-control-btn" id="toggle-grid-btn" title="Показать/скрыть сетку">
@@ -926,7 +926,7 @@
     let isInitialLoad = true;
     let currentAbortController = null;
     let currentTileForComment = null;
-    let tilesVisible = true;
+    let tilesVisible = true; // По умолчанию тайлы включены
     let gridVisible = false;
     let currentPopup = null; // Ссылка на активный попап
 
@@ -1009,7 +1009,7 @@
           };
         }).filter(tile => tile !== null); // Убираем null тайлы
         document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length}`;
-        renderTiles();
+        renderTiles(); // Вызываем рендер после загрузки данных
       })
       .catch(error => {
         if (error.name === 'AbortError') {
@@ -1049,7 +1049,7 @@
         }
       }
       document.getElementById('tiles-status').textContent = `Тайлы: 🧪 ${tileData.length} демо`;
-      renderTiles();
+      renderTiles(); // Вызываем рендер после создания демо-данных
     }
 
     // --- Аутентификация через код ---
@@ -1148,7 +1148,7 @@
         map.on('load', () => {
           log(' 🗺️  Карта загружена');
           document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
-          updateVisibleTiles();
+          updateVisibleTiles(); // Вызываем обновление видимых тайлов после загрузки карты
           addGridLayer();
         });
         map.on('moveend', updateVisibleTiles);
@@ -1191,7 +1191,7 @@
         // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
         map.addSource('grid-source', { 
           type: 'geojson', 
-          data: { type: 'FeatureCollection', features: gridFeatures } 
+           { type: 'FeatureCollection', features: gridFeatures } 
         });
         // --- /ИСПРАВЛЕНИЕ ---
         map.addLayer({ 
@@ -1225,8 +1225,8 @@
       const zoom = map.getZoom();
       let visibility = 'visible';
 
-      // Скрываем точки при низком зуме
-      if (zoom < 5) {
+      // Скрываем точки при низком зуме (уменьшил порог с 5 до 3)
+      if (zoom < 3) {
         visibility = 'none';
       }
 
@@ -1262,7 +1262,7 @@
         // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
         map.addSource('tiles-source', { 
           type: 'geojson', 
-          data: { type: 'FeatureCollection', features: features } 
+           { type: 'FeatureCollection', features: features } 
         });
         // --- /ИСПРАВЛЕНИЕ ---
         map.addLayer({
@@ -1270,17 +1270,18 @@
           type: 'circle',
           source: 'tiles-source',
           paint: {
-            // Минимальный и максимальный зум для отображения точек
+            // Увеличил минимальный и максимальный радиусы
             'circle-radius': [
               'interpolate', ['linear'], ['zoom'],
-              3, 4,    // При zoom 3 - радиус 4
-              6, 8,    // При zoom 6 - радиус 8  
+              2, 3,    // При zoom 2 - радиус 3
+              4, 5,    // При zoom 4 - радиус 5
+              6, 8,    // При zoom 6 - радиус 8
               10, 12   // При zoom 10 - радиус 12
             ],
             'circle-color': [
-              'case', 
+              'case',
               ['==', ['get', 'status'], 'ally'], '#1e88e5',
-              ['==', ['get', 'status'], 'enemy'], '#e53935', 
+              ['==', ['get', 'status'], 'enemy'], '#e53935',
               ['==', ['get', 'status'], 'favorite'], '#ffca28',
               ['==', ['get', 'hasComment'], true], '#9c27b0',
               // Разные цвета для занятых и свободных тайлов
@@ -1297,9 +1298,10 @@
               '#757575' // Темно-серый обводка для свободных
             ],
             'circle-stroke-width': [
-              'interpolate', ['linear'], ['zoom'], 
-              3, 1, 
-              6, 1.5, 
+              'interpolate', ['linear'], ['zoom'],
+              2, 0.5,
+              4, 1,
+              6, 1.5,
               10, 2
             ]
           },
@@ -1450,7 +1452,7 @@
           userMarks[tileId][markType] = comment || true;
           if (markType === 'favorite') favorites.push(tileId);
         }
-        renderTiles();
+        renderTiles(); // Перерисовываем тайлы после изменения метки
         updateFavoritesDropdown();
         updateFilteredTilesDropdown(); // Обновляем список по фильтру
         showToast('Метка сохранена', 'success');
