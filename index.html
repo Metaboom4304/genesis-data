@@ -1074,7 +1074,10 @@
             const x = (normalizedId - 1) % 256;
             const y = Math.floor((normalizedId - 1) / 256);
             const lng = -180 + (x + 0.5) * (360 / 256);
-            const lat = 80 - (y + 0.5) * (160 / 256);
+            
+            // ИСПРАВЛЕНИЕ: Смещаем тайлы на 22 клетки вверх
+            const lat = 80 - (y + 0.5) * (160 / 256) + 22;
+            
             return { lng, lat, x, y };
         }
 
@@ -1292,7 +1295,8 @@
                 }
                 
                 for (let y = 0; y <= 256; y++) {
-                    const lat = 80 - y * (160 / 256);
+                    // ИСПРАВЛЕНИЕ: Смещаем сетку на 22 клетки вверх
+                    const lat = 80 - y * (160 / 256) + 22;
                     gridFeatures.push({
                         type: 'Feature',
                         geometry: {
