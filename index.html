@@ -32,9 +32,8 @@
       --marker-enemy: #e53935;
       --marker-favorite: #ffca28;
       --marker-owned: #43a047;
-      --marker-clear: #9e9e9e; /* Новый цвет для свободных */
+      --marker-clear: #9e9e9e;
     }
-    /* Темная тема */
     .dark-theme {
       --text: #e0d6c8;
       --background: #1a140d;
@@ -60,7 +59,6 @@
       position: relative;
       z-index: 1;
     }
-    /* Заголовок с винтажным стилем */
     .header {
       background: var(--paper);
       padding: 12px 20px;
@@ -96,7 +94,6 @@
       gap: 12px;
       align-items: center;
     }
-    /* Контейнер карты */
     #map {
       flex: 1;
       width: 100%;
@@ -104,7 +101,6 @@
       overflow: hidden;
       border: 1px solid var(--border);
     }
-    /* Панель управления */
     .control-panel {
       position: absolute;
       top: 80px;
@@ -171,7 +167,6 @@
     .toggle-panel:hover {
       background: rgba(139, 69, 19, 0.1);
     }
-    /* Поиск */
     .search-container {
       position: relative;
       margin-bottom: 16px;
@@ -220,7 +215,6 @@
     .search-button:hover {
       background: var(--primary-dark);
     }
-    /* Фильтр */
     .filter-section {
       margin-bottom: 16px;
     }
@@ -245,7 +239,6 @@
       background: rgba(255, 255, 255, 0.1);
       color: var(--text);
     }
-    /* Кнопки */
     .action-buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -291,21 +284,18 @@
     .btn-secondary:hover {
       background: rgba(139, 69, 19, 0.1);
     }
-    /* Избранное - выпадающий список */
     .favorites-dropdown-section {
       margin-bottom: 16px;
     }
     .favorites-dropdown {
       width: 100%;
     }
-    /* Фильтр по меткам - выпадающий список */
     .filtered-tiles-dropdown-section {
       margin-bottom: 16px;
     }
     .filtered-tiles-dropdown {
       width: 100%;
     }
-    /* Управление картой */
     .map-controls {
       position: absolute;
       right: 20px;
@@ -336,7 +326,6 @@
     .control-btn:active {
       transform: translateY(0);
     }
-    /* Кнопки управления сеткой внизу карты */
     .grid-controls {
       position: absolute;
       bottom: 20px;
@@ -368,18 +357,15 @@
       background: var(--primary);
       color: white;
     }
-    /* Скрыть стандартные кнопки масштаба */
     .maplibregl-ctrl-top-right {
       display: none !important;
     }
-    /* Слой сетки */
     .grid-line {
       stroke: #8b4513;
       stroke-width: 1;
       stroke-opacity: 0.3;
       fill: none;
     }
-    /* Эффекты для маркеров */
     .maplibregl-marker.ally {
       filter: drop-shadow(0 0 2px rgba(30, 136, 229, 0.3));
     }
@@ -395,7 +381,6 @@
     .maplibregl-marker.has-comment {
       filter: drop-shadow(0 0 2px rgba(156, 39, 176, 0.3));
     }
-    /* Всплывающие окна */
     .maplibregl-popup {
       max-width: 300px;
       font-family: 'Cinzel', serif;
@@ -440,7 +425,6 @@
     .popup-actions button:hover {
       background: rgba(139, 69, 19, 0.1);
     }
-    /* Модальное окно для комментария */
     .comment-modal {
       display: none;
       position: fixed;
@@ -484,7 +468,6 @@
       gap: 10px;
       justify-content: flex-end;
     }
-    /* Экран ввода кода */
     #code-container {
       position: absolute;
       top: 0;
@@ -593,7 +576,6 @@
       color: var(--border);
       margin-top: 15px;
     }
-    /* Отладка */
     #debug {
       position: fixed;
       bottom: 0;
@@ -627,7 +609,6 @@
       padding-top: 10px;
       border-top: 1px dashed var(--border);
     }
-    /* Загрузчик */
     .loader {
       display: none;
       position: absolute;
@@ -660,7 +641,6 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    /* Уведомления */
     .toast {
       position: fixed;
       top: 20px;
@@ -692,7 +672,6 @@
     .toast-warning {
       border-left-color: var(--marker-favorite);
     }
-    /* Кнопка тестирования API - ПЕРЕМЕЩЕНА ВНИЗ ВЛЕВО и ВПРАВО */
     #test-api-btn {
       position: fixed;
       bottom: 10px;
@@ -711,7 +690,6 @@
     #test-api-btn:hover {
       background: #5d2a0b;
     }
-    /* Адаптация под мобильные */
     @media (max-width: 768px) {
       .control-panel {
         width: calc(100% - 40px);
@@ -762,7 +740,6 @@
 </head>
 <body>
   <div id="app">
-    <!-- Экран ввода кода -->
     <div id="code-container">
       <div class="code-card">
         <h1 class="code-title">GENESIS WAR MAP</h1>
@@ -780,7 +757,6 @@
         </p>
       </div>
     </div>
-    <!-- Заголовок -->
     <div class="header">
       <div class="logo">
         <i class="material-icons logo-icon">public</i>
@@ -795,9 +771,7 @@
         </button>
       </div>
     </div>
-    <!-- Карта -->
     <div id="map"></div>
-    <!-- Панель управления -->
     <div class="control-panel" id="control-panel">
       <div class="panel-header">
         <h3 class="panel-title">Управление картой</h3>
@@ -805,12 +779,10 @@
           <i class="material-icons">keyboard_arrow_up</i>
         </button>
       </div>
-      <!-- Избранные тайлы - ВЫПАДАЮЩИЙ СПИСОК ПЕРЕНЕСЕН НАВЕРХ -->
       <div class="favorites-dropdown-section">
         <label class="filter-label">Избранные тайлы</label>
         <select class="filter-select favorites-dropdown" id="favorites-dropdown">
           <option value="">Выберите избранный тайл</option>
-          <!-- Динамически заполняется -->
         </select>
       </div>
       <div class="search-container">
@@ -831,12 +803,10 @@
           <option value="clear"> ⚪  Без метки</option>
         </select>
       </div>
-      <!-- Список тайлов по фильтру -->
       <div class="filtered-tiles-dropdown-section">
         <label class="filter-label">Тайлы по фильтру</label>
         <select class="filter-select filtered-tiles-dropdown" id="filtered-tiles-dropdown">
           <option value="">Выберите тайл</option>
-          <!-- Динамически заполняется -->
         </select>
       </div>
       <div class="action-buttons">
@@ -850,7 +820,6 @@
         </button>
       </div>
     </div>
-    <!-- Управление картой -->
     <div class="map-controls">
       <button class="control-btn" id="zoom-in">
         <i class="material-icons">add</i>
@@ -862,7 +831,6 @@
         <i class="material-icons">my_location</i>
       </button>
     </div>
-    <!-- Кнопки управления сеткой внизу карты -->
     <div class="grid-controls">
       <button class="grid-control-btn" id="load-tiles-btn" title="Показать/скрыть тайлы">
         <i class="material-icons">map</i>
@@ -871,7 +839,6 @@
         <i class="material-icons">grid_on</i>
       </button>
     </div>
-    <!-- Модальное окно для комментария -->
     <div class="comment-modal" id="comment-modal">
       <div class="comment-modal-content">
         <h3>Добавить комментарий к тайлу #<span id="comment-tile-id"></span></h3>
@@ -882,14 +849,11 @@
         </div>
       </div>
     </div>
-    <!-- Загрузчик -->
     <div class="loader" id="loader">
       <div class="loader-spinner"></div>
       <div class="loader-text">Загрузка данных...</div>
     </div>
-    <!-- Уведомления -->
     <div class="toast" id="toast"></div>
-    <!-- Отладка -->
     <div id="debug">
       <div class="debug-section" id="user-status">Пользователь:  ⏳ </div>
       <div class="debug-section" id="map-status">Карта:  ⏳ </div>
@@ -898,24 +862,25 @@
       <div class="debug-section" id="tiles-status">Тайлы:  ⏳ </div>
       <div id="debug-log"></div>
     </div>
-    <!-- Кнопка тестирования API -->
     <button id="test-api-btn">Тест API</button>
   </div>
   <script>
-    // ИНИЦИАЛИЗАЦИЯ SUPABASE ПЕРЕМЕЩЕНА В САМОЕ НАЧАЛО
+    // Инициализация Supabase
     const supabaseClient = supabase.createClient(
       'https://vbcnhpsavynwzopvdqcw.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiY25ocHNhdnlud3pvcHZkcWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxODM2OTMsImV4cCI6MjA3NDc1OTY5M30.84WBqv1cEpasCrxoqzNpC5FPhciRHphPGJxhFIcMCmE'
     );
+
     // Конфигурация приложения
     const CONFIG = {
       MAP_STYLE: 'https://demotiles.maplibre.org/style.json',
       INITIAL_VIEW: { center: [32, 54], zoom: 4 },
-      CACHE_TTL: 5 * 60 * 1000, // 5 минут
-      TOTAL_TILES: 256 * 256 // 65536 тайлов
+      CACHE_TTL: 5 * 60 * 1000,
+      TOTAL_TILES: 256 * 256
     };
-    // --- НОВАЯ КОНФИГУРАЦИЯ ---
-    const GRID_Y_OFFSET = -39; // Смещение Y для выравнивания сетки с официальной картой
+
+    const GRID_Y_OFFSET = -39;
+
     // Глобальные переменные
     let map;
     let currentUser = { id: null };
@@ -926,11 +891,12 @@
     let isInitialLoad = true;
     let currentAbortController = null;
     let currentTileForComment = null;
-    let tilesVisible = true; // По умолчанию тайлы включены
+    let tilesVisible = true;
     let gridVisible = false;
-    let currentPopup = null; // Ссылка на активный попап
+    let currentPopup = null;
+    let currentMarkers = [];
 
-    // --- Вспомогательные функции ---
+    // Вспомогательные функции
     function log(message, isError = false) {
       const now = new Date();
       const timestamp = `[${now.toLocaleTimeString()}]`;
@@ -943,6 +909,7 @@
       debugLog.scrollTop = debugLog.scrollHeight;
       console[isError ? 'error' : 'log'](message);
     }
+
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
       toast.textContent = message;
@@ -950,24 +917,35 @@
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
+
     function showLoader(visible) {
       document.getElementById('loader').style.display = visible ? 'block' : 'none';
     }
 
-    // --- Функции для работы с координатами тайлов ---
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    // Функции для работы с координатами тайлов
     function plotIdToGeo(plotId) {
       const totalTiles = CONFIG.TOTAL_TILES;
       const normalizedId = Math.max(1, Math.min(plotId, totalTiles));
       const x = (normalizedId - 1) % 256;
       let y = Math.floor((normalizedId - 1) / 256);
 
-      // --- ИСПРАВЛЕНИЕ: Смещение Y ---
+      // Безопасное смещение Y
       y = y + GRID_Y_OFFSET;
-      y = Math.max(0, Math.min(255, y)); // Ограничиваем
-      // --- /ИСПРАВЛЕНИЕ ---
+      y = Math.max(0, Math.min(255, y));
 
       const lng = -180 + (x + 0.5) * (360 / 256);
-      // Убираем старый хак +10
       const lat = 80 - (y + 0.5) * (160 / 256);
       return { lng, lat, x, y };
     }
@@ -977,8 +955,10 @@
       const CACHE_KEY = 'tileDataCache';
       if (currentAbortController) currentAbortController.abort();
       currentAbortController = new AbortController();
+      
       log(' 🔄  Загрузка тайлов с API GoA...');
       document.getElementById('tiles-status').textContent = 'Тайлы: ⏳ Загрузка';
+      
       return fetch('https://back.genesis-of-ages.space/manage/get_tile_info.php', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
@@ -989,12 +969,16 @@
         return response.json();
       })
       .then(apiResponse => {
-        if (!apiResponse.success || !apiResponse.tiles) throw new Error('Неверный формат API');
+        // Улучшенная проверка формата API
+        if (!apiResponse || !apiResponse.success || !Array.isArray(apiResponse.tiles)) {
+          throw new Error('Неверный формат API: отсутствуют данные тайлов');
+        }
+        
         tileData = apiResponse.tiles.map(tile => {
           const plotId = Number(tile.id_tile);
           if (!Number.isInteger(plotId) || plotId < 1 || plotId > CONFIG.TOTAL_TILES) {
               log(` ❌  Неверный ID тайла из API: ${tile.id_tile}`, true);
-              return null; // Пропускаем неверный тайл
+              return null;
           }
           const coords = plotIdToGeo(plotId);
           return {
@@ -1007,14 +991,15 @@
             owner_name: tile.owner_name || null,
             originalData: tile
           };
-        }).filter(tile => tile !== null); // Убираем null тайлы
+        }).filter(tile => tile !== null);
+        
         document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length}`;
-        renderTiles(); // Вызываем рендер после загрузки данных
+        renderTiles();
       })
       .catch(error => {
         if (error.name === 'AbortError') {
           log(' 🔄  Загрузка тайлов отменена');
-          return; // Не вызываем createDemoTiles
+          return;
         }
         log(` ❌  Ошибка загрузки тайлов: ${error.message}`, true);
         showToast('Не удалось загрузить тайлы', 'error');
@@ -1022,6 +1007,7 @@
         createDemoTiles();
       });
     }
+
     function createDemoTiles() {
       tileData = [];
       const demoSize = 50;
@@ -1049,54 +1035,57 @@
         }
       }
       document.getElementById('tiles-status').textContent = `Тайлы: 🧪 ${tileData.length} демо`;
-      renderTiles(); // Вызываем рендер после создания демо-данных
+      renderTiles();
     }
 
-    // --- Аутентификация через код ---
+    // Аутентификация через код
     async function verifyAccessCode(code) {
       try {
-        const { data, error } = await supabaseClient
-          .from('access_codes')
-          .select('user_id, created_at, used')
-          .eq('code', code)
-          .single();
+        // Добавляем таймаут для безопасности
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Таймаут подключения')), 10000)
+        );
+
+        const { data, error } = await Promise.race([
+          supabaseClient
+            .from('access_codes')
+            .select('user_id, created_at, used')
+            .eq('code', code)
+            .single(),
+          timeoutPromise
+        ]);
+
         if (error || !data) {
           showToast('Неверный код', 'error');
           return false;
         }
-        // ВАЖНОЕ ИСПРАВЛЕНИЕ: Supabase возвращает время в UTC, но без указания смещения
-        // Добавляем 'Z' чтобы явно указать что это UTC время
+
         const created = new Date(data.created_at + 'Z');
         const now = new Date();
-        // Расширенная отладка времени
-        console.log('Код найден:', data);
-        console.log('Время создания (UTC):', created.toUTCString());
-        console.log('Время создания (локальное):', created.toLocaleString());
-        console.log('Текущее время (UTC):', now.toUTCString());
-        console.log('Текущее время (локальное):', now.toLocaleString());
-        // Проверяем разницу во времени (в минутах)
         const ageInMinutes = (now - created) / (1000 * 60);
-        console.log('Возраст кода (минут):', ageInMinutes);
-        // УВЕЛИЧИВАЕМ ВРЕМЯ ДЕЙСТВИЯ КОДА ДО 60 МИНУТ ДЛЯ ТЕСТИРОВАНИЯ
+        
         if (ageInMinutes > 60) {
           await supabaseClient.from('access_codes').delete().eq('code', code);
           showToast('Код устарел', 'error');
           return false;
         }
+
         if (data.used) {
           showToast('Код уже использован', 'error');
           return false;
         }
-        // Помечаем код как использованный
+
         const { error: updateError } = await supabaseClient
           .from('access_codes')
           .update({ used: true })
           .eq('code', code);
+
         if (updateError) {
           console.error('Ошибка обновления кода:', updateError);
           showToast('Ошибка сервера', 'error');
           return false;
         }
+
         currentUser.id = data.user_id;
         document.getElementById('code-container').style.display = 'none';
         initMaplibre();
@@ -1109,12 +1098,15 @@
         return false;
       }
     }
+
     function setupCodeForm() {
       const submitButton = document.getElementById('submit-code');
       const codeInput = document.getElementById('access-code');
+      
       codeInput.addEventListener('input', () => {
         codeInput.value = codeInput.value.replace(/[^0-9]/g, '');
       });
+      
       submitButton.addEventListener('click', () => {
         const code = codeInput.value.trim();
         if (code.length === 6) {
@@ -1123,6 +1115,7 @@
           showToast('Код должен содержать 6 цифр', 'error');
         }
       });
+      
       codeInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
           const code = codeInput.value.trim();
@@ -1135,7 +1128,7 @@
       });
     }
 
-    // --- Инициализация MapLibre ---
+    // Инициализация MapLibre
     function initMaplibre() {
       try {
         map = new maplibregl.Map({
@@ -1145,20 +1138,24 @@
           zoom: CONFIG.INITIAL_VIEW.zoom,
           attributionControl: false
         });
+
         map.on('load', () => {
           log(' 🗺️  Карта загружена');
           document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
-          updateVisibleTiles(); // Вызываем обновление видимых тайлов после загрузки карты
+          updateVisibleTiles();
           addGridLayer();
         });
-        map.on('moveend', updateVisibleTiles);
-        map.on('zoomend', updateVisibleTiles);
+
+        const debouncedUpdate = debounce(updateVisibleTiles, 250);
+        map.on('moveend', debouncedUpdate);
+        map.on('zoomend', debouncedUpdate);
       } catch (error) {
         log(` ⚠️  Ошибка инициализации карты: ${error.message}`, true);
         document.getElementById('map-status').textContent = 'Карта: 🔴 Ошибка';
         showToast('Ошибка инициализации карты', 'error');
       }
     }
+
     function addGridLayer() {
       if (!map.getSource('grid-source')) {
         const gridFeatures = [];
@@ -1174,11 +1171,9 @@
           });
         }
         for (let y = 0; y <= 256; y++) {
-          // --- ИСПРАВЛЕНИЕ: Смещение Y для сетки ---
           const correctedY = y + GRID_Y_OFFSET;
-          if (correctedY < 0 || correctedY > 255) continue; // Пропускаем невидимые линии
+          if (correctedY < 0 || correctedY > 255) continue;
           const lat = 80 - correctedY * (160 / 256);
-          // --- /ИСПРАВЛЕНИЕ ---
           gridFeatures.push({ 
             type: 'Feature', 
             geometry: { 
@@ -1188,12 +1183,13 @@
             properties: { type: 'horizontal', y: correctedY } 
           });
         }
-        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
+
+        // ИСПРАВЛЕНИЕ: Добавлено свойство data
         map.addSource('grid-source', { 
           type: 'geojson', 
-           { type: 'FeatureCollection', features: gridFeatures } 
+          data: { type: 'FeatureCollection', features: gridFeatures }
         });
-        // --- /ИСПРАВЛЕНИЕ ---
+
         map.addLayer({ 
           id: 'grid-layer', 
           type: 'line', 
@@ -1210,22 +1206,33 @@
 
     function updateVisibleTiles() {
       if (!map || !tileData.length) return;
+      
       const bounds = map.getBounds();
       visibleTiles.clear();
-      tileData.forEach(tile => {
-        if (bounds.contains([tile.lng, tile.lat])) visibleTiles.add(tile.id);
-      });
+      
+      // Оптимизированная фильтрация
+      for (let i = 0; i < tileData.length; i++) {
+        const tile = tileData[i];
+        if (bounds.contains([tile.lng, tile.lat])) {
+          visibleTiles.add(tile.id);
+        }
+      }
+      
       renderTiles();
-      if (isInitialLoad) { isInitialLoad = false; return; }
+      if (isInitialLoad) { 
+        isInitialLoad = false; 
+        return; 
+      }
     }
 
     function renderTiles() {
-      if (!map || !map.isStyleLoaded()) return requestAnimationFrame(renderTiles); // Используем rAF
+      if (!map || !map.isStyleLoaded()) {
+        return requestAnimationFrame(renderTiles);
+      }
 
       const zoom = map.getZoom();
       let visibility = 'visible';
 
-      // Скрываем точки при низком зуме (уменьшил порог с 5 до 3)
       if (zoom < 3) {
         visibility = 'none';
       }
@@ -1254,29 +1261,30 @@
         });
 
       if (map.getSource('tiles-source')) {
-        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
-        map.getSource('tiles-source').setData({ type: 'FeatureCollection', features: features });
-        // --- /ИСПРАВЛЕНИЕ ---
+        // ИСПРАВЛЕНИЕ: Правильный вызов setData
+        map.getSource('tiles-source').setData({ 
+          type: 'FeatureCollection', 
+          features: features 
+        });
         map.setLayoutProperty('tiles-layer', 'visibility', visibility);
       } else {
-        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
+        // ИСПРАВЛЕНИЕ: Добавлено свойство data
         map.addSource('tiles-source', { 
           type: 'geojson', 
-           { type: 'FeatureCollection', features: features } 
+          data: { type: 'FeatureCollection', features: features }
         });
-        // --- /ИСПРАВЛЕНИЕ ---
+
         map.addLayer({
           id: 'tiles-layer',
           type: 'circle',
           source: 'tiles-source',
           paint: {
-            // Увеличил минимальный и максимальный радиусы
             'circle-radius': [
               'interpolate', ['linear'], ['zoom'],
-              2, 3,    // При zoom 2 - радиус 3
-              4, 5,    // При zoom 4 - радиус 5
-              6, 8,    // При zoom 6 - радиус 8
-              10, 12   // При zoom 10 - радиус 12
+              2, 3,
+              4, 5,
+              6, 8,
+              10, 12
             ],
             'circle-color': [
               'case',
@@ -1284,9 +1292,8 @@
               ['==', ['get', 'status'], 'enemy'], '#e53935',
               ['==', ['get', 'status'], 'favorite'], '#ffca28',
               ['==', ['get', 'hasComment'], true], '#9c27b0',
-              // Разные цвета для занятых и свободных тайлов
-              ['==', ['get', 'owned'], true], '#1e88e5', // Синий для занятых
-              '#9e9e9e' // Серый для свободных
+              ['==', ['get', 'owned'], true], '#1e88e5',
+              '#9e9e9e'
             ],
             'circle-stroke-color': [
               'case',
@@ -1294,8 +1301,8 @@
               ['==', ['get', 'status'], 'enemy'], '#c62828',
               ['==', ['get', 'status'], 'favorite'], '#f57f17',
               ['==', ['get', 'hasComment'], true], '#7b1fa2',
-              ['==', ['get', 'owned'], true], '#1565c0', // Синий обводка для занятых
-              '#757575' // Темно-серый обводка для свободных
+              ['==', ['get', 'owned'], true], '#1565c0',
+              '#757575'
             ],
             'circle-stroke-width': [
               'interpolate', ['linear'], ['zoom'],
@@ -1306,10 +1313,10 @@
             ]
           },
           layout: {
-            // Скрываем слой при низком зуме
             'visibility': visibility
           }
         });
+
         map.setLayoutProperty('tiles-layer', 'visibility', visibility);
         map.on('click', 'tiles-layer', (e) => {
           if (e.features.length > 0) showTilePopup(e.features[0].properties.id, e.lngLat);
@@ -1319,17 +1326,17 @@
       }
     }
 
-    // --- Работа с метками ---
+    // Работа с метками
     function getUserMarkComment(tileId) {
       const marks = userMarks[tileId] || {};
       for (const type in marks) {
-        // Проверяем, что значение существует и является строкой
         if (marks[type] && typeof marks[type] === 'string' && marks[type].trim() !== '') {
           return marks[type];
         }
       }
       return null;
     }
+
     function getUserMarkStatus(tileId) {
       const marks = userMarks[tileId] || {};
       if (marks.ally) return 'ally';
@@ -1338,16 +1345,19 @@
       if (marks.comment) return 'comment';
       return '';
     }
+
     async function loadUserMarks() {
       if (!currentUser.id) return;
       const { data, error } = await supabaseClient
         .from('user_marks')
         .select('tile_id, mark_type, comment')
         .eq('user_id', currentUser.id);
+      
       if (error) {
         log(' ❌  Ошибка загрузки меток: ' + error.message, true);
         return;
       }
+      
       userMarks = {};
       favorites = [];
       data.forEach(mark => {
@@ -1355,10 +1365,12 @@
         userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
         if (mark.mark_type === 'favorite') favorites.push(Number(mark.tile_id));
       });
+      
       updateFavoritesDropdown();
-      updateFilteredTilesDropdown(); // Обновляем список по фильтру
+      updateFilteredTilesDropdown();
       log(` ✅  Загружено ${data.length} меток`);
     }
+
     function updateFavoritesDropdown() {
       const dropdown = document.getElementById('favorites-dropdown');
       if (!dropdown) return;
@@ -1374,6 +1386,7 @@
         dropdown.value = currentValue;
       }
     }
+
     function updateFilteredTilesDropdown() {
       const filterSelect = document.getElementById('status-filter');
       const dropdown = document.getElementById('filtered-tiles-dropdown');
@@ -1402,7 +1415,6 @@
       } else if (selectedFilter === 'clear') {
         filteredTiles = tileData.filter(tile => getUserMarkStatus(tile.id) === '');
       } else {
-        // Все тайлы
         filteredTiles = tileData;
       }
 
@@ -1417,6 +1429,7 @@
         dropdown.value = currentValue;
       }
     }
+
     async function saveMark(tileId, markType, comment = null) {
       if (!currentUser.id) {
         showToast('Ошибка: Требуется авторизация', 'error');
@@ -1452,9 +1465,9 @@
           userMarks[tileId][markType] = comment || true;
           if (markType === 'favorite') favorites.push(tileId);
         }
-        renderTiles(); // Перерисовываем тайлы после изменения метки
+        renderTiles();
         updateFavoritesDropdown();
-        updateFilteredTilesDropdown(); // Обновляем список по фильтру
+        updateFilteredTilesDropdown();
         showToast('Метка сохранена', 'success');
       } catch (error) {
         log(' ❌  Ошибка сохранения метки: ' + error.message, true);
@@ -1462,9 +1475,8 @@
       }
     }
 
-    // --- Попап и модальное окно ---
+    // Попап и модальное окно
     function showTilePopup(tileId, lngLat) {
-      // Удаляем предыдущий попап, если он есть
       if (currentPopup) {
         currentPopup.remove();
         currentPopup = null;
@@ -1478,7 +1490,6 @@
       const comment = getUserMarkComment(tileId);
       const originalData = tile.originalData;
 
-      // --- ИСПРАВЛЕНИЕ: Безопасное отображение данных ---
       const popupContentElement = document.createElement('div');
       popupContentElement.className = 'popup-content';
 
@@ -1494,15 +1505,13 @@
       pGeo.textContent = `Гео координаты: ${tile.lat.toFixed(4)}, ${tile.lng.toFixed(4)}`;
       popupContentElement.appendChild(pGeo);
 
-      // --- ИСПРАВЛЕНИЕ: Цвет статуса ---
       const pStatus = document.createElement('p');
       pStatus.textContent = `Статус: `;
       const statusSpan = document.createElement('span');
       statusSpan.textContent = tile.has_owner === 'true' ? ' Занят' : ' Свободен';
-      statusSpan.style.color = tile.has_owner === 'true' ? '#1e88e5' : '#9e9e9e'; // Синий для занятого, серый для свободного
+      statusSpan.style.color = tile.has_owner === 'true' ? '#1e88e5' : '#9e9e9e';
       pStatus.appendChild(statusSpan);
       popupContentElement.appendChild(pStatus);
-      // --- /ИСПРАВЛЕНИЕ ---
 
       if (tile.owner_name) {
         const pOwner = document.createElement('p');
@@ -1573,16 +1582,12 @@
 
       popupContentElement.appendChild(actionsDiv);
 
-      // --- /ИСПРАВЛЕНИЕ ---
-
       currentPopup = new maplibregl.Popup({ closeOnClick: false })
         .setLngLat(lngLat)
         .setDOMContent(popupContentElement)
         .addTo(map);
 
-      // Обработчики событий добавляем в колбэке open
       currentPopup.on('open', () => {
-        // Убедимся, что элементы существуют
         const markButtons = currentPopup.getContainer().querySelectorAll('.mark-btn');
         const commentButtons = currentPopup.getContainer().querySelectorAll('.comment-btn');
 
@@ -1618,10 +1623,12 @@
       document.getElementById('comment-text').value = comment;
       document.getElementById('comment-modal').style.display = 'flex';
     }
+
     function hideCommentModal() {
       document.getElementById('comment-modal').style.display = 'none';
       currentTileForComment = null;
     }
+
     function saveComment() {
       if (!currentTileForComment) return;
       const commentText = document.getElementById('comment-text').value.trim();
@@ -1629,7 +1636,7 @@
       hideCommentModal();
     }
 
-    // --- Прочие функции (поиск, сброс, тема и т.д.) ---
+    // Прочие функции
     function focusOnTile(tileId) {
       const parsedId = Number(tileId);
       if (!Number.isInteger(parsedId) || parsedId < 1 || parsedId > CONFIG.TOTAL_TILES) {
@@ -1644,6 +1651,7 @@
       }
       return false;
     }
+
     function toggleTilesVisibility() {
       tilesVisible = !tilesVisible;
       if (map.getLayer('tiles-layer')) {
@@ -1652,6 +1660,7 @@
       document.getElementById('load-tiles-btn').classList.toggle('active', tilesVisible);
       showToast(tilesVisible ? 'Тайлы показаны' : 'Тайлы скрыты', 'info');
     }
+
     function toggleGridVisibility() {
       gridVisible = !gridVisible;
       if (map.getLayer('grid-layer')) {
@@ -1660,6 +1669,7 @@
       document.getElementById('toggle-grid-btn').classList.toggle('active', gridVisible);
       showToast(gridVisible ? 'Сетка тайлов показана' : 'Сетка тайлов скрыта', 'info');
     }
+
     function toggleTheme() {
       const isDark = document.body.classList.contains('dark-theme');
       document.body.classList.toggle('dark-theme', !isDark);
@@ -1672,8 +1682,22 @@
       icon.textContent = isDark ? 'brightness_4' : 'brightness_7';
       showToast(isDark ? 'Светлая тема активирована' : 'Темная тема активирована', 'success');
     }
+
+    async function takeScreenshot() {
+      try {
+        const canvas = await map.getCanvas();
+        const link = document.createElement('a');
+        link.download = `genesis-map-${Date.now()}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+        showToast('Снимок сохранен', 'success');
+      } catch (error) {
+        console.error('Ошибка создания скриншота:', error);
+        showToast('Ошибка создания снимка', 'error');
+      }
+    }
+
     function initEventListeners() {
-      // Поиск по кнопке вместо автоматического
       document.getElementById('search-btn').addEventListener('click', () => {
         const value = document.getElementById('search').value.trim();
         if (value) {
@@ -1689,12 +1713,13 @@
           }
         }
       });
-      // Поиск по Enter
+
       document.getElementById('search').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
           document.getElementById('search-btn').click();
         }
       });
+
       document.getElementById('status-filter').addEventListener('change', (e) => {
         const filterValue = e.target.value;
         if (filterValue === 'comment') {
@@ -1713,22 +1738,25 @@
         } else {
           updateVisibleTiles();
         }
-        updateFilteredTilesDropdown(); // Обновляем список по фильтру
+        updateFilteredTilesDropdown();
       });
+
       document.getElementById('favorites-dropdown').addEventListener('change', (e) => {
         const tileId = Number(e.target.value);
         if (Number.isInteger(tileId) && tileId >= 1 && tileId <= CONFIG.TOTAL_TILES) {
           focusOnTile(tileId);
-          e.target.value = ''; // Сбрасываем значение
+          e.target.value = '';
         }
       });
+
       document.getElementById('filtered-tiles-dropdown').addEventListener('change', (e) => {
         const tileId = Number(e.target.value);
         if (Number.isInteger(tileId) && tileId >= 1 && tileId <= CONFIG.TOTAL_TILES) {
           focusOnTile(tileId);
-          e.target.value = ''; // Сбрасываем значение
+          e.target.value = '';
         }
       });
+
       document.getElementById('reset').addEventListener('click', () => {
         document.getElementById('search').value = '';
         document.getElementById('status-filter').value = '';
@@ -1736,20 +1764,22 @@
         document.getElementById('filtered-tiles-dropdown').value = '';
         map.flyTo({ center: CONFIG.INITIAL_VIEW.center, zoom: CONFIG.INITIAL_VIEW.zoom, essential: true });
       });
-      document.getElementById('screenshot-btn').addEventListener('click', () => {
-        showToast('Снимок карты сохранен', 'success');
-      });
-      document.getElementById('load-tiles-btn').addEventListener('click', () => toggleTilesVisibility());
-      document.getElementById('toggle-grid-btn').addEventListener('click', () => toggleGridVisibility());
-      document.getElementById('theme-toggle').addEventListener('click', () => toggleTheme());
+
+      document.getElementById('screenshot-btn').addEventListener('click', takeScreenshot);
+      document.getElementById('load-tiles-btn').addEventListener('click', toggleTilesVisibility);
+      document.getElementById('toggle-grid-btn').addEventListener('click', toggleGridVisibility);
+      document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+      
       document.getElementById('toggle-panel').addEventListener('click', () => {
         const panel = document.getElementById('control-panel');
         panel.classList.toggle('panel-collapsed');
         const icon = document.querySelector('#toggle-panel i');
         icon.textContent = panel.classList.contains('panel-collapsed') ? 'keyboard_arrow_down' : 'keyboard_arrow_up';
       });
+
       document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
       document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
+      
       document.getElementById('locate-me').addEventListener('click', () => {
         showLoader(true);
         navigator.geolocation.getCurrentPosition(
@@ -1764,17 +1794,19 @@
           }
         );
       });
+
       document.getElementById('cancel-comment').addEventListener('click', hideCommentModal);
       document.getElementById('save-comment').addEventListener('click', saveComment);
+      
       document.getElementById('comment-modal').addEventListener('click', (e) => {
         if (e.target.id === 'comment-modal') hideCommentModal();
       });
+
       document.getElementById('debug-toggle').addEventListener('click', () => {
         const debug = document.getElementById('debug');
         debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
       });
 
-      // --- ИСПРАВЛЕНИЕ: Установка иконки темы ---
       let savedTheme;
       try {
           savedTheme = localStorage.getItem('theme') || 'light';
@@ -1789,9 +1821,8 @@
         document.body.classList.remove('dark-theme');
         document.querySelector('#theme-toggle i').textContent = 'brightness_4';
       }
-      // --- /ИСПРАВЛЕНИЕ ---
     }
-    // Функция тестирования API — скрыта в продакшене
+
     function setupTestAPIButton() {
       const testButton = document.getElementById('test-api-btn');
       if (window.location.hostname !== 'localhost') {
@@ -1802,7 +1833,8 @@
         showToast('Тест API недоступен в новой архитектуре', 'warning');
       });
     }
-    // --- Запуск приложения ---
+
+    // Запуск приложения
     document.addEventListener('DOMContentLoaded', () => {
       log(' 🚀  Запуск GENESIS WAR MAP на Supabase');
       document.getElementById('code-container').style.display = 'flex';
