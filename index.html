@@ -1075,8 +1075,7 @@
             const y = Math.floor((normalizedId - 1) / 256);
             const lng = -180 + (x + 0.5) * (360 / 256);
             
-            // ИСПРАВЛЕНИЕ: Увеличиваем смещение тайлов вверх на 22 единицы
-            // и корректируем формулу для правильного расположения
+            // ИСПРАВЛЕНИЕ: Корректное смещение тайлов вверх
             const lat = 80 - (y + 0.5) * (160 / 256) + 22;
             
             return { lng, lat, x, y };
@@ -1092,7 +1091,6 @@
             log(' 🔄 Загрузка тайлов с API GoA...');
             document.getElementById('tiles-status').textContent = 'Тайлы: ⏳ Загрузка';
             
-            // ИСПРАВЛЕНИЕ: Используем альтернативный источник данных
             fetch('https://genesis-data.onrender.com/tiles', {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
@@ -1105,7 +1103,6 @@
             .then(apiResponse => {
                 // ИСПРАВЛЕНИЕ: Обрабатываем оба формата ответа
                 if (Array.isArray(apiResponse)) {
-                    // Формат: массив объектов
                     tileData = apiResponse.map(tile => {
                         const plotId = parseInt(tile.id || tile.id_tile || tile.plotId);
                         const coords = plotIdToGeo(plotId);
@@ -1121,7 +1118,6 @@
                         };
                     });
                 } else if (apiResponse.tiles && Array.isArray(apiResponse.tiles)) {
-                    // Формат: { tiles: [...] }
                     tileData = apiResponse.tiles.map(tile => {
                         const plotId = parseInt(tile.id || tile.id_tile || tile.plotId);
                         const coords = plotIdToGeo(plotId);
@@ -1142,14 +1138,21 @@
                 
                 document.getElementById('tiles-status').textContent = `Тайлы: ✅ ${tileData.length}`;
                 log(` ✅ Загружено ${tileData.length} тайлов`);
-                renderTiles();
+                
+                // ИСПРАВЛЕНИЕ: Принудительно обновляем отображение
+                if (map && map.isStyleLoaded()) {
+                    updateVisibleTiles();
+                } else {
+                    // Если карта еще не загружена, отложим обновление
+                    setTimeout(updateVisibleTiles, 500);
+                }
             })
             .catch(error => {
                 log(` ❌ Ошибка загрузки тайлов: ${error.message}`, true);
                 showToast('Не удалось загрузить тайлы', 'error');
                 document.getElementById('tiles-status').textContent = 'Тайлы: 🔴 Ошибка';
                 
-                // ИСПРАВЛЕНИЕ: Создаем демо-тайлы для тестирования
+                // Создаем демо-тайлы для тестирования
                 log(' 🧪 Создание демо-тайлов для отладки');
                 createDemoTiles();
             });
@@ -1185,7 +1188,13 @@
             
             document.getElementById('tiles-status').textContent = `Тайлы: 🧪 ${tileData.length} демо`;
             log(` 🧪 Создано ${tileData.length} демо-тайлов`);
-            renderTiles();
+            
+            // ИСПРАВЛЕНИЕ: Принудительно обновляем отображение
+            if (map && map.isStyleLoaded()) {
+                updateVisibleTiles();
+            } else {
+                setTimeout(updateVisibleTiles, 500);
+            }
         }
 
         // --- Аутентификация через код ---
@@ -1203,15 +1212,11 @@
                     return false;
                 }
 
-                // ВАЖНОЕ ИСПРАВЛЕНИЕ: Supabase возвращает время в UTC, но без указания смещения
-                // Добавляем 'Z' чтобы явно указать что это UTC время
                 const created = new Date(data.created_at + 'Z');
                 const now = new Date();
 
-                // Проверяем разницу во времени (в минутах)
                 const ageInMinutes = (now - created) / (1000 * 60);
 
-                // УВЕЛИЧИВАЕМ ВРЕМЯ ДЕЙСТВИЯ КОДА ДО 60 МИНУТ ДЛЯ ТЕСТИРОВАНИЯ
                 if (ageInMinutes > 60) {
                     await supabaseClient.from('access_codes').delete().eq('code', code);
                     showToast('Код устарел', 'error');
@@ -1223,7 +1228,6 @@
                     return false;
                 }
 
-                // Помечаем код как использованный
                 const { error: updateError } = await supabaseClient
                     .from('access_codes')
                     .update({ used: true })
@@ -1292,19 +1296,17 @@
                 map.on('load', () => {
                     log(' 🗺️ Карта загружена');
                     document.getElementById('map-status').textContent = 'Карта: ✅ Загружена';
-                    updateVisibleTiles();
                     addGridLayer();
                     
-                    // ИСПРАВЛЕНИЕ: Принудительно обновляем отображение тайлов после загрузки карты
+                    // ИСПРАВЛЕНИЕ: Обновляем видимые тайлы после загрузки карты
                     setTimeout(() => {
-                        renderTiles();
-                    }, 500);
+                        updateVisibleTiles();
+                    }, 100);
                 });
 
                 map.on('moveend', updateVisibleTiles);
                 map.on('zoomend', updateVisibleTiles);
                 
-                // ИСПРАВЛЕНИЕ: Добавляем обработчик ошибок карты
                 map.on('error', (e) => {
                     log(` ❌ Ошибка карты: ${e.error ? e.error.message : 'Неизвестная ошибка'}`, true);
                 });
@@ -1332,7 +1334,6 @@
                 }
                 
                 for (let y = 0; y <= 256; y++) {
-                    // ИСПРАВЛЕНИЕ: Учитываем смещение тайлов вверх
                     const lat = 80 - y * (160 / 256) + 22;
                     gridFeatures.push({
                         type: 'Feature',
@@ -1368,15 +1369,23 @@
             if (!map || !tileData.length) return;
             
             const bounds = map.getBounds();
+            if (!bounds) return;
+            
             visibleTiles.clear();
             
             tileData.forEach(tile => {
-                if (bounds.contains([tile.lng, tile.lat])) visibleTiles.add(tile.id);
+                if (bounds.contains([tile.lng, tile.lat])) {
+                    visibleTiles.add(tile.id);
+                }
             });
             
+            log(` 🎯 В области видимости ${visibleTiles.size} тайлов из ${tileData.length}`);
             renderTiles();
             
-            if (isInitialLoad) { isInitialLoad = false; return; }
+            if (isInitialLoad) { 
+                isInitialLoad = false; 
+                return; 
+            }
             
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {}, 500);
@@ -1384,12 +1393,10 @@
 
         function renderTiles() {
             if (!map || !map.isStyleLoaded()) {
-                // ИСПРАВЛЕНИЕ: Если карта еще не готова, пытаемся снова через 100мс
                 setTimeout(renderTiles, 100);
                 return;
             }
 
-            // ИСПРАВЛЕНИЕ: Убираем точки при отдалении
             const zoom = map.getZoom();
             let visibility = 'visible';
             
@@ -1422,7 +1429,6 @@
                     };
                 });
 
-            // ИСПРАВЛЕНИЕ: Добавляем отладочную информацию
             log(` 🎯 Отрисовка ${features.length} тайлов (видимость: ${visibility})`);
 
             if (map.getSource('tiles-source')) {
@@ -1434,26 +1440,18 @@
                     data: { type: 'FeatureCollection', features }
                 });
 
+                // ИСПРАВЛЕНИЕ: Упрощенное выражение для circle-radius без вложенных interpolate
                 map.addLayer({
                     id: 'tiles-layer',
                     type: 'circle',
                     source: 'tiles-source',
                     paint: {
-                        // ИСПРАВЛЕНИЕ: Заменяем круги на квадраты для занятых тайлов
+                        // ИСПРАВЛЕНИЕ: Простое выражение без вложенных interpolate
                         'circle-radius': [
-                            'case',
-                            ['==', ['get', 'owned'], true],
-                            ['interpolate', ['linear'], ['zoom'],
-                                3, 6,  // При zoom 3 - размер 6 (квадрат)
-                                6, 8,  // При zoom 6 - размер 8
-                                10, 10  // При zoom 10 - размер 10
-                            ],
-                            // Свободные тайлы остаются точками
-                            ['interpolate', ['linear'], ['zoom'],
-                                3, 3,
-                                6, 4,
-                                10, 5
-                            ]
+                            'interpolate', ['linear'], ['zoom'],
+                            3, 4,
+                            6, 6,
+                            10, 8
                         ],
                         'circle-color': [
                             'case',
@@ -1461,7 +1459,7 @@
                             ['==', ['get', 'status'], 'enemy'], '#e53935',
                             ['==', ['get', 'status'], 'favorite'], '#ffca28',
                             ['==', ['get', 'hasComment'], true], '#9c27b0',
-                            // ИСПРАВЛЕНИЕ: Раскрашиваем занятые тайлы по владельцам
+                            // Раскрашиваем занятые тайлы по владельцам
                             ['==', ['get', 'owned'], true], [
                                 'match',
                                 ['get', 'owner'],
@@ -1475,9 +1473,9 @@
                                 'Player8', '#F7DC6F',
                                 'Player9', '#BB8FCE',
                                 'Player10', '#85C1E9',
-                                '#43a047' // Цвет по умолчанию для занятых
+                                '#43a047'
                             ],
-                            'rgba(0, 255, 0, 0.5)' // Свободные тайлы - полупрозрачные зеленые
+                            'rgba(0, 255, 0, 0.5)'
                         ],
                         'circle-stroke-color': [
                             'case',
@@ -1888,7 +1886,7 @@
             initEventListeners();
             setupTestAPIButton();
             
-            // ИСПРАВЛЕНИЕ: Загружаем тайлы сразу, даже без авторизации для демонстрации
+            // Загружаем тайлы сразу для демонстрации
             loadTileData();
         });
     </script>
