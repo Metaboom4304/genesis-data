@@ -929,7 +929,6 @@
     let tilesVisible = true; // По умолчанию тайлы включены
     let gridVisible = false;
     let currentPopup = null; // Ссылка на активный попап
-
     // --- Вспомогательные функции ---
     function log(message, isError = false) {
       const now = new Date();
@@ -953,25 +952,21 @@
     function showLoader(visible) {
       document.getElementById('loader').style.display = visible ? 'block' : 'none';
     }
-
     // --- Функции для работы с координатами тайлов ---
     function plotIdToGeo(plotId) {
       const totalTiles = CONFIG.TOTAL_TILES;
       const normalizedId = Math.max(1, Math.min(plotId, totalTiles));
       const x = (normalizedId - 1) % 256;
       let y = Math.floor((normalizedId - 1) / 256);
-
       // --- ИСПРАВЛЕНИЕ: Смещение Y ---
       y = y + GRID_Y_OFFSET;
       y = Math.max(0, Math.min(255, y)); // Ограничиваем
       // --- /ИСПРАВЛЕНИЕ ---
-
       const lng = -180 + (x + 0.5) * (360 / 256);
       // Убираем старый хак +10
       const lat = 80 - (y + 0.5) * (160 / 256);
       return { lng, lat, x, y };
     }
-
     // Загрузка данных тайлов с кешированием
     function loadTileData() {
       const CACHE_KEY = 'tileDataCache';
@@ -1051,7 +1046,6 @@
       document.getElementById('tiles-status').textContent = `Тайлы: 🧪 ${tileData.length} демо`;
       renderTiles(); // Вызываем рендер после создания демо-данных
     }
-
     // --- Аутентификация через код ---
     async function verifyAccessCode(code) {
       try {
@@ -1134,7 +1128,6 @@
         }
       });
     }
-
     // --- Инициализация MapLibre ---
     function initMaplibre() {
       try {
@@ -1191,7 +1184,7 @@
         // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
         map.addSource('grid-source', { 
           type: 'geojson', 
-           { type: 'FeatureCollection', features: gridFeatures } 
+          data: { type: 'FeatureCollection', features: gridFeatures } // Добавлено свойство 'data'
         });
         // --- /ИСПРАВЛЕНИЕ ---
         map.addLayer({ 
@@ -1207,7 +1200,6 @@
         map.setLayoutProperty('grid-layer', 'visibility', 'none');
       }
     }
-
     function updateVisibleTiles() {
       if (!map || !tileData.length) return;
       const bounds = map.getBounds();
@@ -1218,18 +1210,14 @@
       renderTiles();
       if (isInitialLoad) { isInitialLoad = false; return; }
     }
-
     function renderTiles() {
       if (!map || !map.isStyleLoaded()) return requestAnimationFrame(renderTiles); // Используем rAF
-
       const zoom = map.getZoom();
       let visibility = 'visible';
-
       // Скрываем точки при низком зуме (уменьшил порог с 5 до 3)
       if (zoom < 3) {
         visibility = 'none';
       }
-
       const features = tileData
         .filter(tile => visibleTiles.has(tile.id))
         .map(tile => {
@@ -1252,7 +1240,6 @@
             }
           };
         });
-
       if (map.getSource('tiles-source')) {
         // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
         map.getSource('tiles-source').setData({ type: 'FeatureCollection', features: features });
@@ -1262,7 +1249,7 @@
         // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
         map.addSource('tiles-source', { 
           type: 'geojson', 
-           { type: 'FeatureCollection', features: features } 
+          data: { type: 'FeatureCollection', features: features } // Добавлено свойство 'data'
         });
         // --- /ИСПРАВЛЕНИЕ ---
         map.addLayer({
@@ -1318,7 +1305,6 @@
         map.on('mouseleave', 'tiles-layer', () => map.getCanvas().style.cursor = '');
       }
     }
-
     // --- Работа с метками ---
     function getUserMarkComment(tileId) {
       const marks = userMarks[tileId] || {};
@@ -1378,14 +1364,10 @@
       const filterSelect = document.getElementById('status-filter');
       const dropdown = document.getElementById('filtered-tiles-dropdown');
       if (!dropdown) return;
-
       const currentValue = dropdown.value;
       const selectedFilter = filterSelect.value;
-
       dropdown.innerHTML = '<option value="">Выберите тайл</option>';
-
       let filteredTiles = [];
-
       if (selectedFilter === 'ally') {
         filteredTiles = tileData.filter(tile => getUserMarkStatus(tile.id) === 'ally');
       } else if (selectedFilter === 'enemy') {
@@ -1405,14 +1387,12 @@
         // Все тайлы
         filteredTiles = tileData;
       }
-
       filteredTiles.forEach(tile => {
         const option = document.createElement('option');
         option.value = tile.id;
         option.textContent = `Тайл #${tile.id}`;
         dropdown.appendChild(option);
       });
-
       if (currentValue && dropdown.querySelector(`option[value="${currentValue}"]`)) {
         dropdown.value = currentValue;
       }
@@ -1461,7 +1441,6 @@
         showToast('Ошибка сохранения метки', 'error');
       }
     }
-
     // --- Попап и модальное окно ---
     function showTilePopup(tileId, lngLat) {
       // Удаляем предыдущий попап, если он есть
@@ -1469,31 +1448,24 @@
         currentPopup.remove();
         currentPopup = null;
       }
-
       const tile = tileData.find(t => t.id === tileId);
       if (!tile) return;
-
       const status = getUserMarkStatus(tileId);
       const isFavorite = favorites.includes(tileId);
       const comment = getUserMarkComment(tileId);
       const originalData = tile.originalData;
-
       // --- ИСПРАВЛЕНИЕ: Безопасное отображение данных ---
       const popupContentElement = document.createElement('div');
       popupContentElement.className = 'popup-content';
-
       const h3 = document.createElement('h3');
       h3.textContent = `Тайл #${tileId}`;
       popupContentElement.appendChild(h3);
-
       const pCoords = document.createElement('p');
       pCoords.textContent = `Координаты сетки: X=${tile.gridX}, Y=${tile.gridY}`;
       popupContentElement.appendChild(pCoords);
-
       const pGeo = document.createElement('p');
       pGeo.textContent = `Гео координаты: ${tile.lat.toFixed(4)}, ${tile.lng.toFixed(4)}`;
       popupContentElement.appendChild(pGeo);
-
       // --- ИСПРАВЛЕНИЕ: Цвет статуса ---
       const pStatus = document.createElement('p');
       pStatus.textContent = `Статус: `;
@@ -1502,20 +1474,16 @@
       statusSpan.style.color = tile.has_owner === 'true' ? '#1e88e5' : '#9e9e9e'; // Синий для занятого, серый для свободного
       pStatus.appendChild(statusSpan);
       popupContentElement.appendChild(pStatus);
-      // --- /ИСПРАВЛЕНИЕ ---
-
       if (tile.owner_name) {
         const pOwner = document.createElement('p');
         pOwner.textContent = `Владелец: ${tile.owner_name}`;
         popupContentElement.appendChild(pOwner);
       }
-
       if (comment) {
         const pComment = document.createElement('p');
         pComment.textContent = `Комментарий: ${comment}`;
         popupContentElement.appendChild(pComment);
       }
-
       if (originalData) {
         const resourcesDiv = document.createElement('div');
         resourcesDiv.style.marginTop = '10px';
@@ -1529,63 +1497,51 @@
   ⚡  Артефакты: <span>${originalData.artifacts || 0}</span>`;
         popupContentElement.appendChild(resourcesDiv);
       }
-
       const pMarkStatus = document.createElement('p');
       pMarkStatus.textContent = `Метка: ${status || '—'}`;
       popupContentElement.appendChild(pMarkStatus);
-
       const actionsDiv = document.createElement('div');
       actionsDiv.className = 'popup-actions';
-
       const btnAlly = document.createElement('button');
       btnAlly.className = 'mark-btn';
       btnAlly.dataset.id = tileId;
       btnAlly.dataset.type = 'ally';
       btnAlly.textContent = ' 🟩  Союзник';
       actionsDiv.appendChild(btnAlly);
-
       const btnEnemy = document.createElement('button');
       btnEnemy.className = 'mark-btn';
       btnEnemy.dataset.id = tileId;
       btnEnemy.dataset.type = 'enemy';
       btnEnemy.textContent = ' 🟥  Враг';
       actionsDiv.appendChild(btnEnemy);
-
       const btnFavorite = document.createElement('button');
       btnFavorite.className = 'mark-btn';
       btnFavorite.dataset.id = tileId;
       btnFavorite.dataset.type = 'favorite';
       btnFavorite.textContent = ' ⭐  Избранное';
       actionsDiv.appendChild(btnFavorite);
-
       const btnComment = document.createElement('button');
       btnComment.className = 'comment-btn';
       btnComment.dataset.id = tileId;
       btnComment.textContent = ' 💬  Комментарий';
       actionsDiv.appendChild(btnComment);
-
       const btnClear = document.createElement('button');
       btnClear.className = 'mark-btn';
       btnClear.dataset.id = tileId;
       btnClear.dataset.type = 'clear';
       btnClear.textContent = ' ⚪  Сброс';
       actionsDiv.appendChild(btnClear);
-
       popupContentElement.appendChild(actionsDiv);
-
       // --- /ИСПРАВЛЕНИЕ ---
-
       currentPopup = new maplibregl.Popup({ closeOnClick: false })
         .setLngLat(lngLat)
         .setDOMContent(popupContentElement)
         .addTo(map);
-
       // Обработчики событий добавляем в колбэке open
       currentPopup.on('open', () => {
         // Убедимся, что элементы существуют
         const markButtons = currentPopup.getContainer().querySelectorAll('.mark-btn');
         const commentButtons = currentPopup.getContainer().querySelectorAll('.comment-btn');
-
         markButtons.forEach(btn => {
           btn.addEventListener('click', () => {
             const id = Number(btn.dataset.id);
@@ -1597,7 +1553,6 @@
             }
           });
         });
-
         commentButtons.forEach(btn => {
           btn.addEventListener('click', () => {
             const id = Number(btn.dataset.id);
@@ -1610,7 +1565,6 @@
         });
       });
     }
-
     function showCommentModal(tileId) {
       currentTileForComment = tileId;
       const comment = getUserMarkComment(tileId) || '';
@@ -1628,7 +1582,6 @@
       saveMark(currentTileForComment, 'comment', commentText);
       hideCommentModal();
     }
-
     // --- Прочие функции (поиск, сброс, тема и т.д.) ---
     function focusOnTile(tileId) {
       const parsedId = Number(tileId);
@@ -1773,7 +1726,6 @@
         const debug = document.getElementById('debug');
         debug.style.display = debug.style.display === 'none' ? 'block' : 'none';
       });
-
       // --- ИСПРАВЛЕНИЕ: Установка иконки темы ---
       let savedTheme;
       try {
