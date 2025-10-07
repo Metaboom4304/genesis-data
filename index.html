@@ -1181,10 +1181,10 @@
             properties: { type: 'horizontal', y: correctedY } 
           });
         }
-        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
+        // --- ИСПРАВЛЕНИЕ ОШИБКИ: добавлено свойство data ---
         map.addSource('grid-source', { 
           type: 'geojson', 
-           { type: 'FeatureCollection', features: gridFeatures } 
+          data: { type: 'FeatureCollection', features: gridFeatures } 
         });
         // --- /ИСПРАВЛЕНИЕ ---
         map.addLayer({ 
@@ -1241,15 +1241,15 @@
           };
         });
       if (map.getSource('tiles-source')) {
-        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
+        // --- ИСПРАВЛЕНИЕ ОШИБКИ: добавлено свойство data ---
         map.getSource('tiles-source').setData({ type: 'FeatureCollection', features: features });
         // --- /ИСПРАВЛЕНИЕ ---
         map.setLayoutProperty('tiles-layer', 'visibility', visibility);
       } else {
-        // --- ИСПРАВЛЕНИЕ ОШИБКИ ---
+        // --- ИСПРАВЛЕНИЕ ОШИБКИ: добавлено свойство data ---
         map.addSource('tiles-source', { 
           type: 'geojson', 
-           { type: 'FeatureCollection', features: features } 
+          data: { type: 'FeatureCollection', features: features } 
         });
         // --- /ИСПРАВЛЕНИЕ ---
         map.addLayer({
