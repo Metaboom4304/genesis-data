@@ -1291,10 +1291,13 @@
 
     function getUserMarkStatus(tileId) {
       const marks = userMarks[tileId] || {};
-      if (marks.ally) return 'ally';
+      
+      // Приоритет отображения: enemy > ally > favorite > comment
       if (marks.enemy) return 'enemy';
+      if (marks.ally) return 'ally';
       if (marks.favorite) return 'favorite';
       if (marks.comment) return 'comment';
+      
       return '';
     }
 
@@ -1312,15 +1315,130 @@
       
       userMarks = {};
       favorites = [];
+      
       data.forEach(mark => {
         if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
         userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
-        if (mark.mark_type === 'favorite') favorites.push(Number(mark.tile_id));
+        
+        if (mark.mark_type === 'favorite') {
+          favorites.push(Number(mark.tile_id));
+        }
       });
       
       updateFavoritesDropdown();
       updateFilteredTilesDropdown();
       log(` ✅  Загружено ${data.length} меток`);
+    }
+
+    async function saveMark(tileId, markType, comment = null) {
+      // Показываем уведомление о начале сохранения
+      showToast(`Сохранение метки для тайла #${tileId}...`, 'saving');
+      
+      // Блокируем кнопки на время сохранения
+      const popupContainer = document.querySelector('.maplibregl-popup-content');
+      if (popupContainer) {
+        const buttons = popupContainer.querySelectorAll('button');
+        buttons.forEach(btn => { 
+          btn.disabled = true;
+          btn.style.opacity = '0.6';
+          btn.style.cursor = 'wait';
+        });
+      }
+
+      if (!currentUser.id) {
+        showToast('Ошибка: Требуется авторизация', 'error');
+        return;
+      }
+      
+      try {
+        if (markType === 'clear') {
+          // Полное удаление всех меток для тайла
+          await supabaseClient
+            .from('user_marks')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('tile_id', tileId);
+        } else {
+          // Для статусных меток (ally, enemy, favorite) - заменяем существующие статусные метки
+          // Но сохраняем комментарий если он есть
+          const statusMarkTypes = ['ally', 'enemy', 'favorite'];
+          
+          if (statusMarkTypes.includes(markType)) {
+            // Удаляем только другие статусные метки, но не комментарий
+            await supabaseClient
+              .from('user_marks')
+              .delete()
+              .eq('user_id', currentUser.id)
+              .eq('tile_id', tileId)
+              .in('mark_type', statusMarkTypes);
+          }
+          
+          // Проверяем, существует ли уже такая метка
+          const { data: existingMark } = await supabaseClient
+            .from('user_marks')
+            .select()
+            .eq('user_id', currentUser.id)
+            .eq('tile_id', tileId)
+            .eq('mark_type', markType)
+            .single();
+
+          if (existingMark) {
+            // Обновляем существующую метку
+            await supabaseClient
+              .from('user_marks')
+              .update({
+                comment: comment || null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', currentUser.id)
+              .eq('tile_id', tileId)
+              .eq('mark_type', markType);
+          } else {
+            // Создаем новую метку
+            await supabaseClient
+              .from('user_marks')
+              .insert({
+                user_id: currentUser.id,
+                tile_id: tileId,
+                mark_type: markType,
+                comment: comment || null
+              });
+          }
+        }
+        
+        // Обновляем локальные данные
+        await loadUserMarks(); // Перезагружаем все метки для синхронизации
+        
+        // Показываем сообщение об успехе
+        let successMessage = 'Метка сохранена';
+        if (markType === 'ally') successMessage = 'Тайл помечен как союзник';
+        else if (markType === 'enemy') successMessage = 'Тайл помечен как враг';
+        else if (markType === 'favorite') successMessage = 'Тайл добавлен в избранное';
+        else if (markType === 'comment') successMessage = comment ? 'Комментарий сохранен' : 'Комментарий удален';
+        else if (markType === 'clear') successMessage = 'Все метки удалены';
+        
+        showToast(successMessage, 'success');
+        
+        // Обновляем интерфейс
+        renderTiles();
+        updateFavoritesDropdown();
+        updateFilteredTilesDropdown();
+        
+      } catch (error) {
+        log(' ❌  Ошибка сохранения метки: ' + error.message, true);
+        showToast('Ошибка сохранения метки', 'error');
+      } finally {
+        // Разблокируем кнопки в любом случае
+        const popupContainer = document.querySelector('.maplibregl-popup-content');
+        if (popupContainer) {
+          const buttons = popupContainer.querySelectorAll('button');
+          buttons.forEach(btn => { 
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+          });
+        }
+      }
     }
 
     function updateFavoritesDropdown() {
@@ -1377,97 +1495,6 @@
       
       if (currentValue && dropdown.querySelector(`option[value="${currentValue}"]`)) {
         dropdown.value = currentValue;
-      }
-    }
-
-    async function saveMark(tileId, markType, comment = null) {
-      // Показываем уведомление о начале сохранения
-      showToast(`Сохранение метки для тайла #${tileId}...`, 'saving');
-      
-      // Блокируем кнопки на время сохранения
-      const popupContainer = document.querySelector('.maplibregl-popup-content');
-      if (popupContainer) {
-        const buttons = popupContainer.querySelectorAll('button');
-        buttons.forEach(btn => { 
-          btn.disabled = true;
-          btn.style.opacity = '0.6';
-          btn.style.cursor = 'wait';
-        });
-      }
-
-      if (!currentUser.id) {
-        showToast('Ошибка: Требуется авторизация', 'error');
-        return;
-      }
-      
-      try {
-        if (markType === 'clear') {
-          await supabaseClient
-            .from('user_marks')
-            .delete()
-            .eq('user_id', currentUser.id)
-            .eq('tile_id', tileId);
-        } else {
-          // Сначала удаляем существующие метки для этого тайла
-          await supabaseClient
-            .from('user_marks')
-            .delete()
-            .eq('user_id', currentUser.id)
-            .eq('tile_id', tileId);
-            
-          // Затем добавляем новую метку
-          await supabaseClient
-            .from('user_marks')
-            .insert({
-              user_id: currentUser.id,
-              tile_id: tileId,
-              mark_type: markType,
-              comment: comment || null
-            });
-        }
-        
-        // Обновляем локальные данные
-        if (markType === 'clear') {
-          delete userMarks[tileId];
-          favorites = favorites.filter(id => id !== tileId);
-        } else {
-          if (!userMarks[tileId]) userMarks[tileId] = {};
-          userMarks[tileId][markType] = comment || true;
-          if (markType === 'favorite') {
-            if (!favorites.includes(tileId)) {
-              favorites.push(tileId);
-            }
-          }
-        }
-        
-        // Показываем сообщение об успехе
-        let successMessage = 'Метка сохранена';
-        if (markType === 'ally') successMessage = 'Тайл помечен как союзник';
-        else if (markType === 'enemy') successMessage = 'Тайл помечен как враг';
-        else if (markType === 'favorite') successMessage = 'Тайл добавлен в избранное';
-        else if (markType === 'clear') successMessage = 'Метка удалена';
-        
-        showToast(successMessage, 'success');
-        
-        // Обновляем интерфейс
-        renderTiles();
-        updateFavoritesDropdown();
-        updateFilteredTilesDropdown();
-        
-      } catch (error) {
-        log(' ❌  Ошибка сохранения метки: ' + error.message, true);
-        showToast('Ошибка сохранения метки', 'error');
-      } finally {
-        // Разблокируем кнопки в любом случае
-        const popupContainer = document.querySelector('.maplibregl-popup-content');
-        if (popupContainer) {
-          const buttons = popupContainer.querySelectorAll('button');
-          buttons.forEach(btn => { 
-            btn.disabled = false;
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-          });
-        }
       }
     }
 
@@ -1548,17 +1575,17 @@
         popupContentElement.appendChild(pOwner);
       }
       
-      // Отображаем текущую метку пользователя
+      // Отображаем текущие метки пользователя
       const pUserMark = document.createElement('p');
-      let markText = 'Метка: ';
-      let markDisplay = '—';
-      
-      if (status === 'ally') markDisplay = '🟩 Союзник';
-      else if (status === 'enemy') markDisplay = '🟥 Враг';
-      else if (status === 'favorite') markDisplay = '⭐ Избранное';
-      else if (status === 'comment') markDisplay = '💬 С комментарием';
-      
-      pUserMark.textContent = markText + markDisplay;
+      let markText = 'Метки: ';
+      const activeMarks = [];
+
+      if (status === 'ally') activeMarks.push('🟩 Союзник');
+      if (status === 'enemy') activeMarks.push('🟥 Враг');
+      if (status === 'favorite') activeMarks.push('⭐ Избранное');
+      if (comment) activeMarks.push('💬 Комментарий');
+
+      pUserMark.textContent = markText + (activeMarks.length > 0 ? activeMarks.join(', ') : '—');
       popupContentElement.appendChild(pUserMark);
       
       if (comment) {
