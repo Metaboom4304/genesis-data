@@ -660,6 +660,8 @@
       transition: transform 0.3s ease;
       font-family: 'Cinzel', serif;
       border: 1px solid var(--border);
+      max-width: 400px;
+      word-wrap: break-word;
     }
     .toast.show {
       transform: translateX(0);
@@ -672,6 +674,13 @@
     }
     .toast-warning {
       border-left-color: var(--marker-favorite);
+    }
+    .toast-info {
+      border-left-color: var(--marker-ally);
+    }
+    .toast-saving {
+      border-left-color: var(--primary);
+      background: var(--dark-paper);
     }
     #test-api-btn {
       position: fixed;
@@ -1372,6 +1381,20 @@
     }
 
     async function saveMark(tileId, markType, comment = null) {
+      // Показываем уведомление о начале сохранения
+      showToast(`Сохранение метки для тайла #${tileId}...`, 'saving');
+      
+      // Блокируем кнопки на время сохранения
+      const popupContainer = document.querySelector('.maplibregl-popup-content');
+      if (popupContainer) {
+        const buttons = popupContainer.querySelectorAll('button');
+        buttons.forEach(btn => { 
+          btn.disabled = true;
+          btn.style.opacity = '0.6';
+          btn.style.cursor = 'wait';
+        });
+      }
+
       if (!currentUser.id) {
         showToast('Ошибка: Требуется авторизация', 'error');
         return;
@@ -1385,12 +1408,14 @@
             .eq('user_id', currentUser.id)
             .eq('tile_id', tileId);
         } else {
+          // Сначала удаляем существующие метки для этого тайла
           await supabaseClient
             .from('user_marks')
             .delete()
             .eq('user_id', currentUser.id)
             .eq('tile_id', tileId);
             
+          // Затем добавляем новую метку
           await supabaseClient
             .from('user_marks')
             .insert({
@@ -1401,26 +1426,52 @@
             });
         }
         
+        // Обновляем локальные данные
         if (markType === 'clear') {
           delete userMarks[tileId];
           favorites = favorites.filter(id => id !== tileId);
         } else {
           if (!userMarks[tileId]) userMarks[tileId] = {};
           userMarks[tileId][markType] = comment || true;
-          if (markType === 'favorite') favorites.push(tileId);
+          if (markType === 'favorite') {
+            if (!favorites.includes(tileId)) {
+              favorites.push(tileId);
+            }
+          }
         }
         
+        // Показываем сообщение об успехе
+        let successMessage = 'Метка сохранена';
+        if (markType === 'ally') successMessage = 'Тайл помечен как союзник';
+        else if (markType === 'enemy') successMessage = 'Тайл помечен как враг';
+        else if (markType === 'favorite') successMessage = 'Тайл добавлен в избранное';
+        else if (markType === 'clear') successMessage = 'Метка удалена';
+        
+        showToast(successMessage, 'success');
+        
+        // Обновляем интерфейс
         renderTiles();
         updateFavoritesDropdown();
         updateFilteredTilesDropdown();
-        showToast('Метка сохранена', 'success');
+        
       } catch (error) {
         log(' ❌  Ошибка сохранения метки: ' + error.message, true);
         showToast('Ошибка сохранения метки', 'error');
+      } finally {
+        // Разблокируем кнопки в любом случае
+        const popupContainer = document.querySelector('.maplibregl-popup-content');
+        if (popupContainer) {
+          const buttons = popupContainer.querySelectorAll('button');
+          buttons.forEach(btn => { 
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+          });
+        }
       }
     }
 
-    // ОСНОВНОЕ ИСПРАВЛЕНИЕ: Делегирование событий для кнопок в попапе
+    // Делегирование событий для кнопок в попапе
     function setupPopupEventDelegation() {
       document.addEventListener('click', function(e) {
         // Обработка кнопок меток
@@ -1497,6 +1548,19 @@
         popupContentElement.appendChild(pOwner);
       }
       
+      // Отображаем текущую метку пользователя
+      const pUserMark = document.createElement('p');
+      let markText = 'Метка: ';
+      let markDisplay = '—';
+      
+      if (status === 'ally') markDisplay = '🟩 Союзник';
+      else if (status === 'enemy') markDisplay = '🟥 Враг';
+      else if (status === 'favorite') markDisplay = '⭐ Избранное';
+      else if (status === 'comment') markDisplay = '💬 С комментарием';
+      
+      pUserMark.textContent = markText + markDisplay;
+      popupContentElement.appendChild(pUserMark);
+      
       if (comment) {
         const pComment = document.createElement('p');
         pComment.textContent = `Комментарий: ${comment}`;
@@ -1516,10 +1580,6 @@
   ⚡  Артефакты: <span>${originalData.artifacts || 0}</span>`;
         popupContentElement.appendChild(resourcesDiv);
       }
-      
-      const pMarkStatus = document.createElement('p');
-      pMarkStatus.textContent = `Метка: ${status || '—'}`;
-      popupContentElement.appendChild(pMarkStatus);
       
       const actionsDiv = document.createElement('div');
       actionsDiv.className = 'popup-actions';
