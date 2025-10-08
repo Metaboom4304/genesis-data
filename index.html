@@ -891,7 +891,7 @@
     const GRID_Y_OFFSET = -39;
     
     let map;
-    let currentUser = { id: null };
+    let currentUser = { id: null, hash: null };
     let tileData = [];
     let userMarks = {};
     let favorites = [];
@@ -902,6 +902,68 @@
     let tilesVisible = true;
     let gridVisible = false;
     let currentPopup = null;
+
+    // Константа для хеширования
+    const HASH_SALT = "genesis_map_secret_" + new Date().getFullYear();
+
+    // Функция для создания хеша пользователя
+    function createUserHash(userId) {
+        if (!userId) return null;
+        
+        // Простое но эффективное хеширование
+        let hash = 0;
+        const str = userId + HASH_SALT;
+        
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        
+        return 'user_' + Math.abs(hash).toString(16);
+    }
+
+    // Обновляем currentUser с хешем
+    function updateUserWithHash(userId) {
+        currentUser.id = userId;
+        currentUser.hash = createUserHash(userId.toString());
+        
+        // Сохраняем хеш в localStorage
+        if (currentUser.hash) {
+            localStorage.setItem('user_hash', currentUser.hash);
+        }
+    }
+
+    // Функция для миграции старых записей на новый хеш
+    async function migrateOldMarksToHash() {
+        if (!currentUser.id || !currentUser.hash) return;
+        
+        try {
+            // Находим все метки со старым user_id
+            const { data: oldMarks, error } = await supabaseClient
+                .from('user_marks')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .is('user_hash', null);
+                
+            if (error || !oldMarks || oldMarks.length === 0) return;
+            
+            log(` 🔄  Миграция ${oldMarks.length} старых меток на хеш`);
+            
+            // Обновляем каждую запись
+            for (const mark of oldMarks) {
+                await supabaseClient
+                    .from('user_marks')
+                    .update({ user_hash: currentUser.hash })
+                    .eq('id', mark.id);
+            }
+            
+            log(` ✅  Миграция завершена`);
+            
+        } catch (error) {
+            log(' ⚠️  Ошибка миграции меток: ' + error.message);
+        }
+    }
 
     function log(message, isError = false) {
       const now = new Date();
@@ -1059,7 +1121,8 @@
           return false;
         }
         
-        currentUser.id = data.user_id;
+        // ОБНОВЛЕНО: Используем хеш вместо прямого ID
+        updateUserWithHash(data.user_id);
         document.getElementById('code-container').style.display = 'none';
         initMaplibre();
         loadUserMarks();
@@ -1301,144 +1364,212 @@
       return '';
     }
 
+    // ОБНОВЛЕНО: Функция загрузки меток с поддержкой хешей
     async function loadUserMarks() {
-      if (!currentUser.id) return;
-      const { data, error } = await supabaseClient
-        .from('user_marks')
-        .select('tile_id, mark_type, comment')
-        .eq('user_id', currentUser.id);
-        
-      if (error) {
-        log(' ❌  Ошибка загрузки меток: ' + error.message, true);
-        return;
-      }
-      
-      userMarks = {};
-      favorites = [];
-      
-      data.forEach(mark => {
-        if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
-        userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
-        
-        if (mark.mark_type === 'favorite') {
-          favorites.push(Number(mark.tile_id));
+        if (!currentUser.id) {
+            // Пытаемся восстановить из localStorage
+            const savedHash = localStorage.getItem('user_hash');
+            if (savedHash) {
+                currentUser.hash = savedHash;
+            } else {
+                return;
+            }
         }
-      });
-      
-      updateFavoritesDropdown();
-      updateFilteredTilesDropdown();
-      log(` ✅  Загружено ${data.length} меток`);
-    }
-
-    async function saveMark(tileId, markType, comment = null) {
-      // Показываем уведомление о начале сохранения
-      showToast(`Сохранение метки для тайла #${tileId}...`, 'saving');
-      
-      // Блокируем кнопки на время сохранения
-      const popupContainer = document.querySelector('.maplibregl-popup-content');
-      if (popupContainer) {
-        const buttons = popupContainer.querySelectorAll('button');
-        buttons.forEach(btn => { 
-          btn.disabled = true;
-          btn.style.opacity = '0.6';
-          btn.style.cursor = 'wait';
-        });
-      }
-
-      if (!currentUser.id) {
-        showToast('Ошибка: Требуется авторизация', 'error');
-        return;
-      }
-      
-      try {
-        if (markType === 'clear') {
-          // Полное удаление всех меток для тайла
-          await supabaseClient
+        
+        // Если у нас есть ID но нет хеша - создаем хеш
+        if (currentUser.id && !currentUser.hash) {
+            updateUserWithHash(currentUser.id);
+        }
+        
+        // Мигрируем старые записи если нужно
+        await migrateOldMarksToHash();
+        
+        // Загружаем метки по хешу (приоритет) или по старому ID
+        let query = supabaseClient
             .from('user_marks')
-            .delete()
-            .eq('user_id', currentUser.id)
-            .eq('tile_id', tileId);
+            .select('tile_id, mark_type, comment');
+        
+        if (currentUser.hash) {
+            query = query.eq('user_hash', currentUser.hash);
+        } else if (currentUser.id) {
+            query = query.eq('user_id', currentUser.id);
         } else {
-          // Для статусных меток (ally, enemy, favorite) - заменяем существующие статусные метки
-          // Но сохраняем комментарий если он есть
-          const statusMarkTypes = ['ally', 'enemy', 'favorite'];
-          
-          if (statusMarkTypes.includes(markType)) {
-            // Удаляем только другие статусные метки, но не комментарий
-            await supabaseClient
-              .from('user_marks')
-              .delete()
-              .eq('user_id', currentUser.id)
-              .eq('tile_id', tileId)
-              .in('mark_type', statusMarkTypes);
-          }
-          
-          // Проверяем, существует ли уже такая метка
-          const { data: existingMark } = await supabaseClient
-            .from('user_marks')
-            .select()
-            .eq('user_id', currentUser.id)
-            .eq('tile_id', tileId)
-            .eq('mark_type', markType)
-            .single();
-
-          if (existingMark) {
-            // Обновляем существующую метку
-            await supabaseClient
-              .from('user_marks')
-              .update({
-                comment: comment || null,
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', currentUser.id)
-              .eq('tile_id', tileId)
-              .eq('mark_type', markType);
-          } else {
-            // Создаем новую метку
-            await supabaseClient
-              .from('user_marks')
-              .insert({
-                user_id: currentUser.id,
-                tile_id: tileId,
-                mark_type: markType,
-                comment: comment || null
-              });
-          }
+            return;
         }
         
-        // Обновляем локальные данные
-        await loadUserMarks(); // Перезагружаем все метки для синхронизации
+        const { data, error } = await query;
+            
+        if (error) {
+            log(' ❌  Ошибка загрузки меток: ' + error.message, true);
+            return;
+        }
         
-        // Показываем сообщение об успехе
-        let successMessage = 'Метка сохранена';
-        if (markType === 'ally') successMessage = 'Тайл помечен как союзник';
-        else if (markType === 'enemy') successMessage = 'Тайл помечен как враг';
-        else if (markType === 'favorite') successMessage = 'Тайл добавлен в избранное';
-        else if (markType === 'comment') successMessage = comment ? 'Комментарий сохранен' : 'Комментарий удален';
-        else if (markType === 'clear') successMessage = 'Все метки удалены';
+        userMarks = {};
+        favorites = [];
         
-        showToast(successMessage, 'success');
+        data.forEach(mark => {
+            if (!userMarks[mark.tile_id]) userMarks[mark.tile_id] = {};
+            userMarks[mark.tile_id][mark.mark_type] = mark.comment || true;
+            
+            if (mark.mark_type === 'favorite') {
+                favorites.push(Number(mark.tile_id));
+            }
+        });
         
-        // Обновляем интерфейс
-        renderTiles();
         updateFavoritesDropdown();
         updateFilteredTilesDropdown();
+        log(` ✅  Загружено ${data.length} меток`);
+    }
+
+    // ОБНОВЛЕНО: Функция сохранения меток с поддержкой хешей
+    async function saveMark(tileId, markType, comment = null) {
+        // Показываем уведомление о начале сохранения
+        showToast(`Сохранение метки для тайла #${tileId}...`, 'saving');
         
-      } catch (error) {
-        log(' ❌  Ошибка сохранения метки: ' + error.message, true);
-        showToast('Ошибка сохранения метки', 'error');
-      } finally {
-        // Разблокируем кнопки в любом случае
+        // Блокируем кнопки на время сохранения
         const popupContainer = document.querySelector('.maplibregl-popup-content');
         if (popupContainer) {
-          const buttons = popupContainer.querySelectorAll('button');
-          buttons.forEach(btn => { 
-            btn.disabled = false;
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-          });
+            const buttons = popupContainer.querySelectorAll('button');
+            buttons.forEach(btn => { 
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                btn.style.cursor = 'wait';
+            });
         }
-      }
+
+        if (!currentUser.hash && !currentUser.id) {
+            showToast('Ошибка: Требуется авторизация', 'error');
+            return;
+        }
+        
+        try {
+            if (markType === 'clear') {
+                // Полное удаление всех меток для тайла
+                if (currentUser.hash) {
+                    await supabaseClient
+                        .from('user_marks')
+                        .delete()
+                        .eq('user_hash', currentUser.hash)
+                        .eq('tile_id', tileId);
+                } else {
+                    await supabaseClient
+                        .from('user_marks')
+                        .delete()
+                        .eq('user_id', currentUser.id)
+                        .eq('tile_id', tileId);
+                }
+            } else {
+                // Для статусных меток (ally, enemy, favorite) - заменяем существующие статусные метки
+                // Но сохраняем комментарий если он есть
+                const statusMarkTypes = ['ally', 'enemy', 'favorite'];
+                
+                if (statusMarkTypes.includes(markType)) {
+                    // Удаляем только другие статусные метки, но не комментарий
+                    if (currentUser.hash) {
+                        await supabaseClient
+                            .from('user_marks')
+                            .delete()
+                            .eq('user_hash', currentUser.hash)
+                            .eq('tile_id', tileId)
+                            .in('mark_type', statusMarkTypes);
+                    } else {
+                        await supabaseClient
+                            .from('user_marks')
+                            .delete()
+                            .eq('user_id', currentUser.id)
+                            .eq('tile_id', tileId)
+                            .in('mark_type', statusMarkTypes);
+                    }
+                }
+                
+                // Проверяем, существует ли уже такая метка
+                let query = supabaseClient
+                    .from('user_marks')
+                    .select();
+                
+                if (currentUser.hash) {
+                    query = query.eq('user_hash', currentUser.hash);
+                } else {
+                    query = query.eq('user_id', currentUser.id);
+                }
+                
+                query = query.eq('tile_id', tileId)
+                    .eq('mark_type', markType)
+                    .single();
+
+                const { data: existingMark } = await query;
+
+                if (existingMark) {
+                    // Обновляем существующую метку
+                    let updateQuery = supabaseClient
+                        .from('user_marks')
+                        .update({
+                            comment: comment || null,
+                            updated_at: new Date().toISOString()
+                        });
+                    
+                    if (currentUser.hash) {
+                        updateQuery = updateQuery.eq('user_hash', currentUser.hash);
+                    } else {
+                        updateQuery = updateQuery.eq('user_id', currentUser.id);
+                    }
+                    
+                    await updateQuery
+                        .eq('tile_id', tileId)
+                        .eq('mark_type', markType);
+                } else {
+                    // Создаем новую метку
+                    const markData = {
+                        tile_id: tileId,
+                        mark_type: markType,
+                        comment: comment || null
+                    };
+                    
+                    if (currentUser.hash) {
+                        markData.user_hash = currentUser.hash;
+                    } else {
+                        markData.user_id = currentUser.id;
+                    }
+                    
+                    await supabaseClient
+                        .from('user_marks')
+                        .insert(markData);
+                }
+            }
+            
+            // Обновляем локальные данные
+            await loadUserMarks(); // Перезагружаем все метки для синхронизации
+            
+            // Показываем сообщение об успехе
+            let successMessage = 'Метка сохранена';
+            if (markType === 'ally') successMessage = 'Тайл помечен как союзник';
+            else if (markType === 'enemy') successMessage = 'Тайл помечен как враг';
+            else if (markType === 'favorite') successMessage = 'Тайл добавлен в избранное';
+            else if (markType === 'comment') successMessage = comment ? 'Комментарий сохранен' : 'Комментарий удален';
+            else if (markType === 'clear') successMessage = 'Все метки удалены';
+            
+            showToast(successMessage, 'success');
+            
+            // Обновляем интерфейс
+            renderTiles();
+            updateFavoritesDropdown();
+            updateFilteredTilesDropdown();
+            
+        } catch (error) {
+            log(' ❌  Ошибка сохранения метки: ' + error.message, true);
+            showToast('Ошибка сохранения метки', 'error');
+        } finally {
+            // Разблокируем кнопки в любом случае
+            const popupContainer = document.querySelector('.maplibregl-popup-content');
+            if (popupContainer) {
+                const buttons = popupContainer.querySelectorAll('button');
+                buttons.forEach(btn => { 
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                });
+            }
+        }
     }
 
     function updateFavoritesDropdown() {
@@ -1868,6 +1999,14 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      // Восстанавливаем хеш из localStorage если есть
+      const savedHash = localStorage.getItem('user_hash');
+      if (savedHash) {
+        currentUser.hash = savedHash;
+        // Загружаем метки даже если нет прямого user_id
+        loadUserMarks();
+      }
+      
       log(' 🚀  Запуск GENESIS WAR MAP на Supabase');
       document.getElementById('code-container').style.display = 'flex';
       setupCodeForm();
