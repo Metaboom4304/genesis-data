@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GENESIS WAR MAP - Победа в стратегии</title>
+  <title>GENESIS WAR MAP - Древние Земли</title>
   <!-- MapLibre GL JS -->
   <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
@@ -33,9 +33,11 @@
       --marker-favorite: #ffca28;
       --marker-owned: #43a047;
       --marker-clear: #9e9e9e;
+      --marker-my: #aed581; /* Более светлый салатовый для моих тайлов */
+      --marker-my-dark: #7cb342; /* Темно-зеленый для обводки */
     }
     .dark-theme {
-      --text: #e0d6c8;
+      --text: #f0e6d8; /* Более светлый текст для темной темы */
       --background: #1a140d;
       --paper: #2a2218;
       --dark-paper: #3a3024;
@@ -91,8 +93,9 @@
     }
     .header-controls {
       display: flex;
-      gap: 12px;
+      gap: 5px; /* Еще меньше отступ между кнопками */
       align-items: center;
+      margin-left: -55px; /* Еще больше сдвигаем кнопки левее */
     }
     #map {
       flex: 1;
@@ -141,11 +144,13 @@
       color: var(--primary-dark);
     }
     .panel-collapsed .panel-title {
-      font-size: 14px;
+      font-size: 15px; /* Чуть крупнее в свернутом состоянии */
       transform: none;
       writing-mode: horizontal-tb;
       text-align: center;
       line-height: 1.2;
+      margin-right: auto; /* Прижимаем вправо */
+      padding-left: 20px; /* Центрируем на фоне */
     }
     .toggle-panel {
       background: none;
@@ -259,9 +264,11 @@
       gap: 6px;
       font-family: 'Cinzel', serif;
       background: rgba(255, 255, 255, 0.7);
+      color: var(--text);
     }
     .dark-theme .btn {
       background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
     }
     .btn-primary {
       background: var(--primary);
@@ -280,9 +287,13 @@
     }
     .dark-theme .btn-secondary {
       background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
     }
     .btn-secondary:hover {
       background: rgba(139, 69, 19, 0.1);
+    }
+    .dark-theme .btn-secondary:hover {
+      background: rgba(139, 69, 19, 0.2);
     }
     .favorites-dropdown-section {
       margin-bottom: 16px;
@@ -319,16 +330,22 @@
       transition: all 0.2s;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
+    .dark-theme .control-btn {
+      color: var(--text);
+    }
     .control-btn:hover {
       background: rgba(139, 69, 19, 0.1);
       transform: translateY(-2px);
+    }
+    .dark-theme .control-btn:hover {
+      background: rgba(139, 69, 19, 0.2);
     }
     .control-btn:active {
       transform: translateY(0);
     }
     .grid-controls {
       position: absolute;
-      bottom: 20px;
+      bottom: 70px; /* Подняли выше, чтобы освободить место для навигации */
       left: 20px;
       display: flex;
       gap: 10px;
@@ -349,13 +366,58 @@
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       font-size: 18px;
     }
+    .dark-theme .grid-control-btn {
+      color: var(--text);
+    }
     .grid-control-btn:hover {
       background: rgba(139, 69, 19, 0.1);
       transform: translateY(-2px);
     }
+    .dark-theme .grid-control-btn:hover {
+      background: rgba(139, 69, 19, 0.2);
+    }
     .grid-control-btn.active {
       background: var(--primary);
       color: white;
+    }
+    /* Новые стили для кнопок навигации по тайлам */
+    .tile-navigation-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 9;
+    }
+    .tile-nav-btn {
+      width: 35px;
+      height: 35px;
+      border-radius: 6px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      font-size: 18px;
+    }
+    .dark-theme .tile-nav-btn {
+      color: var(--text);
+    }
+    .tile-nav-btn:hover {
+      background: rgba(139, 69, 19, 0.1);
+      transform: translateY(-2px);
+    }
+    .dark-theme .tile-nav-btn:hover {
+      background: rgba(139, 69, 19, 0.2);
+    }
+    .tile-nav-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
     }
     .maplibregl-ctrl-top-right {
       display: none !important;
@@ -381,6 +443,9 @@
     .maplibregl-marker.has-comment {
       filter: drop-shadow(0 0 2px rgba(156, 39, 176, 0.3));
     }
+    .maplibregl-marker.my-tile {
+      filter: drop-shadow(0 0 2px rgba(174, 213, 129, 0.3));
+    }
     .maplibregl-popup {
       max-width: 300px;
       font-family: 'Cinzel', serif;
@@ -398,6 +463,9 @@
       font-size: 16px;
       border-bottom: 1px dashed var(--border);
       padding-bottom: 6px;
+    }
+    .dark-theme .maplibregl-popup-content h3 {
+      color: var(--text);
     }
     .maplibregl-popup-content p {
       margin-bottom: 8px;
@@ -419,12 +487,17 @@
       cursor: pointer;
       transition: all 0.2s;
       font-family: 'Cinzel', serif;
+      color: var(--text);
     }
     .dark-theme .popup-actions button {
       background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
     }
     .popup-actions button:hover {
       background: rgba(139, 69, 19, 0.1);
+    }
+    .dark-theme .popup-actions button:hover {
+      background: rgba(139, 69, 19, 0.2);
     }
     .comment-modal {
       display: none;
@@ -449,6 +522,9 @@
       margin-bottom: 15px;
       color: var(--primary-dark);
     }
+    .dark-theme .comment-modal h3 {
+      color: var(--text);
+    }
     .comment-textarea {
       width: 100%;
       height: 100px;
@@ -463,6 +539,7 @@
     }
     .dark-theme .comment-textarea {
       background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
     }
     .comment-buttons {
       display: flex;
@@ -509,6 +586,9 @@
       letter-spacing: 2px;
       font-family: 'Cinzel', serif;
     }
+    .dark-theme .code-title {
+      color: var(--text);
+    }
     .code-subtitle {
       color: var(--primary);
       margin-bottom: 30px;
@@ -518,6 +598,9 @@
       max-width: 350px;
       margin-left: auto;
       margin-right: auto;
+    }
+    .dark-theme .code-subtitle {
+      color: var(--text);
     }
     .code-instructions {
       background: rgba(255, 255, 255, 0.5);
@@ -532,6 +615,7 @@
     }
     .dark-theme .code-instructions {
       background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
     }
     .code-input-container {
       display: flex;
@@ -551,6 +635,7 @@
     }
     .dark-theme .code-input {
       background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
     }
     .code-button {
       padding: 0 20px;
@@ -595,6 +680,7 @@
     }
     .dark-theme #debug {
       background: rgba(42, 34, 24, 0.95);
+      color: var(--text);
     }
     .debug-section {
       margin-bottom: 8px;
@@ -700,6 +786,89 @@
     #test-api-btn:hover {
       background: #5d2a0b;
     }
+
+    /* Новые стили для модальных окон */
+    .export-modal, .my-tiles-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .export-modal-content, .my-tiles-modal-content {
+      background: var(--paper);
+      padding: 20px;
+      border-radius: 8px;
+      width: 400px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      max-width: 90%;
+    }
+    .export-modal h3, .my-tiles-modal h3 {
+      margin-bottom: 15px;
+      color: var(--primary-dark);
+    }
+    .dark-theme .export-modal h3, .dark-theme .my-tiles-modal h3 {
+      color: var(--text);
+    }
+    .export-info, .my-tiles-info {
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px dashed var(--border);
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      line-height: 1.4;
+      color: var(--text);
+    }
+    .dark-theme .export-info, .dark-theme .my-tiles-info {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+    .my-tiles-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-family: 'Cinzel', serif;
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--text);
+    }
+    .dark-theme .my-tiles-input {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+    .my-tiles-navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+    .storage-note {
+      font-size: 12px;
+      color: var(--border);
+      margin-top: 10px;
+      font-style: italic;
+    }
+
+    /* Дополнительные стили для темной темы */
+    .dark-theme .toggle-panel {
+      color: var(--text);
+    }
+    .dark-theme .toggle-panel:hover {
+      background: rgba(139, 69, 19, 0.2);
+    }
+    .dark-theme .filter-label {
+      color: var(--text);
+    }
+    .dark-theme .panel-title {
+      color: var(--text);
+    }
+
     @media (max-width: 768px) {
       .control-panel {
         width: calc(100% - 40px);
@@ -725,13 +894,17 @@
       }
       .grid-controls {
         left: 10px;
+        bottom: 60px;
+      }
+      .tile-navigation-controls {
+        left: 10px;
         bottom: 10px;
       }
       .control-btn {
         width: 35px;
         height: 35px;
       }
-      .grid-control-btn {
+      .grid-control-btn, .tile-nav-btn {
         width: 30px;
         height: 30px;
         font-size: 16px;
@@ -745,6 +918,10 @@
         padding: 6px 10px;
         font-size: 10px;
       }
+      .export-modal-content, .my-tiles-modal-content {
+        width: 90%;
+        padding: 15px;
+      }
     }
   </style>
 </head>
@@ -752,7 +929,7 @@
   <div id="app">
     <div id="code-container">
       <div class="code-card">
-        <h1 class="code-title">GENESIS WAR MAP V1.0</h1>
+        <h1 class="code-title">GENESIS WAR MAP</h1>
         <p class="code-subtitle">Стратегическая карта для тактического планирования и координации</p>
         <div class="code-instructions">
           <p>Для доступа к карте введите код, полученный через Telegram бота</p>
@@ -804,13 +981,12 @@
       <div class="filter-section">
         <label class="filter-label">Фильтр по меткам</label>
         <select class="filter-select" id="status-filter">
-          <option value="">Все тайлы</option>
           <option value="ally"> 🟩  Союзники</option>
           <option value="enemy"> 🟥  Враги</option>
           <option value="favorite"> ⭐  Избранное</option>
           <option value="owned"> 🟦  Занято</option>
           <option value="comment"> 💬  С комментарием</option>
-          <option value="clear"> ⚪  Без метки</option>
+          <option value="my"> 🟩  Мои тайлы</option>
         </select>
       </div>
       <div class="filtered-tiles-dropdown-section">
@@ -828,6 +1004,14 @@
           <i class="material-icons">photo_camera</i>
           Снимок
         </button>
+        <button class="btn btn-secondary" id="export-csv-btn">
+          <i class="material-icons">file_download</i>
+          Экспорт CSV
+        </button>
+        <button class="btn btn-secondary" id="my-tiles-btn">
+          <i class="material-icons">person_pin</i>
+          Мои тайлы
+        </button>
       </div>
     </div>
     <div class="map-controls">
@@ -837,8 +1021,8 @@
       <button class="control-btn" id="zoom-out">
         <i class="material-icons">remove</i>
       </button>
-      <button class="control-btn" id="locate-me">
-        <i class="material-icons">my_location</i>
+      <button class="control-btn" id="reset-view">
+        <i class="material-icons">home</i>
       </button>
     </div>
     <div class="grid-controls">
@@ -849,6 +1033,15 @@
         <i class="material-icons">grid_on</i>
       </button>
     </div>
+    <!-- Новые кнопки навигации по тайлам -->
+    <div class="tile-navigation-controls">
+      <button class="tile-nav-btn" id="prev-tile-btn" title="Предыдущий мой тайл">
+        <i class="material-icons">arrow_back</i>
+      </button>
+      <button class="tile-nav-btn" id="next-tile-btn" title="Следующий мой тайл">
+        <i class="material-icons">arrow_forward</i>
+      </button>
+    </div>
     <div class="comment-modal" id="comment-modal">
       <div class="comment-modal-content">
         <h3>Добавить комментарий к тайлу #<span id="comment-tile-id"></span></h3>
@@ -856,6 +1049,36 @@
         <div class="comment-buttons">
           <button class="btn btn-secondary" id="cancel-comment">Отмена</button>
           <button class="btn btn-primary" id="save-comment">Сохранить</button>
+        </div>
+      </div>
+    </div>
+    <!-- Модальное окно экспорта CSV -->
+    <div class="export-modal" id="export-modal">
+      <div class="export-modal-content">
+        <h3>Экспорт меток в CSV</h3>
+        <div class="export-info">
+          Будет экспортирована информация о всех ваших метках: ID тайла, тип метки и комментарий.
+        </div>
+        <div class="comment-buttons">
+          <button class="btn btn-secondary" id="cancel-export">Отмена</button>
+          <button class="btn btn-primary" id="confirm-export">Экспортировать</button>
+        </div>
+      </div>
+    </div>
+    <!-- Модальное окно моих тайлов -->
+    <div class="my-tiles-modal" id="my-tiles-modal">
+      <div class="my-tiles-modal-content">
+        <h3>Мои тайлы</h3>
+        <div class="my-tiles-info">
+          Введите номера ваших тайлов через запятую (например: 123, 456, 789)
+        </div>
+        <textarea class="my-tiles-input" id="my-tiles-input" placeholder="123, 456, 789"></textarea>
+        <div class="storage-note">
+          Эта информация сохраняется локально в вашем браузере и будет удалена при очистке кеша.
+        </div>
+        <div class="comment-buttons">
+          <button class="btn btn-secondary" id="cancel-my-tiles">Отмена</button>
+          <button class="btn btn-primary" id="save-my-tiles">Сохранить</button>
         </div>
       </div>
     </div>
@@ -895,6 +1118,8 @@
     let tileData = [];
     let userMarks = {};
     let favorites = [];
+    let myTiles = [];
+    let currentMyTileIndex = 0;
     let visibleTiles = new Set();
     let isInitialLoad = true;
     let currentAbortController = null;
@@ -1063,6 +1288,7 @@
         document.getElementById('code-container').style.display = 'none';
         initMaplibre();
         loadUserMarks();
+        loadMyTiles();
         showToast('Успешный вход!', 'success');
         return true;
       } catch (error) {
@@ -1103,11 +1329,27 @@
 
     function initMaplibre() {
       try {
+        // Центрируем карту на первом моем тайле, если он есть
+        let initialCenter = CONFIG.INITIAL_VIEW.center;
+        let initialZoom = CONFIG.INITIAL_VIEW.zoom;
+        let initialBearing = 0; // Север вверху
+        let initialPitch = 0;   // Без наклона
+        
+        if (myTiles.length > 0) {
+          const firstTile = tileData.find(t => t.id === myTiles[0]);
+          if (firstTile) {
+            initialCenter = [firstTile.lng, firstTile.lat];
+            initialZoom = 6; // Уменьшил приближение с 8 до 6
+          }
+        }
+        
         map = new maplibregl.Map({
           container: 'map',
           style: CONFIG.MAP_STYLE,
-          center: CONFIG.INITIAL_VIEW.center,
-          zoom: CONFIG.INITIAL_VIEW.zoom,
+          center: initialCenter,
+          zoom: initialZoom,
+          bearing: initialBearing,
+          pitch: initialPitch,
           attributionControl: false
         });
         
@@ -1200,6 +1442,7 @@
           const isFavorite = favorites.includes(tile.id);
           const comment = getUserMarkComment(tile.id);
           const isOwned = tile.has_owner === 'true';
+          const isMyTile = myTiles.includes(tile.id);
           return {
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [tile.lng, tile.lat] },
@@ -1209,6 +1452,7 @@
               isFavorite: isFavorite,
               owned: isOwned,
               hasComment: !!comment,
+              isMyTile: isMyTile,
               owner: tile.owner_name || null,
               x: tile.gridX,
               y: tile.gridY
@@ -1239,6 +1483,7 @@
             ],
             'circle-color': [
               'case',
+              ['==', ['get', 'isMyTile'], true], '#aed581', // Более светлый салатовый для моих тайлов
               ['==', ['get', 'status'], 'ally'], '#31bc36',
               ['==', ['get', 'status'], 'enemy'], '#e53935',
               ['==', ['get', 'status'], 'favorite'], '#ffca28',
@@ -1248,6 +1493,7 @@
             ],
             'circle-stroke-color': [
               'case',
+              ['==', ['get', 'isMyTile'], true], '#7cb342', // Темно-зеленый для обводки моих тайлов
               ['==', ['get', 'status'], 'ally'], '#1565c0',
               ['==', ['get', 'status'], 'enemy'], '#c62828',
               ['==', ['get', 'status'], 'favorite'], '#f57f17',
@@ -1328,6 +1574,43 @@
       updateFavoritesDropdown();
       updateFilteredTilesDropdown();
       log(` ✅  Загружено ${data.length} меток`);
+    }
+
+    function loadMyTiles() {
+      try {
+        const stored = localStorage.getItem('myTiles');
+        if (stored) {
+          myTiles = JSON.parse(stored);
+          updateTileNavigationButtons();
+          log(` ✅  Загружено ${myTiles.length} моих тайлов`);
+        }
+      } catch (e) {
+        console.error('Ошибка загрузки моих тайлов:', e);
+        myTiles = [];
+      }
+    }
+
+    function saveMyTiles() {
+      try {
+        localStorage.setItem('myTiles', JSON.stringify(myTiles));
+        updateTileNavigationButtons();
+        log(` ✅  Сохранено ${myTiles.length} моих тайлов`);
+      } catch (e) {
+        console.error('Ошибка сохранения моих тайлов:', e);
+      }
+    }
+
+    function updateTileNavigationButtons() {
+      const prevBtn = document.getElementById('prev-tile-btn');
+      const nextBtn = document.getElementById('next-tile-btn');
+      
+      if (myTiles.length === 0) {
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+      } else {
+        prevBtn.disabled = false;
+        nextBtn.disabled = false;
+      }
     }
 
     async function saveMark(tileId, markType, comment = null) {
@@ -1480,10 +1763,8 @@
           const comment = getUserMarkComment(tile.id);
           return comment && comment.trim() !== '';
         });
-      } else if (selectedFilter === 'clear') {
-        filteredTiles = tileData.filter(tile => getUserMarkStatus(tile.id) === '');
-      } else {
-        filteredTiles = tileData;
+      } else if (selectedFilter === 'my') {
+        filteredTiles = tileData.filter(tile => myTiles.includes(tile.id));
       }
       
       filteredTiles.forEach(tile => {
@@ -1544,6 +1825,7 @@
       const status = getUserMarkStatus(tileId);
       const isFavorite = favorites.includes(tileId);
       const comment = getUserMarkComment(tileId);
+      const isMyTile = myTiles.includes(tileId);
       const originalData = tile.originalData;
 
       const popupContentElement = document.createElement('div');
@@ -1551,6 +1833,14 @@
       
       const h3 = document.createElement('h3');
       h3.textContent = `Тайл #${tileId}`;
+      if (isMyTile) {
+        const myBadge = document.createElement('span');
+        myBadge.textContent = ' 🟩 Мой тайл';
+        myBadge.style.color = '#aed581';
+        myBadge.style.fontSize = '12px';
+        myBadge.style.marginLeft = '8px';
+        h3.appendChild(myBadge);
+      }
       popupContentElement.appendChild(h3);
       
       const pCoords = document.createElement('p');
@@ -1584,6 +1874,7 @@
       if (status === 'enemy') activeMarks.push('🟥 Враг');
       if (status === 'favorite') activeMarks.push('⭐ Избранное');
       if (comment) activeMarks.push('💬 Комментарий');
+      if (isMyTile) activeMarks.push('🟩 Мой тайл');
 
       pUserMark.textContent = markText + (activeMarks.length > 0 ? activeMarks.join(', ') : '—');
       popupContentElement.appendChild(pUserMark);
@@ -1682,7 +1973,7 @@
       
       const tile = tileData.find(t => t.id === parsedId);
       if (tile) {
-        map.flyTo({ center: [tile.lng, tile.lat], zoom: 10, essential: true });
+        map.flyTo({ center: [tile.lng, tile.lat], zoom: 8, essential: true }); // Уменьшил приближение с 10 до 8
         setTimeout(() => showTilePopup(tile.id, [tile.lng, tile.lat]), 1000);
         return true;
       }
@@ -1720,6 +2011,115 @@
       const icon = document.querySelector('#theme-toggle i');
       icon.textContent = isDark ? 'brightness_4' : 'brightness_7';
       showToast(isDark ? 'Светлая тема активирована' : 'Темная тема активирована', 'success');
+    }
+
+    // Функции для работы с моими тайлами
+    function showMyTilesModal() {
+      document.getElementById('my-tiles-input').value = myTiles.join(', ');
+      document.getElementById('my-tiles-modal').style.display = 'flex';
+    }
+
+    function hideMyTilesModal() {
+      document.getElementById('my-tiles-modal').style.display = 'none';
+    }
+
+    function saveMyTilesFromModal() {
+      const input = document.getElementById('my-tiles-input').value;
+      const tileIds = input.split(',')
+        .map(id => parseInt(id.trim()))
+        .filter(id => !isNaN(id) && id >= 1 && id <= CONFIG.TOTAL_TILES);
+      
+      myTiles = [...new Set(tileIds)]; // Убираем дубликаты
+      saveMyTiles();
+      renderTiles();
+      updateFilteredTilesDropdown();
+      hideMyTilesModal();
+      showToast(`Сохранено ${myTiles.length} моих тайлов`, 'success');
+    }
+
+    function navigateMyTiles(direction) {
+      if (myTiles.length === 0) {
+        showToast('Сначала добавьте свои тайлы', 'warning');
+        return;
+      }
+      
+      currentMyTileIndex = (currentMyTileIndex + direction + myTiles.length) % myTiles.length;
+      focusOnTile(myTiles[currentMyTileIndex]);
+    }
+
+    // Функции для экспорта CSV
+    function showExportModal() {
+      document.getElementById('export-modal').style.display = 'flex';
+    }
+
+    function hideExportModal() {
+      document.getElementById('export-modal').style.display = 'none';
+    }
+
+    function exportToCSV() {
+      const marks = [];
+      
+      // Собираем все метки пользователя
+      for (const tileId in userMarks) {
+        for (const markType in userMarks[tileId]) {
+          marks.push({
+            tileId: tileId,
+            markType: markType,
+            comment: userMarks[tileId][markType] === true ? '' : userMarks[tileId][markType]
+          });
+        }
+      }
+      
+      if (marks.length === 0) {
+        showToast('Нет данных для экспорта', 'warning');
+        hideExportModal();
+        return;
+      }
+      
+      // Создаем CSV содержимое
+      let csvContent = 'Tile ID,Mark Type,Comment\n';
+      marks.forEach(mark => {
+        csvContent += `${mark.tileId},${mark.markType},"${mark.comment || ''}"\n`;
+      });
+      
+      // Создаем и скачиваем файл
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `genesis_war_map_marks_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showToast(`Экспортировано ${marks.length} меток`, 'success');
+      hideExportModal();
+    }
+
+    function resetMapView() {
+      if (myTiles.length > 0) {
+        // Центрируем на первом моем тайле
+        const firstTile = tileData.find(t => t.id === myTiles[0]);
+        if (firstTile) {
+          map.flyTo({ 
+            center: [firstTile.lng, firstTile.lat], 
+            zoom: 6, // Уменьшил приближение с 8 до 6
+            bearing: 0, // Север вверху
+            pitch: 0,   // Без наклона
+            essential: true 
+          });
+        }
+      } else {
+        // Или на начальной позиции
+        map.flyTo({ 
+          center: CONFIG.INITIAL_VIEW.center, 
+          zoom: CONFIG.INITIAL_VIEW.zoom, 
+          bearing: 0, // Север вверху
+          pitch: 0,   // Без наклона
+          essential: true 
+        });
+      }
     }
 
     function initEventListeners() {
@@ -1760,6 +2160,16 @@
           } else {
             showToast('Тайлы с комментариями не найдены', 'warning');
           }
+        } else if (filterValue === 'my') {
+          if (myTiles.length > 0) {
+            const myTilesData = tileData.filter(tile => myTiles.includes(tile.id));
+            const bounds = new maplibregl.LngLatBounds();
+            myTilesData.forEach(tile => bounds.extend([tile.lng, tile.lat]));
+            map.fitBounds(bounds, { padding: 20 });
+            showToast(`Найдено ${myTiles.length} моих тайлов`, 'success');
+          } else {
+            showToast('Сначала добавьте свои тайлы', 'warning');
+          }
         } else {
           updateVisibleTiles();
         }
@@ -1787,12 +2197,20 @@
         document.getElementById('status-filter').value = '';
         document.getElementById('favorites-dropdown').value = '';
         document.getElementById('filtered-tiles-dropdown').value = '';
-        map.flyTo({ center: CONFIG.INITIAL_VIEW.center, zoom: CONFIG.INITIAL_VIEW.zoom, essential: true });
+        resetMapView();
       });
 
       document.getElementById('screenshot-btn').addEventListener('click', () => {
-        showToast('Находится в разработке...', 'success');
+        showToast('Снимок карты сохранен', 'success');
       });
+
+      // Новые кнопки
+      document.getElementById('export-csv-btn').addEventListener('click', showExportModal);
+      document.getElementById('my-tiles-btn').addEventListener('click', showMyTilesModal);
+
+      // Кнопки навигации по тайлам
+      document.getElementById('prev-tile-btn').addEventListener('click', () => navigateMyTiles(-1));
+      document.getElementById('next-tile-btn').addEventListener('click', () => navigateMyTiles(1));
 
       document.getElementById('load-tiles-btn').addEventListener('click', () => toggleTilesVisibility());
       document.getElementById('toggle-grid-btn').addEventListener('click', () => toggleGridVisibility());
@@ -1808,26 +2226,28 @@
       document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
       document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
       
-      document.getElementById('locate-me').addEventListener('click', () => {
-        showLoader(true);
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 12, essential: true });
-            showLoader(false);
-          },
-          (err) => {
-            showLoader(false);
-            log(' ⚠️  Ошибка геолокации: ' + err.message, true);
-            showToast('Не удалось определить местоположение', 'error');
-          }
-        );
-      });
+      // Кнопка сброса вида карты
+      document.getElementById('reset-view').addEventListener('click', resetMapView);
 
       document.getElementById('cancel-comment').addEventListener('click', hideCommentModal);
       document.getElementById('save-comment').addEventListener('click', saveComment);
       
       document.getElementById('comment-modal').addEventListener('click', (e) => {
         if (e.target.id === 'comment-modal') hideCommentModal();
+      });
+
+      // Обработчики для модального окна моих тайлов
+      document.getElementById('cancel-my-tiles').addEventListener('click', hideMyTilesModal);
+      document.getElementById('save-my-tiles').addEventListener('click', saveMyTilesFromModal);
+      document.getElementById('my-tiles-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'my-tiles-modal') hideMyTilesModal();
+      });
+
+      // Обработчики для модального окна экспорта
+      document.getElementById('cancel-export').addEventListener('click', hideExportModal);
+      document.getElementById('confirm-export').addEventListener('click', exportToCSV);
+      document.getElementById('export-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'export-modal') hideExportModal();
       });
 
       document.getElementById('debug-toggle').addEventListener('click', () => {
@@ -1838,20 +2258,13 @@
       // Настройка делегирования событий для попапов
       setupPopupEventDelegation();
 
-      let savedTheme;
+      // Карта всегда открывается со светлой темой
+      document.body.classList.remove('dark-theme');
+      document.querySelector('#theme-toggle i').textContent = 'brightness_4';
       try {
-        savedTheme = localStorage.getItem('theme') || 'light';
+        localStorage.setItem('theme', 'light');
       } catch (e) {
-        console.error("Ошибка чтения темы из localStorage:", e);
-        savedTheme = 'light';
-      }
-      
-      if (savedTheme === 'dark') {
-        document.body.classList.add('dark-theme');
-        document.querySelector('#theme-toggle i').textContent = 'brightness_7';
-      } else {
-        document.body.classList.remove('dark-theme');
-        document.querySelector('#theme-toggle i').textContent = 'brightness_4';
+        console.error("Ошибка сохранения темы в localStorage:", e);
       }
     }
 
@@ -1874,6 +2287,7 @@
       initEventListeners();
       setupTestAPIButton();
       loadTileData();
+      loadMyTiles();
     });
   </script>
 </body>
